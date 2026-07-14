@@ -18,16 +18,18 @@
  ********************************************************************************/
 void lq_tracking_demo(void)
 {
-    // 初始化 8 路灰度循迹传感器，数据引脚连接到 PIN_64, PIN_65, PIN_72 (可任意修改)
-    lq_tracking tracking(LS_ADC_CH0, PIN_64, PIN_65, PIN_72);
+    // 初始化 8 路灰度循迹传感器，数据引脚连接到 PIN_75, PIN_67, PIN_88 (可任意修改)
+    lq_tracking tracking(LS_ADC_CH5, PIN_77, PIN_89, PIN_88);
 
+    printf("\n");
     while (ls_system_running.load())
     {
         // 打印 8 路传感器的采样值前, 先调用 get_polling_value 进行一轮采集和处理, 确保 get_value 获取到的是最新数据
         tracking.get_polling_value();
-        printf("val : %03d, %03d, %03d, %03d, %03d, %03d, %03d, %03d\n",
+        printf("\rval : %03d, %03d, %03d, %03d, %03d, %03d, %03d, %03d",
                tracking.get_value(0), tracking.get_value(1), tracking.get_value(2), tracking.get_value(3),
                tracking.get_value(4), tracking.get_value(5), tracking.get_value(6), tracking.get_value(7));
+        fflush(stdout);
         usleep(100 * 1000);
     }
 }

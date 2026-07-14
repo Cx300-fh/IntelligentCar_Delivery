@@ -24,9 +24,11 @@ void lq_vl53l0x_demo(void)
 
     lq_i2c_vl53l0x vl53l0x;
 
+    printf("\n");
     while (ls_system_running.load())
     {
-        printf("VL53L0X distance = %05u\n\n", vl53l0x.get_vl53l0x_dis());
+        printf("\rVL53L0X distance = %05u", vl53l0x.get_vl53l0x_dis());
+        fflush(stdout);
         usleep(100*100);
     }
 }

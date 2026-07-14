@@ -55,7 +55,7 @@ void lq_tracking::get_polling_value()
     uint8_t num_samples = 5, discard_samples = 3, i = 0, j = 0;
     for (i = 0; i < 8; i++)
     {
-        this->set_io((i>>2)&1, (i>>1)&1, (i>>0)&1);
+        this->set_io((i>>0)&1, (i>>1)&1, (i>>2)&1);
         for (j = 0; j < num_samples; j++)
         {
             // 采样并缩放范围为 0-100
