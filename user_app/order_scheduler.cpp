@@ -1,5 +1,6 @@
 #include "order_scheduler.hpp"
 #include "navigation.hpp"
+#include "voice.hpp"
 
 OrderScheduler order_scheduler;
 
@@ -209,6 +210,26 @@ void OrderScheduler::emit_event(SchedulerEventType type, int order_id, int node_
     printf("[Order] %s: order=%d node=%d %s / %s\n",
            get_scheduler_event_name(type), order_id, node_id,
            last_event.text_zh, last_event.text_en);
+
+    switch (type) {
+        case SCHED_EVENT_PICKUP_ARRIVED:
+            Voice_Play_Event(VOICE_EVENT_PICKUP_ARRIVED);
+            break;
+        case SCHED_EVENT_DROPOFF_ARRIVED:
+            Voice_Play_Event(VOICE_EVENT_DROPOFF_ARRIVED);
+            break;
+        case SCHED_EVENT_ROUTE_UPDATED:
+            Voice_Play_Event(VOICE_EVENT_ROUTE_UPDATED);
+            break;
+        case SCHED_EVENT_ORDER_DELAYED:
+            Voice_Play_Event(VOICE_EVENT_ORDER_DELAYED);
+            break;
+        case SCHED_EVENT_ORDER_COMPLETED:
+            Voice_Play_Event(VOICE_EVENT_TASK_COMPLETE);
+            break;
+        default:
+            break;
+    }
 }
 
 int OrderScheduler::route_cost_from(int current_node, const std::vector<RouteStop>& candidate, int start_index) {
