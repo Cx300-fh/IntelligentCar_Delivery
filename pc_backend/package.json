@@ -1,0 +1,21 @@
+{
+  "name": "loongson-delivery-pc-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PC-side HTTP/WebSocket/UDP gateway for the Loongson smart delivery car.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "check": "node --check server.js && node --check config.js && node --check carClient.js && node --check imageReceiver.js && node --check voiceGateway.js && node --check mapWeights.js",
+    "simulate:car": "node scripts/simulate_car.js",
+    "simulate:image": "node scripts/simulate_image.js",
+    "simulate:voice": "node scripts/simulate_voice.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
