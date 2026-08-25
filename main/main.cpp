@@ -1,0 +1,154 @@
+/********************************************************************************
+ * @file            main.cpp
+ * @brief           本文件是 LQ_2K300_301_LIB 软件开源库文件的一部分
+ * @copyright       版权所有 (C) 2025-2026 北京龙邱科技有限公司
+ * @website         http://www.lqist.cn
+ * @taobao          https://longqiu.taobao.com
+ *
+ * @description     龙邱科技 LS2K300/301 核心板驱动开源库声明
+ *
+ * 本文件遵循 GPL-3.0 开源协议发布，旨在为龙芯 2K300/301 平台提供快速上手开发基于龙芯 2K300/301 平台的应用程序的参考实现.
+ * 商业用途(包括单位使用)需提前联系作者获取授权
+ *
+ * GPL-3.0 许可证声明摘要:
+ * 1. 允许自由使用、修改、分发本软件
+ * 2. 分发修改后的版本时，必须以相同许可证发布
+ * 3. 必须保留原始版权声明和许可证信息
+ * 4. 不提供任何担保，使用风险自负
+ * 5. 完整协议文本请参见项目根目录 LICENSE 文件
+ *
+ * @author          龙邱科技-012
+ * @email           chiusir@163.com
+ * @version         V2.1.0
+ * @update          2026-04-21
+ *
+ * @note            使用本开源库前, 请确认板卡型号与 PMON 版本是否匹配.
+ *                  龙邱 2K301 或已根据群文件升级系统的2K300可直接使用.
+ *                  旧版本 2K300 需要修改时钟频率, 请到 lq_clock.hpp 文件修改 CONFIG_USE_PMON.
+ *
+ * @note            本库已重载 CTRL+C 信号, 按下 CTRL+C 时，会设置 ls_system_running 为 false，
+ *                  从而退出所有正在运行的 demo 例程.
+ * @note            如果用户在主程序写了自定义的循环，需要在循环中判断 ls_system_running.load() 是否为 true，
+ *                  否则会导致程序无法退出.
+ ********************************************************************************/
+
+#include "main.hpp"
+#include "include.hpp"
+
+
+lq_timer timer_0;
+
+
+// 定时器回调函数
+void my_timer_0_callback(void)
+{
+    Ultima_Control();  // 调用综合控制函数
+}
+
+
+int main()
+{
+    All_Init(); // 初始化
+
+    // 导航状态机初始化
+    nav_fsm.init();
+
+    // 通信入口初始化
+    Voice_Model_Init();     // 外部语音模型 UDP: 小车 -> 电脑模型 8899
+    Route_Server_Init();    // 电脑路线前端 UDP: 电脑后端 -> 小车 8898
+
+    // 定时器初始化
+    lq_signal_set_exit_cb([](){ timer_0.stop(); });
+    timer_0.set_seconds_ms(5, my_timer_0_callback);     // 设置定时器回调，5ms执行一次
+
+    while (ls_system_running.load())
+    {
+        Calculate_FPS();            // 计算FPS（每秒更新一次fps_observe变量，不打印）
+
+        // 仅在摄像头初始化成功时执行图像处理
+        if (image_init_ok) {
+            Image_Process();            // 图像总采集处理
+            Boundary_Extract();         // 迷宫扫线提取边界并计算循迹偏差
+            Tag_Scan_Process();         // 标签识别处理
+            Draw_RGB();                 // 绘制所有可视化内容（边线、Tag等）
+            Send_Image(1);              // 图传发送图像 (0-不发送, 1-原图, 2-灰度图, 3-二值化图)
+        }
+
+        // 至此，图像处理完成，可用数据：
+        // ├─ 图像:   RGB原图、灰度图、二值化图
+        // ├─ 边界:   border_msg(边界信息), ele_current(循迹偏差)
+        // ├─ AprilTag: tag_id, tag_angle, tag_dir_ns/ew, tag_center_x/y, tag_dir_ns/ew_name
+        // └─ 帧率:   fps_observe
+
+        // 导航状态机更新
+        // ┌─────────────┬─────────────────────────────────────────┐
+        // │ 状态        │ 说明                                    │
+        // ├─────────────┼─────────────────────────────────────────┤
+        // │ IDLE        │ 等待指令，小车静止                      │
+        // │ SEARCHING   │ 盲走阶段，循迹寻找第一个Tag             │
+        // │ AT_NODE     │ 到达节点，决策（走错路/路口/查表转向）  │
+        // │ WAITING     │ 等待3秒，播报位置                       │
+        // │ EXECUTING   │ 执行动作（循迹/转向/直行/掉头）         │
+        // │ ARRIVED     │ 到达终点，停车                          │
+        // └─────────────┴─────────────────────────────────────────┘
+        nav_fsm.update();
+
+        // 电脑路线前端UDP指令轮询（非阻塞，端口8898）
+        Route_Server_Poll();
+
+        // 语音外部模型UDP返回轮询（非阻塞，端口8899）
+        Voice_Model_Poll();
+
+        // 获取当前导航动作（用于运动控制）
+        // ┌───────────────────┬────────────────────────────────┐
+        // │ 动作              │ 控制逻辑                       │
+        // ├───────────────────┼────────────────────────────────┤
+        // │ ACTION_FOLLOW     │ 循迹行驶（使用ele_current偏差）│
+        // │ ACTION_STRAIGHT   │ 直行过路口                     │
+        // │ ACTION_TURN_LEFT  │ 左转                           │
+        // │ ACTION_TURN_RIGHT │ 右转                           │
+        // │ ACTION_UTURN      │ 掉头                           │
+        // │ ACTION_STOP       │ 停车                           │
+        // └───────────────────┴────────────────────────────────┘
+        Control_Apply_Nav_Action(nav_fsm.get_action());
+
+        // 屏幕指令控制导航（处理逻辑在 screen.cpp Screen_Rx_Process()）
+        // ┌─────────────┬─────────────────────────────────────────┐
+        // │ 指令        │ 功能                                    │
+        // ├─────────────┼─────────────────────────────────────────┤
+        // │ AIM,map,tgt │ 设定地图和目标点（仅保存，不启动）      │
+        // │ START       │ 使用已设定的地图和目标点启动导航        │
+        // │ STOP/PAUSE  │ 急停/取消当前任务                       │
+        // │ ORDER       │ 创建订单                                │
+        // │ CONFIRM     │ 确认取/放货动作                         │
+        // │ EDGE        │ 更新边权/封路                           │
+        // │ WIFI        │ 配置 WiFi                               │
+        // └─────────────┴─────────────────────────────────────────┘
+
+        // 每3帧发送一次屏幕数据（避免串口过载）
+        static int screen_send_cnt = 0;
+        if (++screen_send_cnt >= 3) {
+            Screen_Send_All();
+            screen_send_cnt = 0;
+        }
+
+        // 陶晶驰屏幕心跳包：每200ms发送一次，保持屏幕在线状态
+        // 防止屏幕认为龙芯未启动而跳转初始化界面并清空地图/目标点
+        static uint32_t last_hb_time = 0;
+        uint32_t current_time = lq_get_tick_ms();
+        if (current_time - last_hb_time >= 200) {  // 200ms间隔
+            Screen_Send_Heartbeat();
+            last_hb_time = current_time;
+        }
+
+        // WiFi状态定时检查（每3秒检查一次连接状态）
+        WiFi_Periodic_Check();
+
+        // 实时调试信息（需要时取消注释）
+        // Print_Data();              // 打印传感器/导航数据到调试串口
+
+        // usleep(1000 * 1);           // 主循环休眠，避免占用过多 CPU
+    }
+
+    return 0;
+}

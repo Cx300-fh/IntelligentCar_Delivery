@@ -65,10 +65,10 @@ void dir_control()
     ele_out = place_pid_control(&turn_pid, ele_current, ele_target, turn_ele);
     ele_out = RANGE_LIMIT(ele_out, -80, 80);
 
-    unsigned int servo_duty = SERVO_MID - ele_out * 2.5;
+    int servo_duty = (int)(SERVO_MID - ele_out * 2.5);
+    servo_duty = RANGE_LIMIT(servo_duty, SERVO_MIN, SERVO_MAX);
 
-    // servo_pwm.gtim_pwm_set_duty(servo_duty);
-    servo_pwm.gtim_pwm_set_duty(SERVO_MID);
+    servo_pwm.gtim_pwm_set_duty(servo_duty);
 
     /* 速度设置 */
     if(run == 1)
@@ -79,6 +79,10 @@ void dir_control()
     {
         current_speed = (current_speed > 0) ? current_speed - speed_ramp : 0;  // 速度缓减至0
         // current_speed = 0;  // 速度直接置零
+        if (current_speed <= 0) {
+            left_speed = 0;
+            right_speed = 0;
+        }
     }
 
     /* 差速控制 */
@@ -93,6 +97,88 @@ void dir_control()
         diff_ratio = (-ele_out) * 0.01;
         left_speed = current_speed * (1 + diff_ratio * 0.2);
         right_speed = current_speed * (1 - diff_ratio);
+    }
+}
+
+
+/**
+ * @brief 将导航状态机动作映射为底层运动控制目标
+ * @note  第一版使用低速定时路口动作，后续可替换为陀螺仪/里程计闭环。
+ */
+void Control_Apply_Nav_Action(int action)
+{
+    static int last_action = ACTION_NONE;
+    static uint32_t action_start_ms = 0;
+
+    uint32_t now_ms = lq_get_tick_ms();
+    if (action != last_action) {
+        last_action = action;
+        action_start_ms = now_ms;
+    }
+
+    switch (action) {
+    case ACTION_FOLLOW:
+        if (!image_init_ok) {
+            run = 0;
+            target_speed = 0;
+            ele_current = 0;
+            ele_target = 0;
+            break;
+        }
+        run = 1;
+        target_speed = SPEED_FOLLOW;
+        ele_current = bias_calculate();
+        ele_target = 0;
+        break;
+
+    case ACTION_STRAIGHT:
+        run = 1;
+        target_speed = SPEED_ACTION;
+        ele_current = 0;
+        ele_target = 0;
+        if (now_ms - action_start_ms >= TURN_HOLD_MS) {
+            nav_fsm.set_action_done();
+        }
+        break;
+
+    case ACTION_TURN_LEFT:
+        run = 1;
+        target_speed = SPEED_ACTION;
+        ele_current = TURN_BIAS;
+        ele_target = 0;
+        if (now_ms - action_start_ms >= TURN_HOLD_MS) {
+            nav_fsm.set_action_done();
+        }
+        break;
+
+    case ACTION_TURN_RIGHT:
+        run = 1;
+        target_speed = SPEED_ACTION;
+        ele_current = -TURN_BIAS;
+        ele_target = 0;
+        if (now_ms - action_start_ms >= TURN_HOLD_MS) {
+            nav_fsm.set_action_done();
+        }
+        break;
+
+    case ACTION_UTURN:
+        run = 1;
+        target_speed = SPEED_ACTION;
+        ele_current = TURN_BIAS;
+        ele_target = 0;
+        if (now_ms - action_start_ms >= UTURN_HOLD_MS) {
+            nav_fsm.set_action_done();
+        }
+        break;
+
+    case ACTION_STOP:
+    case ACTION_NONE:
+    default:
+        run = 0;
+        target_speed = 0;
+        ele_current = 0;
+        ele_target = 0;
+        break;
     }
 }
 

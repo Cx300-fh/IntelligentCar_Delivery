@@ -54,6 +54,7 @@ extern "C" {
 #include "screen.hpp"
 #include "voice.hpp"
 #include "voice_model_client.hpp"
+#include "route_udp_server.hpp"
 #include "navigation.hpp"
 #include "order_scheduler.hpp"
 #include "wifi_manager.hpp"   // WiFi管理模块（支持屏幕配置WiFi）

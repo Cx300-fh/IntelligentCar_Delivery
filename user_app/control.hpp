@@ -10,6 +10,14 @@
 #define ELE_OUT_MAX  65     // 转向环输出限幅
 #define BIAS_MAX     100    // 偏差限幅
 #define SERVO_MID    1470   // 舵机中值（PWM占空比）
+#define SERVO_MIN    1000   // 舵机占空比安全下限
+#define SERVO_MAX    1900   // 舵机占空比安全上限
+
+#define SPEED_FOLLOW     20  // 循迹巡航速度
+#define SPEED_ACTION     14  // 路口动作低速
+#define TURN_HOLD_MS    650  // 左/右/直行动作保持时间
+#define UTURN_HOLD_MS  1100  // 掉头动作保持时间
+#define TURN_BIAS        45  // 定时转向动作的虚拟偏差量
 
 //================================================================================
 // 结构体定义
@@ -30,7 +38,7 @@ typedef struct PID
 extern uint8_t follow_row;              // 循迹参考行
 extern double target_speed;             // 目标速度
 
-extern PID left_motor_pid, right_motor_pid, turn_pid_ele;         // PID结构体
+extern PID left_motor_pid, right_motor_pid, turn_pid;         // PID结构体
 
 extern double turn_ele[2];            // 转向环 PD 参数 [KP, KD]
 extern double ele_target;             // 转向环目标偏差（0=居中）
@@ -57,6 +65,7 @@ double bias_calculate();        // 偏差计算
 void dir_control();             // 方向环控制
 void motor_control();           // 电机控制
 void Ultima_Control();          // 综合控制（中断调用）
+void Control_Apply_Nav_Action(int action);  // 导航动作到运动控制目标的映射
 
 double place_pid_control(PID* sptr, double now_point, double set_point, double *turn_pid);    // 位置式PD
 double pid_realize(PID* sptr, double actual_speed, double set_speed, double *motor_pid);      // 增量式PID
