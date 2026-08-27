@@ -63,6 +63,23 @@ class MapWeights {
     this.conditions = new Map();
   }
 
+  loadConditions(conditions) {
+    for (const condition of conditions || []) {
+      this.conditions.set(
+        edgeKey(condition.map_id, condition.from, condition.to),
+        {
+          map_id: Number(condition.map_id),
+          from: Number(condition.from),
+          to: Number(condition.to),
+          manual_penalty: Number(condition.manual_penalty || 0),
+          dynamic_penalty: Number(condition.dynamic_penalty || 0),
+          blocked: Boolean(condition.blocked),
+          updated_at: condition.updated_at || new Date().toISOString()
+        }
+      );
+    }
+  }
+
   getMaps() {
     return MAPS;
   }

@@ -34,8 +34,10 @@ class VoiceGateway extends EventEmitter {
       this.emit('voice_command', this.lastCommand);
 
       const result = await this.resolveVoiceCommand(message);
+      const source = result.source || 'rules';
       this.lastResult = {
         ...result,
+        source,
         sent_at: new Date().toISOString(),
         remote: `${remote.address}:${remote.port}`
       };
@@ -79,10 +81,17 @@ class VoiceGateway extends EventEmitter {
         throw new Error(`HTTP ${response.status}`);
       }
       const result = await response.json();
-      return this.normalizeModelResult(result);
+      return this.withSource(this.normalizeModelResult(result), 'external_model');
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  withSource(result, source) {
+    return {
+      ...result,
+      source
+    };
   }
 
   normalizeModelResult(result) {
@@ -108,40 +117,40 @@ class VoiceGateway extends EventEmitter {
     if (!text) return this.invalidResult();
 
     if (/(确认|好了|已放入|放好了|已取走|取走了|confirm|ok|done|placed|taken)/i.test(text)) {
-      return { type: 'command_result', action: 'confirm' };
+      return this.withSource({ type: 'command_result', action: 'confirm' }, 'rules');
     }
 
     if (/(停止|暂停|取消|急停|stop|pause|cancel)/i.test(text)) {
-      return { type: 'command_result', action: 'stop' };
+      return this.withSource({ type: 'command_result', action: 'stop' }, 'rules');
     }
 
     if (/(状态|到哪|查询|进度|status|where|progress)/i.test(text)) {
-      return { type: 'command_result', action: 'query_status' };
+      return this.withSource({ type: 'command_result', action: 'query_status' }, 'rules');
     }
 
     if (/(放入|取件|pickup|place)/i.test(text)) {
-      return {
+      return this.withSource({
         type: 'command_result',
         action: 'speak',
         speak_event: 'pickup_arrived'
-      };
+      }, 'rules');
     }
 
     if (/(取走|送达|终点|dropoff|take|arrived)/i.test(text)) {
-      return {
+      return this.withSource({
         type: 'command_result',
         action: 'speak',
         speak_event: 'dropoff_arrived'
-      };
+      }, 'rules');
     }
 
     const order = this.tryParseOrder(normalized, message.map_id);
     if (order) {
-      return {
+      return this.withSource({
         type: 'command_result',
         action: 'submit_order',
         ...order
-      };
+      }, 'rules');
     }
 
     return this.invalidResult();
@@ -182,11 +191,11 @@ class VoiceGateway extends EventEmitter {
   }
 
   invalidResult() {
-    return {
+    return this.withSource({
       type: 'command_result',
       action: 'speak',
       speak_event: 'invalid_command'
-    };
+    }, 'rules');
   }
 
   getStatus() {
