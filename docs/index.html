@@ -6,6 +6,15 @@
   <title>Intelligent Car Delivery</title>
   <meta name="description" content="Autonomous campus delivery system with dynamic routing, voice interaction, UDP gateway, and persistent mission tracing.">
   <style>
+
+    @font-face {
+      font-family: "Prism";
+      src: url("assets/fonts/Prism.woff2") format("woff2");
+      font-style: normal;
+      font-weight: 400 900;
+      font-display: swap;
+    }
+
     :root {
       color-scheme: dark;
       --bg: #0c0e0d;
@@ -69,6 +78,14 @@
       text-decoration: none;
       font-weight: 760;
       white-space: nowrap;
+    }
+
+
+    .brand-logo {
+      width: 35px;
+      height: 35px;
+      display: block;
+      flex: 0 0 auto;
     }
 
     .brand-mark {
@@ -205,16 +222,17 @@
       display: block;
       margin-top: 10px;
       font-family:
+        "Prism",
         "Arial Narrow",
         "Helvetica Neue",
         Arial,
         sans-serif;
       font-size: clamp(31px, 4.4vw, 62px);
-      font-weight: 800;
+      font-weight: 700;
       line-height: .95;
-      letter-spacing: .055em;
+      letter-spacing: .045em;
       color: var(--green);
-      text-transform: uppercase;
+      text-transform: none;
       white-space: nowrap;
     }
 
@@ -1056,7 +1074,7 @@
   <div class="topbar">
     <div class="shell nav">
       <a class="brand" href="#top" aria-label="Intelligent Car Delivery home">
-        <span class="brand-mark" aria-hidden="true"></span>
+        <img class="brand-logo" src="assets/brand/logo.svg" alt="" aria-hidden="true">
         Intelligent Car Delivery
       </a>
       <div class="nav-links" aria-label="Page navigation">
@@ -1072,7 +1090,6 @@
   <header id="top" class="hero">
     <div class="shell hero-grid">
       <div>
-        <p class="eyebrow">Autonomous Campus Logistics</p>
         <h1 class="hero-title-mark">
           <span class="hero-title-cn">清&nbsp;&nbsp;送</span>
           <span class="hero-title-en">THU Delivery</span>
