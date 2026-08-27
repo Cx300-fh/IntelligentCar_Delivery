@@ -6,7 +6,7 @@
 
 ## Demo 入口
 
-- 交互式项目展示页：打开 [`demo_site/index.html`](./demo_site/index.html)
+- 交互式项目展示页：打开 [`docs/index.html`](./docs/index.html)
 - 真实电脑端控制台：
 
 ```bash
@@ -190,7 +190,7 @@ GET  /api/voice-logs?limit=100
 ```text
 .
 ├── README.md                         # 项目展示首页
-├── demo_site/                        # 静态交互式项目展示页
+├── docs/                             # GitHub Pages 静态交互式项目展示页
 ├── pc_backend/                       # 电脑端后端、前端控制台、数据库
 ├── Loongson_2K300_301_LIB/
 │   ├── main/                         # 小车主程序入口
