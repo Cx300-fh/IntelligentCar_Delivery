@@ -4,524 +4,1364 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IntelligentCar Delivery</title>
-  <meta name="description" content="Loongson smart delivery car with order scheduling, dynamic route planning, voice interaction, image streaming, and SQLite persistence.">
+  <meta name="description" content="Autonomous campus delivery system with dynamic routing, voice interaction, UDP gateway, and persistent mission tracing.">
   <style>
     :root {
+      color-scheme: dark;
+      --bg: #0c0e0d;
+      --surface: #151816;
+      --text: #f1f3f0;
+      --muted: #8e948f;
+      --muted-2: #b9beb9;
+      --line: rgba(241, 243, 240, .14);
+      --line-soft: rgba(241, 243, 240, .08);
+      --green: #76b900;
+      --green-soft: rgba(118, 185, 0, .18);
+      --orange: #e3a62f;
+      --red: #d85b46;
+      --blue: #70a4ff;
+      --shadow: 0 30px 90px rgba(0, 0, 0, .45);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      --bg: #05070d;
-      --text: #eef7ff;
-      --muted: #9dafc8;
-      --panel: rgba(255,255,255,.075);
-      --line: rgba(255,255,255,.18);
-      --cyan: #6ee7ff;
-      --blue: #7aa7ff;
-      --violet: #b38cff;
-      --green: #78f6c2;
-      --amber: #ffd166;
-      --red: #ff7b8a;
     }
+
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
       margin: 0;
+      background:
+        linear-gradient(180deg, rgba(118, 185, 0, .06), transparent 420px),
+        var(--bg);
       color: var(--text);
-      background: var(--bg);
       letter-spacing: 0;
       overflow-x: hidden;
     }
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      z-index: -2;
-      background:
-        radial-gradient(circle at 78% 4%, rgba(110,231,255,.2), transparent 28%),
-        radial-gradient(circle at 20% 18%, rgba(179,140,255,.18), transparent 30%),
-        linear-gradient(180deg, rgba(122,167,255,.08), transparent 46%);
-    }
-    body::after {
-      content: "";
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      opacity: .16;
-      background-image:
-        linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px);
-      background-size: 44px 44px;
-      mask-image: linear-gradient(to bottom, black, transparent 88%);
-    }
+
     a { color: inherit; }
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 18px;
-      padding: 16px clamp(18px, 5vw, 76px);
-      border-bottom: 1px solid rgba(255,255,255,.1);
-      background: rgba(5,7,13,.72);
+    button { cursor: pointer; font: inherit; }
+    code { color: #d7f6b9; }
+
+    .shell {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 20;
+      border-bottom: 1px solid rgba(241, 243, 240, .08);
+      background: rgba(12, 14, 13, .72);
       backdrop-filter: blur(18px);
     }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; }
-    .mark {
+
+    .nav {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .brand-mark {
       width: 26px;
       height: 26px;
-      border-radius: 7px;
-      background: conic-gradient(from 160deg, var(--cyan), var(--violet), var(--green), var(--cyan));
-      box-shadow: 0 0 26px rgba(110,231,255,.35);
-    }
-    .navlinks { display: flex; gap: 16px; color: var(--muted); font-size: 14px; }
-    .navlinks a { text-decoration: none; }
-    header {
-      min-height: 92vh;
+      border: 1px solid rgba(118, 185, 0, .6);
+      background:
+        linear-gradient(135deg, rgba(118,185,0,.9), transparent 44%),
+        #171b18;
       display: grid;
-      grid-template-columns: minmax(320px, .95fr) minmax(460px, 1.2fr);
+      place-items: center;
+    }
+
+    .brand-mark::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      box-shadow: 0 0 18px rgba(118,185,0,.8);
+    }
+
+    .nav-links {
+      display: flex;
       align-items: center;
-      gap: 42px;
-      padding: 56px clamp(18px, 5vw, 76px) 48px;
+      gap: 22px;
+      color: var(--muted-2);
+      font-size: 14px;
     }
-    .eyebrow {
-      color: var(--cyan);
-      font-weight: 800;
-      text-transform: uppercase;
-      font-size: 13px;
-      letter-spacing: .14em;
-    }
-    h1 {
-      margin: 14px 0 18px;
-      max-width: 900px;
-      font-size: clamp(42px, 7vw, 88px);
-      line-height: .95;
-      letter-spacing: 0;
-    }
-    h2 {
-      margin: 0 0 10px;
-      font-size: clamp(30px, 4vw, 54px);
-      line-height: 1.05;
-      letter-spacing: 0;
-    }
-    h3 { margin: 0 0 10px; font-size: 18px; }
-    p { color: var(--muted); line-height: 1.7; }
-    .lead { max-width: 760px; color: #c9d8ee; font-size: clamp(17px, 2vw, 21px); }
-    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
-    .button, button {
-      border: 1px solid rgba(255,255,255,.26);
-      border-radius: 999px;
-      background: linear-gradient(135deg, rgba(110,231,255,.22), rgba(179,140,255,.22));
-      color: var(--text);
-      padding: 12px 18px;
-      font: inherit;
-      font-weight: 800;
+
+    .nav-links a {
       text-decoration: none;
-      cursor: pointer;
-      box-shadow: 0 10px 30px rgba(0,0,0,.22);
+      transition: color .2s ease;
     }
-    .button.secondary, button.secondary { background: rgba(255,255,255,.06); color: #d8e6fa; }
-    .stage {
+
+    .nav-links a:hover { color: var(--text); }
+
+    .hero {
+      min-height: 100svh;
       position: relative;
-      min-height: 560px;
-      border: 1px solid var(--line);
-      border-radius: 28px;
-      background: linear-gradient(180deg, rgba(255,255,255,.11), rgba(255,255,255,.045));
-      box-shadow: 0 28px 90px rgba(0,0,0,.42);
+      display: grid;
+      align-items: end;
+      padding: 110px 0 42px;
       overflow: hidden;
+      isolation: isolate;
     }
-    .stage::before {
+
+    .hero::before {
       content: "";
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle at 50% 50%, rgba(110,231,255,.16), transparent 38%);
+      z-index: -3;
+      background:
+        linear-gradient(90deg, rgba(12,14,13,.94) 0%, rgba(12,14,13,.82) 32%, rgba(12,14,13,.25) 72%),
+        linear-gradient(0deg, var(--bg) 0%, transparent 34%),
+        url("assets/delivery-robot-hero.png") center right / cover no-repeat;
+      transform: scale(1.015);
     }
-    .orbit {
+
+    .hero::after {
+      content: "";
       position: absolute;
-      inset: 38px;
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 50%;
-      animation: spin 18s linear infinite;
+      inset: auto 0 0;
+      height: 34%;
+      z-index: -2;
+      background: linear-gradient(180deg, transparent, var(--bg));
     }
-    .orbit.two { inset: 88px; animation-duration: 26s; animation-direction: reverse; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .map-card {
-      position: absolute;
-      left: 7%;
-      right: 7%;
-      top: 12%;
-      bottom: 11%;
-      border: 1px solid rgba(255,255,255,.16);
-      border-radius: 22px;
-      background: rgba(3,8,18,.78);
-      backdrop-filter: blur(14px);
-      overflow: hidden;
-    }
-    .map-head {
-      display: flex;
-      justify-content: space-between;
-      padding: 14px 16px;
-      color: var(--muted);
-      border-bottom: 1px solid rgba(255,255,255,.1);
-      font-size: 13px;
-    }
-    .map-space { position: absolute; inset: 48px 0 0; }
-    .road {
-      position: absolute;
-      height: 4px;
-      border-radius: 999px;
-      background: rgba(157,175,200,.44);
-      transform-origin: left center;
-    }
-    .road.route { background: linear-gradient(90deg, var(--cyan), var(--green)); box-shadow: 0 0 20px rgba(110,231,255,.45); }
-    .road.hot { background: var(--amber); animation: hot 1.8s ease-in-out infinite; }
-    @keyframes hot { 50% { filter: brightness(1.35); box-shadow: 0 0 22px rgba(255,209,102,.48); } }
-    .node {
-      position: absolute;
-      width: 32px;
-      height: 32px;
-      margin: -16px 0 0 -16px;
+
+    .hero-grid {
       display: grid;
-      place-items: center;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,.72);
-      background: #142139;
-      color: #fff;
-      font-size: 12px;
-      font-weight: 900;
-      box-shadow: 0 0 22px rgba(122,167,255,.22);
+      grid-template-columns: minmax(0, .85fr) minmax(320px, .55fr);
+      gap: 60px;
+      align-items: end;
     }
-    .node.pickup { background: #0b7b63; box-shadow: 0 0 28px rgba(120,246,194,.45); }
-    .node.dropoff { background: #9b3443; box-shadow: 0 0 28px rgba(255,123,138,.45); }
-    .car {
-      position: absolute;
-      width: 34px;
-      height: 24px;
-      left: 15%;
-      top: 72%;
-      border-radius: 8px;
-      background: #eaf6ff;
-      box-shadow: 0 0 30px rgba(110,231,255,.7);
-      animation: drive 7s ease-in-out infinite;
-      z-index: 4;
+
+    .eyebrow {
+      margin: 0 0 18px;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 780;
+      text-transform: uppercase;
     }
-    .car::before { content: ""; position: absolute; inset: 6px 7px; border-radius: 5px; background: #19304f; }
-    @keyframes drive {
-      0%,100% { left: 15%; top: 72%; }
-      32% { left: 34%; top: 50%; }
-      62% { left: 55%; top: 42%; }
-      84% { left: 78%; top: 28%; }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      margin-bottom: 22px;
+      max-width: 980px;
+      font-size: clamp(54px, 9vw, 116px);
+      line-height: .88;
+      letter-spacing: 0;
+      font-weight: 820;
     }
-    .floating-card {
-      position: absolute;
-      right: 7%;
-      bottom: 7%;
-      width: min(320px, 58%);
-      border: 1px solid rgba(255,255,255,.18);
-      border-radius: 18px;
-      padding: 16px;
-      background: rgba(5,10,22,.86);
+
+    .hero-lead {
+      max-width: 760px;
+      color: #d9ddd8;
+      font-size: clamp(19px, 2vw, 24px);
+      line-height: 1.45;
+    }
+
+    .zh {
+      color: var(--muted-2);
+      line-height: 1.8;
+      font-size: 16px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border: 1px solid rgba(241, 243, 240, .18);
+      background: rgba(241, 243, 240, .06);
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 720;
+      transition: transform .2s ease, border-color .2s ease, background .2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(118,185,0,.65);
+      background: rgba(118,185,0,.13);
+    }
+
+    .btn.primary {
+      border-color: rgba(118,185,0,.75);
+      background: var(--green);
+      color: #0c0e0d;
+    }
+
+    .mission-card {
+      border: 1px solid rgba(241, 243, 240, .18);
+      background: rgba(15, 18, 16, .76);
       backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      padding: 18px;
     }
-    .status-row {
+
+    .mission-top {
       display: flex;
       justify-content: space-between;
       gap: 14px;
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(255,255,255,.1);
       color: var(--muted);
       font-size: 13px;
+      border-bottom: 1px solid var(--line-soft);
+      padding-bottom: 14px;
     }
-    .status-row strong { color: var(--text); }
-    main { padding: 16px clamp(18px, 5vw, 76px) 68px; }
-    .section-title { max-width: 860px; margin: 54px 0 20px; }
-    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-    .card {
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 20px;
-      background: var(--panel);
-      min-height: 176px;
-    }
-    .metric { font-size: 34px; font-weight: 900; color: var(--cyan); margin-bottom: 8px; }
-    .wide { grid-column: 1 / -1; }
-    .split { display: grid; grid-template-columns: 1.15fr .85fr; gap: 16px; }
-    .tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
-    .tabs button.active { background: linear-gradient(135deg, rgba(110,231,255,.3), rgba(120,246,194,.2)); border-color: rgba(110,231,255,.5); }
-    .panel-map {
-      height: 430px;
+
+    .route-strip {
       position: relative;
-      border-radius: 20px;
-      border: 1px solid var(--line);
-      background: rgba(3,8,18,.72);
-      overflow: hidden;
+      height: 112px;
+      margin: 20px 0;
     }
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-    .chip {
-      border: 1px solid rgba(255,255,255,.15);
-      border-radius: 999px;
-      padding: 6px 10px;
-      color: #d7e6f8;
-      background: rgba(255,255,255,.06);
-      font-size: 13px;
+
+    .route-strip::before {
+      content: "";
+      position: absolute;
+      left: 15px;
+      right: 15px;
+      top: 49px;
+      height: 2px;
+      background: rgba(241,243,240,.18);
     }
-    .timeline { display: grid; gap: 12px; counter-reset: step; }
-    .step {
+
+    .route-progress {
+      position: absolute;
+      left: 15px;
+      top: 49px;
+      height: 2px;
+      width: 72%;
+      background: var(--green);
+      box-shadow: 0 0 22px rgba(118,185,0,.55);
+      animation: pulseLine 2.4s ease-in-out infinite;
+    }
+
+    @keyframes pulseLine { 50% { opacity: .55; } }
+
+    .stop {
+      position: absolute;
+      top: 31px;
+      transform: translateX(-50%);
       display: grid;
-      grid-template-columns: 36px 1fr;
+      justify-items: center;
       gap: 12px;
-      align-items: start;
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: rgba(255,255,255,.06);
-    }
-    .step::before {
-      counter-increment: step;
-      content: counter(step);
-      display: grid;
-      place-items: center;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--cyan), var(--violet));
-      color: #06101d;
-      font-weight: 900;
-    }
-    .step h3, .step p { margin: 0; }
-    .flow { display: grid; gap: 10px; overflow: hidden; }
-    .packet {
-      padding: 14px;
-      border-radius: 14px;
-      border-left: 4px solid var(--cyan);
-      background: rgba(255,255,255,.07);
-      animation: packet 4.6s ease-in-out infinite;
-    }
-    .packet:nth-child(2) { animation-delay: .5s; border-color: var(--green); }
-    .packet:nth-child(3) { animation-delay: 1s; border-color: var(--amber); }
-    @keyframes packet { 0%,100% { transform: translateX(0); opacity: .86; } 50% { transform: translateX(14px); opacity: 1; } }
-    pre {
-      margin: 0;
-      overflow: auto;
-      white-space: pre-wrap;
-      border: 1px solid rgba(255,255,255,.13);
-      border-radius: 16px;
-      background: #030810;
-      color: #d9f7ff;
-      padding: 16px;
-      line-height: 1.6;
-    }
-    code { color: #d9f7ff; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,.12); text-align: left; color: #dbe9fa; }
-    th { color: var(--cyan); }
-    .shot-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
-    .shot {
-      min-height: 160px;
-      border: 1px dashed rgba(255,255,255,.22);
-      border-radius: 18px;
-      display: grid;
-      place-items: center;
-      padding: 14px;
-      color: var(--muted);
-      background: rgba(255,255,255,.05);
+      color: var(--muted-2);
+      font-size: 12px;
       text-align: center;
     }
-    footer { padding: 28px clamp(18px, 5vw, 76px); color: var(--muted); border-top: 1px solid rgba(255,255,255,.1); }
-    @media (max-width: 980px) {
-      header, .split, .grid { grid-template-columns: 1fr; }
-      .stage { min-height: 500px; }
-      .shot-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-      .navlinks { display: none; }
+
+    .stop::before {
+      content: "";
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(241,243,240,.3);
+      background: var(--surface);
     }
-    @media (max-width: 620px) {
-      h1 { font-size: 42px; }
-      .floating-card { width: 84%; }
-      .shot-grid { grid-template-columns: 1fr; }
+
+    .stop.active::before {
+      background: var(--green);
+      box-shadow: 0 0 24px rgba(118,185,0,.58);
     }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; }
+
+    .stop:nth-child(2) { left: 8%; }
+    .stop:nth-child(3) { left: 43%; }
+    .stop:nth-child(4) { left: 78%; }
+
+    .mission-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .mission-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-top: 1px solid var(--line-soft);
+      color: var(--muted-2);
+      font-size: 14px;
+    }
+
+    .mission-list strong { color: var(--text); text-align: right; }
+
+    section { padding: 86px 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .88fr) minmax(260px, .42fr);
+      gap: 34px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    h2 {
+      margin-bottom: 0;
+      font-size: clamp(34px, 5vw, 68px);
+      line-height: .98;
+      letter-spacing: 0;
+      font-weight: 800;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+      font-size: 22px;
+      line-height: 1.18;
+      font-weight: 760;
+    }
+
+    p {
+      color: var(--muted-2);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .statement {
+      margin: 0;
+      max-width: 920px;
+      color: var(--text);
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1.05;
+      font-weight: 780;
+    }
+
+    .loop {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .loop-step {
+      min-height: 230px;
+      padding: 24px;
+      border-right: 1px solid var(--line-soft);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .loop-step:last-child { border-right: 0; }
+    .loop-step::before {
+      content: attr(data-index);
+      position: absolute;
+      right: 18px;
+      bottom: 10px;
+      color: rgba(241,243,240,.05);
+      font-size: 92px;
+      font-weight: 820;
+      line-height: 1;
+    }
+
+    .loop-step.active {
+      background: linear-gradient(180deg, rgba(118,185,0,.16), transparent);
+    }
+
+    .loop-kicker {
+      margin-bottom: 60px;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 760;
+      text-transform: uppercase;
+    }
+
+    .map-lab {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(300px, .45fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .map-stage {
+      position: relative;
+      min-height: 560px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(rgba(241,243,240,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(241,243,240,.035) 1px, transparent 1px),
+        #0f1210;
+      background-size: 44px 44px;
+      overflow: hidden;
+    }
+
+    .map-stage svg {
+      width: 100%;
+      height: 100%;
+      min-height: 560px;
+      display: block;
+    }
+
+    .base-road {
+      stroke: rgba(241,243,240,.22);
+      stroke-width: 1.4;
+      stroke-linecap: round;
+    }
+
+    .route-road {
+      stroke: var(--green);
+      stroke-width: 5;
+      stroke-linecap: round;
+      fill: none;
+      filter: drop-shadow(0 0 8px rgba(118,185,0,.45));
+      stroke-dasharray: 9 12;
+      animation: flow 1.1s linear infinite;
+    }
+
+    .old-road {
+      stroke: rgba(241,243,240,.26);
+      stroke-width: 4;
+      stroke-linecap: round;
+      fill: none;
+      opacity: 0;
+      transition: opacity .45s ease;
+    }
+
+    .anomaly-road {
+      stroke: var(--orange);
+      stroke-width: 5;
+      stroke-linecap: round;
+      opacity: 0;
+      transition: opacity .35s ease;
+    }
+
+    .map-stage.congested .anomaly-road,
+    .map-stage.congested .old-road { opacity: 1; }
+
+    @keyframes flow { to { stroke-dashoffset: -21; } }
+
+    .map-node {
+      fill: rgba(241,243,240,.42);
+      stroke: rgba(12,14,13,.9);
+      stroke-width: 2;
+    }
+
+    .map-node.key { fill: var(--green); }
+    .map-node.end { fill: var(--red); }
+    .map-node.current { fill: var(--blue); }
+
+    .map-label {
+      fill: var(--muted-2);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .vehicle-dot {
+      fill: var(--text);
+      filter: drop-shadow(0 0 10px rgba(118,185,0,.8));
+    }
+
+    .map-side {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 22px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      border: 1px solid var(--line);
+      background: rgba(241,243,240,.04);
+      color: var(--muted-2);
+      min-height: 38px;
+      padding: 0 14px;
+    }
+
+    .tab.active {
+      border-color: rgba(118,185,0,.8);
+      background: var(--green);
+      color: var(--bg);
+      font-weight: 760;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .metric {
+      border: 1px solid var(--line-soft);
+      padding: 12px;
+      min-height: 86px;
+      background: rgba(241,243,240,.03);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+
+    .metric strong {
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .control-row button {
+      min-height: 42px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      background: rgba(241,243,240,.05);
+      color: var(--text);
+      font-weight: 720;
+    }
+
+    .control-row button.hot {
+      border-color: rgba(227,166,47,.6);
+      background: rgba(227,166,47,.13);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      background: var(--green-soft);
+      color: #d8ffb5;
+      border: 1px solid rgba(118,185,0,.4);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .journey {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .journey-track {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(240px, 1fr));
+      min-width: 860px;
+    }
+
+    .journey-step {
+      min-height: 330px;
+      padding: 24px;
+      border-right: 1px solid var(--line-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .journey-step:last-child { border-right: 0; }
+
+    .screen {
+      min-height: 130px;
+      border: 1px solid rgba(118,185,0,.34);
+      background:
+        linear-gradient(180deg, rgba(118,185,0,.12), rgba(118,185,0,.03)),
+        #080a09;
+      padding: 16px;
+      display: grid;
+      align-content: center;
+      gap: 8px;
+    }
+
+    .screen strong {
+      color: var(--green);
+      font-size: 22px;
+    }
+
+    .voice-demo {
+      display: grid;
+      grid-template-columns: minmax(0, .65fr) minmax(0, .35fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .voice-chain {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 26px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .voice-node {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 18px;
+      align-items: center;
+      padding: 16px;
+      border: 1px solid var(--line-soft);
+      background: rgba(241,243,240,.035);
+    }
+
+    .voice-node .tag {
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 780;
+      text-transform: uppercase;
+    }
+
+    .voice-meter {
+      height: 130px;
+      display: flex;
+      align-items: end;
+      gap: 8px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: #0f1210;
+    }
+
+    .bar {
+      flex: 1;
+      min-width: 8px;
+      background: var(--green);
+      opacity: .72;
+      animation: voice 1.4s ease-in-out infinite;
+    }
+
+    .bar:nth-child(2n) { animation-delay: .18s; }
+    .bar:nth-child(3n) { animation-delay: .31s; }
+    .bar:nth-child(4n) { animation-delay: .44s; }
+
+    @keyframes voice {
+      0%, 100% { height: 22%; }
+      50% { height: 86%; }
+    }
+
+    .architecture {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .arch-node {
+      min-height: 178px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .arch-node::after {
+      content: "";
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+      transform: translateX(-100%);
+      animation: signal 2.8s ease-in-out infinite;
+    }
+
+    .arch-node:nth-child(2)::after { animation-delay: .35s; }
+    .arch-node:nth-child(3)::after { animation-delay: .7s; }
+    .arch-node:nth-child(4)::after { animation-delay: 1.05s; }
+
+    @keyframes signal {
+      60%, 100% { transform: translateX(100%); }
+    }
+
+    .protocol-flow {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted-2);
+    }
+
+    .protocol-flow span {
+      border: 1px solid var(--line-soft);
+      padding: 9px 11px;
+      background: rgba(241,243,240,.035);
+      font-size: 13px;
+    }
+
+    details {
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 16px 18px;
+    }
+
+    summary {
+      cursor: pointer;
+      color: var(--text);
+      font-weight: 760;
+    }
+
+    pre {
+      margin: 16px 0 0;
+      overflow: auto;
+      padding: 16px;
+      background: #080a09;
+      border: 1px solid var(--line-soft);
+      color: #d6ddd3;
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .campus {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .campus-card {
+      min-height: 330px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(145deg, rgba(118,185,0,.13), transparent 34%),
+        var(--surface);
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .node-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .node-cloud span {
+      min-width: 34px;
+      min-height: 30px;
+      padding: 6px 10px;
+      border: 1px solid var(--line-soft);
+      color: var(--muted-2);
+      text-align: center;
+    }
+
+    .data-flow {
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .database {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 24px;
+    }
+
+    .table-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .table-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 0;
+      border-top: 1px solid var(--line-soft);
+      color: var(--muted-2);
+    }
+
+    .table-row strong { color: var(--text); }
+
+    .open-source {
+      border-top: 1px solid var(--line);
+      padding-bottom: 36px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: end;
+    }
+
+    .progress-note {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .map-lab,
+      .voice-demo,
+      .data-flow,
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 120px; }
+      .hero::before {
+        background:
+          linear-gradient(180deg, rgba(12,14,13,.55), var(--bg) 82%),
+          url("assets/delivery-robot-hero.png") center top / cover no-repeat;
+        opacity: .85;
+      }
+      .mission-card { margin-top: 160px; }
+      .loop { grid-template-columns: 1fr; }
+      .loop-step { min-height: 180px; border-right: 0; border-bottom: 1px solid var(--line-soft); }
+      .architecture,
+      .campus {
+        grid-template-columns: 1fr;
+      }
+      .journey { overflow-x: auto; }
+    }
+
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 28px, 1180px); }
+      h1 { font-size: 52px; }
+      h2, .statement { font-size: 34px; }
+      .hero-actions .btn { width: 100%; }
+      .metric-grid { grid-template-columns: 1fr; }
+      .voice-node { grid-template-columns: 1fr; }
+      .map-stage, .map-stage svg { min-height: 430px; }
+      section { padding: 58px 0; }
     }
   </style>
 </head>
 <body>
-  <nav>
-    <div class="brand"><span class="mark"></span><span>IntelligentCar Delivery</span></div>
-    <div class="navlinks"><a href="#maps">Maps</a><a href="#flow">Flow</a><a href="#protocol">Protocol</a><a href="#data">Data</a></div>
-  </nav>
-
-  <header>
-    <div>
-      <div class="eyebrow">Loongson autonomous delivery demo</div>
-      <h1>让校园物流车自己接单、规划、到站提醒。</h1>
-      <p class="lead">一个完整的智能外卖/物流车系统：电脑端下单，小车端导航，路况边权实时更新，语音命令通过 UDP 交给电脑模型理解，所有订单与状态落入 SQLite。</p>
-      <div class="hero-actions">
-        <a class="button" href="#maps">Explore maps</a>
-        <a class="button secondary" href="../README.md">Read README</a>
+  <div class="topbar">
+    <div class="shell nav">
+      <a class="brand" href="#top" aria-label="IntelligentCar Delivery home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        IntelligentCar Delivery
+      </a>
+      <div class="nav-links" aria-label="Page navigation">
+        <a href="#loop">Loop</a>
+        <a href="#map">Dynamic Map</a>
+        <a href="#voice">Voice</a>
+        <a href="#system">System</a>
+        <a href="#source">Open Source</a>
       </div>
     </div>
-    <div class="stage" aria-label="autonomous delivery route animation">
-      <div class="orbit"></div>
-      <div class="orbit two"></div>
-      <div class="map-card">
-        <div class="map-head"><span>THU route simulation</span><span>dynamic cost +15%</span></div>
-        <div class="map-space" id="heroMap"></div>
+  </div>
+
+  <header id="top" class="hero">
+    <div class="shell hero-grid">
+      <div>
+        <p class="eyebrow">Autonomous Campus Logistics</p>
+        <h1>IntelligentCar Delivery</h1>
+        <p class="hero-lead">Autonomous campus delivery, from order to destination.</p>
+        <p class="zh">一个围绕真实硬件小车构建的外卖/物流车系统：电脑端下单，小车按拓扑地图导航，路况变化时动态重规划，并通过屏幕、语音、图传和数据库留下完整任务轨迹。</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#map">Watch Demo</a>
+          <a class="btn" href="#system">Explore System</a>
+          <a class="btn" href="https://github.com/Cx300-fh/IntelligentCar_Delivery">GitHub</a>
+        </div>
       </div>
-      <div class="floating-card">
-        <div class="status-row"><span>Order</span><strong>#1024 active</strong></div>
-        <div class="status-row"><span>Current action</span><strong>FOLLOW</strong></div>
-        <div class="status-row"><span>Route</span><strong>3 -> 4 -> 9</strong></div>
-        <div class="status-row"><span>Voice</span><strong>请放入物品</strong></div>
-      </div>
+      <aside class="mission-card" aria-label="Live mission preview">
+        <div class="mission-top">
+          <span>Live mission</span>
+          <span class="status-pill">Route adaptive</span>
+        </div>
+        <div class="route-strip" aria-hidden="true">
+          <div class="route-progress"></div>
+          <div class="stop active">Order</div>
+          <div class="stop active">Pickup</div>
+          <div class="stop">Dropoff</div>
+        </div>
+        <ul class="mission-list">
+          <li><span>Map</span><strong>THU</strong></li>
+          <li><span>Route</span><strong id="heroRoute">3 -> 4 -> 9</strong></li>
+          <li><span>Station prompt</span><strong>请放入物品</strong></li>
+          <li><span>Channel</span><strong>HTTP + UDP + UART</strong></li>
+        </ul>
+      </aside>
     </div>
   </header>
 
   <main>
-    <div class="section-title">
-      <h2>System capabilities</h2>
-      <p>从下单到导航，从语音到数据库，这个 Demo 已经把完整的信息流和车端算法骨架串起来。</p>
-    </div>
-    <div class="grid">
-      <div class="card"><div class="metric">8898</div><h3>订单控制通道</h3><p>电脑后端把创建订单、确认、停止、边权更新转换为小车 UDP JSON。</p></div>
-      <div class="card"><div class="metric">8888</div><h3>实时图传</h3><p>小车发送 4 字节长度头和 JPEG 数据，电脑端推送到浏览器。</p></div>
-      <div class="card"><div class="metric">8899</div><h3>语音模型网关</h3><p>小车 ASR 文本交给电脑端规则或外部模型，返回结构化动作。</p></div>
-    </div>
-
-    <div class="section-title" id="maps">
-      <h2>Two campus maps</h2>
-      <p>节点 ID 与屏幕目标、AprilTag、Dijkstra 节点统一，减少地图和硬件之间的映射误差。</p>
-    </div>
-    <div class="split">
-      <div class="panel-map" id="detailMap"></div>
-      <div class="card">
-        <div class="tabs">
-          <button class="active" id="thuBtn" type="button">THU 清华</button>
-          <button class="secondary" id="sutdBtn" type="button">SUTD</button>
-        </div>
-        <h3 id="mapTitle"></h3>
-        <p id="mapText"></p>
-        <div class="chips" id="nodeList"></div>
+    <section id="loop" class="shell">
+      <div class="section-head">
+        <h2>One complete loop, not a pile of modules.</h2>
+        <p class="zh">系统的核心体验是一条连续链路：浏览器创建订单，电脑后端转发给小车，小车取件、行驶、避开高成本道路，最后到站提醒取货。</p>
       </div>
-    </div>
+      <div class="loop" aria-label="Order to delivery loop">
+        <article class="loop-step active" data-index="01">
+          <div class="loop-kicker">Order</div>
+          <h3>Create mission</h3>
+          <p>浏览器提交地图、起点、终点和订单编号，电脑端后端把任务转成小车可执行 UDP JSON。</p>
+        </article>
+        <article class="loop-step" data-index="02">
+          <div class="loop-kicker">Plan</div>
+          <h3>Weighted Dijkstra</h3>
+          <p>边权由基础距离、动态路况、人工难走配置和封路状态共同决定。</p>
+        </article>
+        <article class="loop-step" data-index="03">
+          <div class="loop-kicker">Drive</div>
+          <h3>Navigate by tags</h3>
+          <p>AprilTag 节点作为定位锚点，导航状态机输出跟线、直行、转向、停止动作。</p>
+        </article>
+        <article class="loop-step" data-index="04">
+          <div class="loop-kicker">Adapt</div>
+          <h3>Reroute in motion</h3>
+          <p>电脑端可下发拥堵、事故、天气或人工封路权重，小车按最新成本重规划。</p>
+        </article>
+        <article class="loop-step" data-index="05">
+          <div class="loop-kicker">Deliver</div>
+          <h3>Prompt and confirm</h3>
+          <p>到起点播报“请放入物品”，到终点播报“请取走物品”，确认后推进订单状态。</p>
+        </article>
+      </div>
+    </section>
 
-    <div class="section-title" id="flow">
-      <h2>Order lifecycle</h2>
-      <p>订单不是单次导航，而是一组带有取放约束的站点动作。</p>
-    </div>
-    <div class="grid">
-      <div class="card wide">
-        <div class="timeline">
-          <div class="step"><div><h3>创建订单</h3><p>电脑端选择地图、起点和终点。</p></div></div>
-          <div class="step"><div><h3>到达起点</h3><p>屏幕和语音提示“请放入物品”。</p></div></div>
-          <div class="step"><div><h3>运输与重规划</h3><p>根据人工权重、拥堵、天气或封路更新路径成本。</p></div></div>
-          <div class="step"><div><h3>到达终点</h3><p>提示“请取走物品”，确认后订单完成并持久化。</p></div></div>
+    <section id="map" class="shell">
+      <div class="section-head">
+        <h2>The campus is not static.</h2>
+        <p class="zh">地图展示的是导航层，而不是调试图。基础道路弱化，当前路线高亮，只有拥堵或封路边才进入视觉焦点。</p>
+      </div>
+
+      <div class="map-lab">
+        <div class="map-stage" id="mapStage" aria-label="Interactive route map">
+          <svg id="routeSvg" viewBox="0 0 900 560" role="img" aria-labelledby="mapTitle mapDesc">
+            <title id="mapTitle">Dynamic routing map</title>
+            <desc id="mapDesc">Interactive THU and SUTD map with current route and congestion reroute.</desc>
+            <g id="baseRoads"></g>
+            <g id="oldRoute"></g>
+            <g id="anomalyRoad"></g>
+            <g id="currentRoute"></g>
+            <g id="nodes"></g>
+            <circle class="vehicle-dot" id="vehicleDot" r="8" cx="255" cy="340"></circle>
+          </svg>
+        </div>
+
+        <aside class="map-side">
+          <div class="panel">
+            <div class="tabs" role="tablist" aria-label="Campus maps">
+              <button class="tab active" data-map="thu" type="button">THU</button>
+              <button class="tab" data-map="sutd" type="button">SUTD</button>
+            </div>
+            <h3 id="mapName">THU campus route</h3>
+            <p id="mapCopy">Initial route: node 3 to node 9 through node 4. Trigger congestion to make edge 4 -> 9 expensive and watch Dijkstra choose 3 -> 7 -> 9.</p>
+            <div class="metric-grid">
+              <div class="metric"><span>Route</span><strong id="routeText">3-4-9</strong></div>
+              <div class="metric"><span>Cost</span><strong id="costText">18</strong></div>
+              <div class="metric"><span>ETA</span><strong id="etaText">4.2m</strong></div>
+            </div>
+            <div class="control-row">
+              <button class="hot" id="congestionBtn" type="button">Simulate congestion</button>
+              <button id="resetBtn" type="button">Reset route</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <span class="status-pill" id="edgeStatus">Normal traffic</span>
+            <h3 style="margin-top:16px;">Weight model</h3>
+            <p><strong>final_cost = base_distance + dynamic_penalty + manual_penalty</strong></p>
+            <p>人工难走路线、拥堵、事故、天气和封路都可以通过电脑端后端写入 SQLite，并同步下发到小车。</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="shell">
+      <div class="section-head">
+        <h2>From order to arrival.</h2>
+        <p class="zh">站点交互不是额外页面，而是配送流程的一部分。屏幕与语音使用同一语义事件，后续可切换中文或英文播报 ID。</p>
+      </div>
+      <div class="journey">
+        <div class="journey-track">
+          <article class="journey-step">
+            <div>
+              <span class="status-pill">Browser</span>
+              <h3 style="margin-top:18px;">Create an order</h3>
+              <p>选择地图、取件节点和送达节点，发送到电脑端后端。</p>
+            </div>
+            <div class="screen">
+              <span>POST /api/orders</span>
+              <strong>3 -> 9</strong>
+            </div>
+          </article>
+          <article class="journey-step">
+            <div>
+              <span class="status-pill">Pickup</span>
+              <h3 style="margin-top:18px;">Please place the item</h3>
+              <p>小车到达起点后等待确认，屏幕和语音同时提示。</p>
+            </div>
+            <div class="screen">
+              <span>起点 / Pickup</span>
+              <strong>请放入物品</strong>
+            </div>
+          </article>
+          <article class="journey-step">
+            <div>
+              <span class="status-pill">Adaptive</span>
+              <h3 style="margin-top:18px;">Reroute while driving</h3>
+              <p>边权变化后从当前 AprilTag 节点重新计算后续路径。</p>
+            </div>
+            <div class="screen">
+              <span>ROUTE_UPDATED</span>
+              <strong>3 -> 7 -> 9</strong>
+            </div>
+          </article>
+          <article class="journey-step">
+            <div>
+              <span class="status-pill">Dropoff</span>
+              <h3 style="margin-top:18px;">Please take the item</h3>
+              <p>终点确认后订单完成，状态快照写入电脑端数据库。</p>
+            </div>
+            <div class="screen">
+              <span>终点 / Dropoff</span>
+              <strong>请取走物品</strong>
+            </div>
+          </article>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="section-title" id="protocol">
-      <h2>Communication protocol</h2>
-      <p>电脑端负责 HTTP/WebSocket/UDP 网关，小车端只处理轻量 JSON 和本地硬件控制。</p>
-    </div>
-    <div class="grid">
-      <div class="card"><h3>Message stream</h3><div class="flow"><div class="packet"><code>HTTP 3000</code> create order</div><div class="packet"><code>UDP 8898</code> submit_order</div><div class="packet"><code>WebSocket</code> status_response</div></div></div>
-      <div class="card"><h3>Status JSON</h3><pre>{
-  "state": "EXECUTING",
-  "nav_action": "FOLLOW",
-  "path": [3, 4, 9],
-  "scheduler_event": "ROUTE_UPDATED"
-}</pre></div>
-      <div class="card"><h3>Edge cost</h3><pre>final_cost = base_distance
-           + manual_penalty
-           + dynamic_penalty
+    <section id="voice" class="shell">
+      <div class="section-head">
+        <h2>Talk to the car.</h2>
+        <p class="zh">本地 ASRPRO 负责固定播报，电脑端语音网关负责命令理解。外部模型 API 可以替换规则解析器，而小车端协议保持 UDP JSON。</p>
+      </div>
+      <div class="voice-demo">
+        <div class="voice-chain">
+          <div class="voice-node">
+            <div class="tag">User voice</div>
+            <p>“确认已放入” / “Stop mission” / “查询当前状态”</p>
+          </div>
+          <div class="voice-node">
+            <div class="tag">ASRPRO</div>
+            <p>串口识别文本进入小车语音模块，转发给电脑端模型网关。</p>
+          </div>
+          <div class="voice-node">
+            <div class="tag">UDP 8899</div>
+            <p>电脑端返回 <code>confirm</code>、<code>stop</code>、<code>submit_order</code>、<code>speak</code> 等结构化动作。</p>
+          </div>
+          <div class="voice-node">
+            <div class="tag">Vehicle</div>
+            <p>调度器推进订单状态，或触发 ASRPRO 本地播报 ID。</p>
+          </div>
+        </div>
+        <aside class="panel">
+          <div class="voice-meter" aria-hidden="true">
+            <span class="bar" style="height:35%"></span>
+            <span class="bar" style="height:58%"></span>
+            <span class="bar" style="height:42%"></span>
+            <span class="bar" style="height:78%"></span>
+            <span class="bar" style="height:28%"></span>
+            <span class="bar" style="height:64%"></span>
+            <span class="bar" style="height:48%"></span>
+          </div>
+          <h3 style="margin-top:20px;">Local voice first</h3>
+          <p>起点、终点、任务开始、取消、完成、异常状态都映射到本地播报 ID；外部模型只理解命令，不负责生成音频。</p>
+        </aside>
+      </div>
+    </section>
 
-blocked => skip edge</pre></div>
-    </div>
+    <section id="system" class="shell">
+      <div class="section-head">
+        <h2>Under the hood.</h2>
+        <p class="zh">电脑不是简单前端，而是通信网关：它托管控制台、收发 UDP、转发 WebSocket、写入 SQLite，并为地图 API 和模型 API 留出替换点。</p>
+      </div>
+      <div class="architecture">
+        <article class="arch-node">
+          <span class="status-pill">Browser</span>
+          <h3 style="margin-top:18px;">Order console</h3>
+          <p>HTTP 3000 托管前端；REST 创建订单和边权；WebSocket 接收状态、图像、语音事件。</p>
+        </article>
+        <article class="arch-node">
+          <span class="status-pill">Backend</span>
+          <h3 style="margin-top:18px;">UDP gateway</h3>
+          <p>8898 下发订单和控制，8888 接收 JPEG 图传，8899 处理语音模型命令。</p>
+        </article>
+        <article class="arch-node">
+          <span class="status-pill">Vehicle</span>
+          <h3 style="margin-top:18px;">Navigation core</h3>
+          <p>订单调度、动态 Dijkstra、AprilTag 定位、屏幕提示、语音播报和运动控制。</p>
+        </article>
+        <article class="arch-node">
+          <span class="status-pill">SQLite</span>
+          <h3 style="margin-top:18px;">Trace store</h3>
+          <p>订单、边权、语音命令、小车状态快照全部持久化。</p>
+        </article>
+      </div>
+      <div class="protocol-flow" aria-label="Communication flow">
+        <span>Browser</span><span>HTTP :3000</span><span>Backend</span><span>UDP :8898</span><span>Vehicle</span><span>WebSocket back</span>
+      </div>
+      <details>
+        <summary>View protocol details</summary>
+        <pre>{
+  "submit_order": {"order_id": 1, "map_id": 1, "pickup_node": 3, "dropoff_node": 9},
+  "edge_update": {"from": 4, "to": 9, "manual_penalty": 0, "dynamic_penalty": 15, "blocked": false},
+  "status_response": {
+    "state": "EXECUTING",
+    "nav_action": "FOLLOW",
+    "current_node": 3,
+    "path": [3, 7, 9],
+    "scheduler_event": "ROUTE_UPDATED"
+  }
+}</pre>
+      </details>
+    </section>
 
-    <div class="section-title" id="data">
-      <h2>Persistent data</h2>
-      <p>电脑端 SQLite 记录系统可追踪状态，重启后仍可查询订单、边权、语音和小车状态。</p>
-    </div>
-    <div class="card">
-      <table>
-        <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
-        <tbody>
-          <tr><td><code>orders</code></td><td>订单 ID、地图、起点、终点、状态、最后响应</td></tr>
-          <tr><td><code>edge_conditions</code></td><td>人工权重、动态权重、封路配置</td></tr>
-          <tr><td><code>voice_command_logs</code></td><td>语音文本、解析动作、规则/模型来源</td></tr>
-          <tr><td><code>car_status_snapshots</code></td><td>小车实时状态快照</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <section class="shell">
+      <div class="data-flow">
+        <div>
+          <p class="eyebrow">Persistent Operations</p>
+          <p class="statement">Every decision leaves a trace.</p>
+          <p class="zh">调度结果、路况权重、语音命令和车辆状态都进入电脑端 SQLite。演示结束后仍能复盘：谁下了单、哪条边变贵、语音命令如何解析、小车当时在哪里。</p>
+        </div>
+        <div class="database">
+          <h3>SQLite tables</h3>
+          <div class="table-list">
+            <div class="table-row"><strong>orders</strong><span>mission state and car response</span></div>
+            <div class="table-row"><strong>edge_conditions</strong><span>manual weight, dynamic weight, blocked</span></div>
+            <div class="table-row"><strong>voice_command_logs</strong><span>text, action, source, request, result</span></div>
+            <div class="table-row"><strong>car_status_snapshots</strong><span>navigation and scheduler state</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <div class="section-title">
-      <h2>Image placeholders</h2>
-      <p>真实截图放入这些路径后即可替换展示素材。</p>
-    </div>
-    <div class="shot-grid">
-      <div class="shot">MD_Image/demo/order_creation_ui.png<br>电脑端订单创建界面</div>
-      <div class="shot">MD_Image/demo/car_screen_pickup.png<br>小车起点屏幕提示</div>
-      <div class="shot">MD_Image/demo/map_route_demo.png<br>地图路线与边权</div>
-      <div class="shot">MD_Image/demo/system_architecture.png<br>系统架构图</div>
-    </div>
+    <section class="shell">
+      <div class="section-head">
+        <h2>Built for two campuses.</h2>
+        <p class="zh">第一版订单站点限定为现有地图节点：屏幕目标 ID、AprilTag ID 和 Dijkstra 节点 ID 保持一致，便于实车调试和课堂演示。</p>
+      </div>
+      <div class="campus">
+        <article class="campus-card">
+          <div>
+            <span class="status-pill">MAP_THU = 1</span>
+            <h3 style="margin-top:18px;">THU map</h3>
+            <p>14 个节点，路口节点为 3、4、5、9、10、12，适合展示校园配送与复杂路口重规划。</p>
+          </div>
+          <div class="node-cloud" aria-label="THU nodes">
+            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span>
+          </div>
+        </article>
+        <article class="campus-card">
+          <div>
+            <span class="status-pill">MAP_SUTD = 2</span>
+            <h3 style="margin-top:18px;">SUTD map</h3>
+            <p>12 个节点，路口节点为 1、2、3、4、5、6、10，保留和 THU 一致的调度与路径接口。</p>
+          </div>
+          <div class="node-cloud" aria-label="SUTD nodes">
+            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="source" class="shell open-source">
+      <div class="footer-grid">
+        <div>
+          <p class="eyebrow">Open Source Demo</p>
+          <h2>Ready for defense, demo, and continued engineering.</h2>
+          <p class="zh">项目基于 Loongson 2K300/301 小车硬件平台开发。真实控制台位于电脑端后端，GitHub Pages 页面用于让访问者快速理解系统价值、算法路径和演示流程。</p>
+          <p class="progress-note">Completed: order scheduling, dynamic weighted routing, route UDP, image gateway, voice gateway, SQLite persistence. Next: real-car calibration, frontend polish, external map/model API keys.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn primary" href="https://github.com/Cx300-fh/IntelligentCar_Delivery">Source code</a>
+          <a class="btn" href="https://github.com/Cx300-fh/IntelligentCar_Delivery#readme">README</a>
+        </div>
+      </div>
+    </section>
   </main>
-
-  <footer>GitHub Pages demo for IntelligentCar Delivery. Static showcase only; real control runs in <code>pc_backend</code>.</footer>
 
   <script>
     const maps = {
       thu: {
-        title: 'THU 清华地图',
-        text: '地图 ID 为 1，节点 1..14，路口节点为 3、4、5、9、10、12。示例路线从图书馆到大礼堂，并避开高成本道路。',
-        nodes: ['紫荆操场','理科楼','图书馆','苏世民书院','东大操场','校医院','学生宿舍','东门','大礼堂','新清华学堂','中央主楼','A点','照澜院','科技大楼'],
-        points: [[15,72,1],[24,34,2],[34,50,3,'pickup'],[48,54,4],[39,74,5],[18,18,6],[58,64,7],[58,84,8],[36,20,9,'dropoff'],[68,42,10],[82,48,11],[76,76,12],[54,18,13],[88,24,14]],
-        edges: [[1,3,'route'],[1,5],[2,3],[2,6],[3,4,'hot'],[4,5,'route'],[4,7],[5,8],[6,9],[9,10,'route'],[9,13],[7,10],[10,11],[11,12],[8,12],[12,14],[13,14]]
+        name: "THU campus route",
+        copy: "Initial route: node 3 to node 9 through node 4. Trigger congestion to make edge 4 -> 9 expensive and watch Dijkstra choose 3 -> 7 -> 9.",
+        nodes: {
+          1:[110,420], 2:[170,300], 3:[255,340], 4:[430,285], 5:[545,210],
+          6:[625,90], 7:[470,420], 8:[690,395], 9:[735,250], 10:[320,160],
+          11:[195,145], 12:[585,315], 13:[790,125], 14:[105,220]
+        },
+        roads: [[1,2],[2,3],[3,4],[4,5],[5,6],[3,7],[7,9],[4,9],[4,10],[10,11],[11,14],[5,12],[12,8],[8,9],[9,13]],
+        initial: [3,4,9],
+        reroute: [3,7,9],
+        anomaly: [4,9],
+        old: [3,4,9],
+        costs: { normal: 18, congested: 22 },
+        eta: { normal: "4.2m", congested: "5.0m" }
       },
       sutd: {
-        title: 'SUTD 地图',
-        text: '地图 ID 为 2，节点 1..12，路口节点为 1、2、3、4、5、6、10。适合展示教学楼、图书馆、宿舍与公共设施之间的物流任务。',
-        nodes: ['A','B','C','D','E','F','LIB','AUD','SSH','CC','POOL','SRC'],
-        points: [[16,54,1,'pickup'],[28,74,2],[30,30,3],[50,32,4],[66,56,5],[74,30,6],[40,16,7],[58,42,8],[82,56,9,'dropoff'],[52,70,10],[60,84,11],[42,86,12]],
-        edges: [[1,2,'route'],[1,3],[1,10,'route'],[2,11,'hot'],[2,12],[3,4],[3,7],[4,6],[4,8],[5,8],[5,9,'route'],[5,10,'route'],[5,12],[6,9],[6,11],[7,10]]
+        name: "SUTD campus route",
+        copy: "SUTD keeps the same node-based order interface. Congestion shifts the path from 2 -> 4 -> 8 to 2 -> 5 -> 8.",
+        nodes: {
+          1:[120,270], 2:[230,355], 3:[265,185], 4:[430,300], 5:[455,430], 6:[600,340],
+          7:[700,205], 8:[740,385], 9:[560,155], 10:[355,95], 11:[145,455], 12:[770,95]
+        },
+        roads: [[1,2],[1,3],[2,4],[2,5],[3,4],[3,10],[10,9],[4,6],[5,6],[5,8],[6,8],[6,7],[7,12],[7,9]],
+        initial: [2,4,6,8],
+        reroute: [2,5,8],
+        anomaly: [4,6],
+        old: [2,4,6,8],
+        costs: { normal: 15, congested: 19 },
+        eta: { normal: "3.6m", congested: "4.3m" }
       }
     };
-    function render(target, map) {
-      target.innerHTML = '<div class="car"></div>';
-      const pointById = new Map(map.points.map(([x, y, id]) => [id, { x, y }]));
-      for (const [from, to, state] of map.edges) {
-        const a = pointById.get(from);
-        const b = pointById.get(to);
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const road = document.createElement('div');
-        road.className = 'road ' + (state || '');
-        road.style.left = a.x + '%';
-        road.style.top = a.y + '%';
-        road.style.width = Math.hypot(dx, dy) + '%';
-        road.style.transform = 'rotate(' + Math.atan2(dy, dx) * 180 / Math.PI + 'deg)';
-        target.appendChild(road);
-      }
-      for (const [x, y, id, role] of map.points) {
-        const node = document.createElement('div');
-        node.className = 'node ' + (role || '');
-        node.style.left = x + '%';
-        node.style.top = y + '%';
-        node.textContent = id;
-        target.appendChild(node);
-      }
+
+    const state = { map: "thu", congested: false };
+    const svgNS = "http://www.w3.org/2000/svg";
+    const baseRoads = document.getElementById("baseRoads");
+    const currentRoute = document.getElementById("currentRoute");
+    const oldRoute = document.getElementById("oldRoute");
+    const anomalyRoad = document.getElementById("anomalyRoad");
+    const nodesGroup = document.getElementById("nodes");
+    const vehicleDot = document.getElementById("vehicleDot");
+    const mapStage = document.getElementById("mapStage");
+    const routeText = document.getElementById("routeText");
+    const costText = document.getElementById("costText");
+    const etaText = document.getElementById("etaText");
+    const edgeStatus = document.getElementById("edgeStatus");
+    const mapName = document.getElementById("mapName");
+    const mapCopy = document.getElementById("mapCopy");
+    const heroRoute = document.getElementById("heroRoute");
+
+    function clear(el) {
+      while (el.firstChild) el.removeChild(el.firstChild);
     }
-    function setMap(key) {
-      const map = maps[key];
-      document.querySelector('#mapTitle').textContent = map.title;
-      document.querySelector('#mapText').textContent = map.text;
-      document.querySelector('#nodeList').innerHTML = map.nodes.map((name) => '<span class="chip">' + name + '</span>').join('');
-      document.querySelector('#thuBtn').classList.toggle('active', key === 'thu');
-      document.querySelector('#sutdBtn').classList.toggle('active', key === 'sutd');
-      render(document.querySelector('#detailMap'), map);
+
+    function makeLine(a, b, cls) {
+      const line = document.createElementNS(svgNS, "line");
+      line.setAttribute("x1", a[0]);
+      line.setAttribute("y1", a[1]);
+      line.setAttribute("x2", b[0]);
+      line.setAttribute("y2", b[1]);
+      line.setAttribute("class", cls);
+      return line;
     }
-    document.querySelector('#thuBtn').addEventListener('click', () => setMap('thu'));
-    document.querySelector('#sutdBtn').addEventListener('click', () => setMap('sutd'));
-    render(document.querySelector('#heroMap'), maps.thu);
-    setMap('thu');
+
+    function makePath(route, cls) {
+      const map = maps[state.map];
+      const path = document.createElementNS(svgNS, "path");
+      const d = route.map((node, index) => {
+        const point = map.nodes[node];
+        return `${index === 0 ? "M" : "L"} ${point[0]} ${point[1]}`;
+      }).join(" ");
+      path.setAttribute("d", d);
+      path.setAttribute("class", cls);
+      return path;
+    }
+
+    function renderMap() {
+      const map = maps[state.map];
+      const route = state.congested ? map.reroute : map.initial;
+      clear(baseRoads);
+      clear(currentRoute);
+      clear(oldRoute);
+      clear(anomalyRoad);
+      clear(nodesGroup);
+
+      const seen = new Set();
+      map.roads.forEach(([from, to]) => {
+        const key = [from, to].sort((a, b) => a - b).join("-");
+        if (seen.has(key)) return;
+        seen.add(key);
+        baseRoads.appendChild(makeLine(map.nodes[from], map.nodes[to], "base-road"));
+      });
+
+      oldRoute.appendChild(makePath(map.old, "old-road"));
+      anomalyRoad.appendChild(makeLine(map.nodes[map.anomaly[0]], map.nodes[map.anomaly[1]], "anomaly-road"));
+      currentRoute.appendChild(makePath(route, "route-road"));
+
+      Object.entries(map.nodes).forEach(([id, point]) => {
+        const numericId = Number(id);
+        const circle = document.createElementNS(svgNS, "circle");
+        circle.setAttribute("cx", point[0]);
+        circle.setAttribute("cy", point[1]);
+        circle.setAttribute("r", route.includes(numericId) ? 7 : 3.8);
+        const cls = numericId === route[0] ? "map-node key" : numericId === route[route.length - 1] ? "map-node end" : route.includes(numericId) ? "map-node current" : "map-node";
+        circle.setAttribute("class", cls);
+        nodesGroup.appendChild(circle);
+
+        if (route.includes(numericId) || numericId === map.anomaly[0] || numericId === map.anomaly[1]) {
+          const label = document.createElementNS(svgNS, "text");
+          label.setAttribute("x", point[0] + 10);
+          label.setAttribute("y", point[1] - 10);
+          label.setAttribute("class", "map-label");
+          label.textContent = id;
+          nodesGroup.appendChild(label);
+        }
+      });
+
+      const start = map.nodes[route[0]];
+      vehicleDot.setAttribute("cx", start[0]);
+      vehicleDot.setAttribute("cy", start[1]);
+      const motion = document.createElementNS(svgNS, "animateMotion");
+      motion.setAttribute("dur", "5s");
+      motion.setAttribute("repeatCount", "indefinite");
+      motion.setAttribute("path", makePath(route, "route-road").getAttribute("d"));
+      clear(vehicleDot);
+      vehicleDot.appendChild(motion);
+
+      mapStage.classList.toggle("congested", state.congested);
+      routeText.textContent = route.join("-");
+      heroRoute.textContent = route.join(" -> ");
+      costText.textContent = state.congested ? map.costs.congested : map.costs.normal;
+      etaText.textContent = state.congested ? map.eta.congested : map.eta.normal;
+      edgeStatus.textContent = state.congested ? `Edge ${map.anomaly.join(" -> ")} cost +15` : "Normal traffic";
+      mapName.textContent = map.name;
+      mapCopy.textContent = map.copy;
+    }
+
+    document.querySelectorAll(".tab").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((tab) => tab.classList.remove("active"));
+        button.classList.add("active");
+        state.map = button.dataset.map;
+        state.congested = false;
+        renderMap();
+      });
+    });
+
+    document.getElementById("congestionBtn").addEventListener("click", () => {
+      state.congested = true;
+      renderMap();
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      state.congested = false;
+      renderMap();
+    });
+
+    const loopSteps = [...document.querySelectorAll(".loop-step")];
+    let activeStep = 0;
+    setInterval(() => {
+      loopSteps.forEach((step) => step.classList.remove("active"));
+      activeStep = (activeStep + 1) % loopSteps.length;
+      loopSteps[activeStep].classList.add("active");
+    }, 2200);
+
+    renderMap();
   </script>
 </body>
 </html>
