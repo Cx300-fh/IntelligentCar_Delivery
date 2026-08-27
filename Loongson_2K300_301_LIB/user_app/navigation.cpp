@@ -167,6 +167,7 @@ const char* get_nav_state_name(NavState state) {
     switch (state) {
         case NAV_STATE_IDLE:      return "IDLE";
         case NAV_STATE_SEARCHING: return "SEARCHING";
+        case NAV_STATE_LOCATING:  return "LOCATING";
         case NAV_STATE_AT_NODE:   return "AT_NODE";
         case NAV_STATE_WAITING:   return "WAITING";
         case NAV_STATE_EXECUTING: return "EXECUTING";
@@ -433,6 +434,9 @@ void NavigationFSM::update(void) {
         case NAV_STATE_SEARCHING:
             handle_searching();
             break;
+        case NAV_STATE_LOCATING:
+            handle_locating();
+            break;
         case NAV_STATE_AT_NODE:
             handle_at_node();
             break;
@@ -451,6 +455,54 @@ void NavigationFSM::update(void) {
 /*============================================================================
  *                              状态处理函数
  *============================================================================*/
+
+/**
+ * @brief 开始原地定位（配送模式）
+ * @details 停车状态下扫描Tag确认当前位置。不动车（动作恒为STOP）。
+ *          start_leg可直接从LOCATING状态接管（保留已确认的current_id）。
+ */
+void NavigationFSM::begin_localization(int map_id) {
+    task.active = true;          // 状态机需要激活才会扫描Tag
+    task.paused = false;
+    task.map_id = map_id;
+    task.target_id = 0;
+    dijkstra->set_map(map_id);
+
+    // 保留可能已有的定位，否则从未知开始
+    if (status.current_id <= 0) {
+        status.current_id = -1;
+        status.has_prev_info = false;
+    }
+    status.target_arrived = false;
+    status.state = NAV_STATE_LOCATING;
+    status.current_action = ACTION_STOP;
+    printf("[Nav] 原地定位开始（地图%d），当前已知位置：%s\n",
+           map_id,
+           status.current_id > 0 ? dijkstra->get_node_name(status.current_id) : "未知");
+}
+
+/**
+ * @brief 处理LOCATING状态（原地定位）
+ * @details 与SEARCHING相同的Tag验证，但动作恒为STOP（不动车）。
+ *          识别到有效Tag即确认位置并保持在LOCATING（等待start_leg）。
+ */
+void NavigationFSM::handle_locating(void) {
+    status.current_action = ACTION_STOP;   // 定位阶段绝不动车
+
+    if (tag_id >= 0 && det_found) {
+        int max_valid_id = (task.map_id == MAP_SUTD) ? 12 : 14;
+        if (tag_id < 1 || tag_id > max_valid_id) return;   // 地图外Tag忽略
+
+        if (status.current_id != tag_id) {
+            status.current_id = tag_id;
+            status.has_prev_info = false;   // 静止识别无来向信息
+            status.is_first_node = false;
+            printf("[Nav] 定位确认：当前位置=%s（静止待命）\n",
+                   dijkstra->get_node_name(tag_id));
+        }
+    }
+    // 保持在LOCATING：位置持续跟随可见Tag，直到start_leg/cancel_task
+}
 
 /**
  * @brief 处理IDLE状态

@@ -26,8 +26,9 @@ class Dijkstra;
 enum NavState {
     NAV_STATE_IDLE = 0,         // 空闲/等待指令
     NAV_STATE_SEARCHING,        // 寻找第一个Tag（盲走阶段）
+    NAV_STATE_LOCATING,         // 原地定位（配送模式：停车扫描Tag确认位置，不动）
     NAV_STATE_AT_NODE,          // 到达节点，决策中
-    NAV_STATE_WAITING,          // 等待3秒
+    NAV_STATE_WAITING,          // 节点稳定期
     NAV_STATE_EXECUTING,        // 执行动作（循迹/转向/直行）
     NAV_STATE_ARRIVED,          // 到达终点
 };
@@ -163,6 +164,11 @@ public:
 
     // 取消导航任务
     void cancel_task(void);
+
+    // ==================== 原地定位（配送模式） ====================
+    // 停车状态下扫描Tag确认当前位置（不动车）：
+    // 配送模式启动即调用；位置确认后goto_stop的start_leg才能规划
+    void begin_localization(int map_id);
     
     // 状态机主更新（每帧调用）
     void update(void);
@@ -206,6 +212,7 @@ private:
     // 状态处理函数
     void handle_idle(void);
     void handle_searching(void);
+    void handle_locating(void);
     void handle_at_node(void);
     void handle_waiting(void);
     void handle_executing(void);

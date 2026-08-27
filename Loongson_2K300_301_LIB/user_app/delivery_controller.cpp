@@ -122,6 +122,8 @@ void DeliveryController::Init(void)
     });
 
     state_ = DELIVERY_WAIT_CONN;
+    // 原地定位：停车扫描Tag确认当前位置（等服务器期间位置就绪，goto免被拒）
+    nav_fsm.begin_localization(cfg_.map_id);
     printf("[DLV] 配送模式启动：服务器%s:%u 地图v%d\n",
            cfg_.host.c_str(), (unsigned)cfg_.port, cfg_.map_version);
 }
@@ -556,17 +558,19 @@ void DeliveryController::Observe_Arrival(void)
             arrival_map_ = map;
             arrival_node_ = node;
             arrival_wait_start_ = lq_get_tick_ms();
-            printf("[DLV] 目标到站锁存：地图%d 节点%d，等待停稳\n", map, node);
+            // 立即关闭运动许可：Motion_Permitted仅在NAVIGATING为true，
+            // 切到ARRIVED_WAIT后5ms线程正常缓停，停稳后才发arrived
+            if (state_ == DELIVERY_NAVIGATING) state_ = DELIVERY_ARRIVED_WAIT;
+            printf("[DLV] 目标到站锁存：地图%d 节点%d，立即停车等待停稳\n", map, node);
         } else {
             return;
         }
     }
     if (arrival_reported_) return;   // 已上报，等event_ack/下一命令
 
-    // Kevin 222.md二.4：确认目标Tag -> 受控减速 -> 停稳 -> 锁存 -> arrived
+    // Kevin 222.md二.4：确认目标Tag -> 受控减速 -> 停稳 -> arrived
     if (Control_Is_Stopped()) {
         arrival_reported_ = true;
-        if (state_ == DELIVERY_NAVIGATING) state_ = DELIVERY_ARRIVED_WAIT;
 
         // 构造arrived可靠事件：持久化 -> 入发送队列（message_id固定用于重发）
         ArrivedEvent ev;

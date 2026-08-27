@@ -56,6 +56,7 @@ void my_timer_0_callback(void)
 
 int main()
 {
+    setvbuf(stdout, NULL, _IOLBF, 0);   // 行缓冲：重定向到文件时日志实时落盘
     All_Init(); // 初始化
 
     // 导航状态机初始化

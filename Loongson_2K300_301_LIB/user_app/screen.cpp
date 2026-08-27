@@ -465,6 +465,11 @@ void Screen_Rx_Process(const uint8_t* data, ssize_t len)
         printf("[Screen] RX: %s\n", cmd);  // 打印接收到的正确指令
         // 串口屏线程安全例外：只允许置位安全禁止（受控快停），清除由主线程负责
         Safety_Inhibit_Set(INHIBIT_REASON_MANUAL);
+        if (delivery.Enabled()) {
+            // 配送模式：只置安全禁止，不取消任务（保留定位与目标，等服务器命令/人工确认）
+            printf("[Screen] 配送模式急停（安全禁止已置位）\n");
+            return;
+        }
         nav_fsm.cancel_task();
         printf("[Screen] 急停/取消任务（安全禁止已置位）\n");
         return;

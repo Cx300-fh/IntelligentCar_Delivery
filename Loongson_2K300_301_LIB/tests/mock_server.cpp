@@ -1,10 +1,12 @@
 /**
  * @file mock_server.cpp
  * @brief 板端模拟服务器（回环联调：与main同机运行，main连127.0.0.1:8898）
- * @details 两种模式：
+ * @details 三种模式：
  *   交互模式（默认）：stdin命令 sync/goto/hold/estop/resume/silent/drop/quit
- *   冒烟模式 --smoke：自动 hello_ack→state_sync→2s后goto 13→收arrived→event_ack→结束
- *          用于无场地自动验证协议闭环（无Tag时车应回 POSITION_UNKNOWN 拒绝，亦算通过路径）
+ *   冒烟模式 --smoke [node]：自动 hello_ack→state_sync→心跳出现有效位置2s后
+ *          goto(默认13)→收arrived→event_ack→结束
+ *   观察模式 --observe：只回hello_ack/sync/心跳ack，不发命令，
+ *          打印车端报告的current_node（验证摄像头+Tag识别），30s结束
  */
 
 #include "delivery_protocol.hpp"
@@ -23,6 +25,9 @@
 #include <string>
 #include <vector>
 #include <deque>
+
+static bool g_observe = false;
+static int  g_goto_node = 13;
 
 static uint64_t Now_Ms() {
     struct timespec ts;
@@ -113,7 +118,17 @@ static std::string Hb_Ack_Json(uint64_t& seq) {
 
 int main(int argc, char** argv)
 {
-    bool smoke = (argc > 1 && strcmp(argv[1], "--smoke") == 0);
+    bool smoke = false;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--smoke") == 0) {
+            smoke = true;
+            if (i + 1 < argc && argv[i + 1][0] >= '0' && argv[i + 1][0] <= '9') {
+                g_goto_node = atoi(argv[++i]);
+            }
+        } else if (strcmp(argv[i], "--observe") == 0) {
+            g_observe = true;
+        }
+    }
 
     int lfd = socket(AF_INET, SOCK_STREAM, 0);
     int one = 1;
@@ -127,7 +142,8 @@ int main(int argc, char** argv)
         printf("[mock] bind/listen失败: %s\n", strerror(errno));
         return 1;
     }
-    printf("[mock] 监听8898%s...\n", smoke ? "（冒烟模式）" : "（交互模式）");
+    printf("[mock] 监听8898（%s）...\n",
+           g_observe ? "观察模式" : smoke ? "冒烟模式" : "交互模式");
 
     int cfd = accept(lfd, NULL, NULL);
     if (cfd < 0) { printf("[mock] accept失败\n"); return 1; }
@@ -172,12 +188,16 @@ int main(int argc, char** argv)
                     got_hello = true;
                     if (Send_Line(cfd, Hello_Ack_Json(seq))) t_hello_ack = Now_Ms();
                     printf(">> hello_ack\n");
-                    if (smoke) {
+                    if (smoke || g_observe) {
                         Send_Line(cfd, Sync_Json(seq));
                         t_sync = Now_Ms();
                         printf(">> state_sync\n");
                     }
                 } else if (t == "heartbeat") {
+                    printf("   [hb] node=%s action=%s nav=%s\n",
+                           J_Field(L, "current_node").c_str(),
+                           J_Field(L, "current_action").c_str(),
+                           J_Field(L, "navigation_state").c_str());
                     if (!smoke || Now_Ms() - t_hello_ack > 500) {
                         Send_Line(cfd, Hb_Ack_Json(seq));
                     }
@@ -204,20 +224,27 @@ int main(int argc, char** argv)
             }
         }
 
-        // ---- 冒烟时序推进 ----
+        // ---- 冒烟/观察时序推进 ----
+        if (g_observe) {
+            if (Now_Ms() - t0 > 30000) {
+                printf("\n===== 观察结束 =====\n  连接与心跳正常，位置见上方日志\n");
+                break;
+            }
+            continue;
+        }
         if (smoke) {
             if (t_goto && Now_Ms() >= t_goto) {
                 t_goto = 0;
                 cmd_ver = 1;
-                Send_Line(cfd, Goto_Json(seq, cmd_ver, 13));
-                printf(">> goto_stop v1 -> node13\n");
+                Send_Line(cfd, Goto_Json(seq, cmd_ver, g_goto_node));
+                printf(">> goto_stop v1 -> node%d\n", g_goto_node);
             }
             if (smoke_done || Now_Ms() - t0 > 60000) {
                 printf("\n===== 冒烟结果 =====\n");
                 printf("  hello/hello_ack      : %s\n", got_hello ? "PASS" : "FAIL");
                 printf("  state_sync/sync_ack  : %s\n", t_sync ? "PASS" : "FAIL");
-                printf("  goto_stop/ack        : %s\n", got_ack ? "PASS(无Tag场地预期POSITION_UNKNOWN拒绝)" : "FAIL");
-                printf("  arrived/event_ack    : %s\n", got_arrived ? "PASS" : "SKIP(无场地)");
+                printf("  goto_stop/ack        : %s\n", got_ack ? "PASS" : "FAIL");
+                printf("  arrived/event_ack    : %s\n", got_arrived ? "PASS" : "FAIL");
                 break;
             }
             continue;
