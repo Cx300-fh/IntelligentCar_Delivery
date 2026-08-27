@@ -143,6 +143,15 @@
       align-items: end;
     }
 
+    .hero-grid > *,
+    .section-head > *,
+    .map-lab > *,
+    .voice-demo > *,
+    .data-flow > *,
+    .footer-grid > * {
+      min-width: 0;
+    }
+
     .eyebrow {
       margin: 0 0 18px;
       color: var(--green);
@@ -159,6 +168,7 @@
       line-height: .88;
       letter-spacing: 0;
       font-weight: 820;
+      overflow-wrap: anywhere;
     }
 
     .hero-lead {
@@ -172,6 +182,8 @@
       color: var(--muted-2);
       line-height: 1.8;
       font-size: 16px;
+      max-width: 100%;
+      word-break: break-all;
     }
 
     .hero-actions {
@@ -332,6 +344,8 @@
       color: var(--muted-2);
       line-height: 1.7;
       font-size: 16px;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .statement {
@@ -826,6 +840,12 @@
         grid-template-columns: 1fr;
       }
       .hero { min-height: auto; padding-top: 120px; }
+      .hero-grid { display: block; }
+      .hero-grid > div:first-child {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+      }
       .hero::before {
         background:
           linear-gradient(180deg, rgba(12,14,13,.55), var(--bg) 82%),
@@ -844,8 +864,11 @@
 
     @media (max-width: 560px) {
       .shell { width: min(100% - 28px, 1180px); }
-      h1 { font-size: 52px; }
+      h1 { font-size: 44px; line-height: .94; }
       h2, .statement { font-size: 34px; }
+      .zh { overflow-wrap: anywhere; }
+      .mission-top { display: grid; justify-content: start; }
+      .mission-card { width: 100%; max-width: 100%; padding: 16px; overflow: hidden; }
       .hero-actions .btn { width: 100%; }
       .metric-grid { grid-template-columns: 1fr; }
       .voice-node { grid-template-columns: 1fr; }
@@ -877,7 +900,7 @@
         <p class="eyebrow">Autonomous Campus Logistics</p>
         <h1>IntelligentCar Delivery</h1>
         <p class="hero-lead">Autonomous campus delivery, from order to destination.</p>
-        <p class="zh">一个围绕真实硬件小车构建的外卖/物流车系统：电脑端下单，小车按拓扑地图导航，路况变化时动态重规划，并通过屏幕、语音、图传和数据库留下完整任务轨迹。</p>
+        <p class="zh">电脑端下单，小车按拓扑地图导航。<br>路况变化时动态重规划。<br>屏幕、语音、图传和数据库记录轨迹。</p>
         <div class="hero-actions">
           <a class="btn primary" href="#map">Watch Demo</a>
           <a class="btn" href="#system">Explore System</a>
