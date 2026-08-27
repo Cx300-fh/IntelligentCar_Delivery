@@ -250,8 +250,8 @@
     .hero-title-cn {
       display: block;
       position: relative;
-      top: -60px;
-      left: 12px;
+      top: -58px;
+      left: 18px;
       font-family:
         "Yishanbei",
         "STKaiti",
@@ -1168,6 +1168,7 @@
           <span class="hero-title-en">THU Delivery</span>
         </h1>
         <p class="hero-lead">Autonomous campus delivery, from order to destination.</p>
+        <p class="zh">电脑端下单，小车按拓扑地图导航<br>路况变化时动态重规划<br>屏幕、语音、图传和数据库记录轨迹</p>
         <div class="hero-actions">
           <a class="btn primary" href="#map">Watch Demo</a>
           <a class="btn" href="#system">Explore System</a>
@@ -1193,7 +1194,7 @@
     <section id="loop" class="shell">
       <div class="section-head">
         <h2>One complete loop, not a pile of modules.</h2>
-        <p class="zh">系统的核心体验是一条连续链路：浏览器创建订单，电脑后端转发给小车，小车取件、行驶、避开高成本道路，最后到站提醒取货。</p>
+        
       </div>
       <div class="loop" aria-label="Order to delivery loop">
         <article class="loop-step active" data-index="01">
@@ -1227,7 +1228,7 @@
     <section id="map" class="shell">
       <div class="section-head">
         <h2>The campus is not static.</h2>
-        <p class="zh">地图展示的是导航层，而不是调试图。基础道路弱化，当前路线高亮，只有拥堵或封路边才进入视觉焦点。</p>
+        
       </div>
 
       <div class="map-lab">
@@ -1338,7 +1339,7 @@
     <section id="voice" class="shell">
       <div class="section-head">
         <h2>Talk to the car.</h2>
-        <p class="zh">本地 ASRPRO 负责固定播报，电脑端语音网关负责命令理解。外部模型 API 可以替换规则解析器，而小车端协议保持 UDP JSON。</p>
+        
       </div>
       <div class="voice-demo">
         <div class="voice-chain">
@@ -1378,7 +1379,7 @@
     <section id="system" class="shell">
       <div class="section-head">
         <h2>Under the hood.</h2>
-        <p class="zh">电脑不是简单前端，而是通信网关：它托管控制台、收发 UDP、转发 WebSocket、写入 SQLite，并为地图 API 和模型 API 留出替换点。</p>
+        
       </div>
       <div class="architecture">
         <article class="arch-node">
@@ -1425,7 +1426,7 @@
     <section class="shell">
       <div class="section-head">
         <h2>Built for two campuses.</h2>
-        <p class="zh">第一版订单站点限定为现有地图节点：屏幕目标 ID、AprilTag ID 和 Dijkstra 节点 ID 保持一致，便于实车调试和课堂演示。</p>
+        
       </div>
       <div class="campus">
         <article class="campus-card">
