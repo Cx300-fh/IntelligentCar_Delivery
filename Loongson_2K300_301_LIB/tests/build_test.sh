@@ -22,6 +22,12 @@ $TOOLCHAIN -std=c++11 -O1 -Wall -pthread -Iuser_app -Ithird_party \
     user_app/delivery_protocol.cpp \
     -o /tmp/test_gateway
 
+echo "== 编译 mock_server (板端模拟服务器: 交互/--smoke冒烟) =="
+$TOOLCHAIN -std=c++11 -O1 -Wall -pthread -Iuser_app -Ithird_party \
+    tests/mock_server.cpp \
+    user_app/delivery_protocol.cpp \
+    -o /tmp/mock_server
+
 echo "== 编译完成 =="
 
 if [ -n "$1" ]; then
@@ -30,4 +36,6 @@ if [ -n "$1" ]; then
         cat /tmp/$t | ssh root@"$1" \
             "cat > /home/root/$t && chmod +x /home/root/$t && /home/root/$t"
     done
+    echo "== 部署: mock_server (不运行) =="
+    cat /tmp/mock_server | ssh root@"$1" "cat > /home/root/mock_server && chmod +x /home/root/mock_server"
 fi

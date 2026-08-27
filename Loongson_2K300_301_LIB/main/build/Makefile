@@ -1689,6 +1689,30 @@ home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/control.cpp.s
 .PHONY : home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/control.cpp.s
 
+home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.o: home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.o
+.PHONY : home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.o
+
+# target to build an object file
+home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.o
+.PHONY : home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.o
+
+home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.i: home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.i
+.PHONY : home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.i
+
+# target to preprocess a source file
+home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.i
+.PHONY : home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.i
+
+home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.s: home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.s
+.PHONY : home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.s
+
+# target to generate assembly for a file
+home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.s
+.PHONY : home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.s
+
 home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_protocol.o: home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_protocol.cpp.o
 .PHONY : home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_protocol.o
 
@@ -2181,6 +2205,9 @@ help:
 	@echo "... home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/control.o"
 	@echo "... home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/control.i"
 	@echo "... home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/control.s"
+	@echo "... home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.o"
+	@echo "... home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.i"
+	@echo "... home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.s"
 	@echo "... home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_protocol.o"
 	@echo "... home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_protocol.i"
 	@echo "... home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_protocol.s"

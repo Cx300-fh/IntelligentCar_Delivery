@@ -1,7 +1,7 @@
-CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/wifi_manager.cpp.o: \
- /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/wifi_manager.cpp \
+CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.o: \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp \
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/stdc-predef.h \
- /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/wifi_manager.hpp \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.hpp \
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/include.hpp \
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/cstring \
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/c++config.h \
@@ -552,8 +552,8 @@ CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/voice.hpp \
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/navigation.hpp \
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/run_mode.hpp \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/wifi_manager.hpp \
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/obstacle.hpp \
- /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.hpp \
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/car_gateway.hpp \
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_protocol.hpp \
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_types.hpp \

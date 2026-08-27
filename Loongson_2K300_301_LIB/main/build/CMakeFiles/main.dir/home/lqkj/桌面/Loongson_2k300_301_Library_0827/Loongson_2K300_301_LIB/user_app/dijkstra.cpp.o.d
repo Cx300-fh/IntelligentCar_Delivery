@@ -552,4 +552,28 @@ CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/navigation.hpp \
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/run_mode.hpp \
  /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/wifi_manager.hpp \
- /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/obstacle.hpp
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/obstacle.hpp \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.hpp \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/car_gateway.hpp \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_protocol.hpp \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_types.hpp \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/main/../third_party/nlohmann/json.hpp \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/iterator \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/stream_iterator.h \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/forward_list \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/forward_list.h \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/forward_list.tcc \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/valarray \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/valarray_array.h \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/valarray_array.tcc \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/valarray_before.h \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/slice_array.h \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/valarray_after.h \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/gslice.h \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/gslice_array.h \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/mask_array.h \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/indirect_array.h \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/cassert \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/numeric \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6/loongarch64-linux-gnu/sysroot/usr/include/c++/8.3.0/bits/stl_numeric.h \
+ /home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_store.hpp

@@ -79,6 +79,7 @@
 ./../main/build/CMakeFiles/3.22.1/CompilerIdC/CMakeCCompilerId.c
 ./../main/build/CMakeFiles/3.22.1/CompilerIdCXX/CMakeCXXCompilerId.cpp
 ./../main/main.cpp
+./../tests/mock_server.cpp
 ./../tests/test_delivery.cpp
 ./../tests/test_gateway.cpp
 ./../tools/LQ_Dep_libs/apriltag_install/include/common/g2d.c
@@ -106,6 +107,7 @@
 ./../user_app/camera.cpp
 ./../user_app/car_gateway.cpp
 ./../user_app/control.cpp
+./../user_app/delivery_controller.cpp
 ./../user_app/delivery_protocol.cpp
 ./../user_app/delivery_store.cpp
 ./../user_app/dijkstra.cpp

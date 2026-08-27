@@ -61,6 +61,10 @@ int main()
     // 导航状态机初始化
     nav_fsm.init();
 
+    // 配送协调器初始化（读配置文件决定配送/本地模式）并启动网关线程
+    delivery.Init();
+    delivery.Start();
+
     // 定时器初始化（Ctrl+C退出时：先停定时器，再归零PWM安全停车）
     lq_signal_set_exit_cb([](){ timer_0.stop(); Control_Safe_Shutdown(); });
     timer_0.set_seconds_ms(5, my_timer_0_callback);     // 设置定时器回调，5ms执行一次
@@ -80,8 +84,14 @@ int main()
             Draw_RGB();                 // 绘制所有可视化内容（边线、Tag等）
             Send_Image(1);              // 图传发送图像 (0-不发送, 1-原图, 2-灰度图, 3-二值化图, 4-合并色块图, 5-红色块图, 6-黄色块图)
         } else {
-            Control_Safe_Shutdown();  // 摄像头初始化失败：安全停车后退出
-            return 0;
+            // 摄像头初始化失败：程序不退出（Kevin验收项）——停车保持+网络在线，
+            // 无视觉时导航位置未知，任何goto_stop都会被POSITION_UNKNOWN拒绝（安全）
+            static uint32_t cam_warn_ms = 0;
+            if (lq_get_tick_ms() - cam_warn_ms >= 5000) {
+                cam_warn_ms = lq_get_tick_ms();
+                printf("[CAM] 摄像头未就绪：保持停车与网络在线，人工恢复后重启程序\n");
+            }
+            usleep(1000 * 50);   // 无图像时节流，避免主循环空转
         }
 
         // 至此，图像处理完成，可用数据：
@@ -101,16 +111,22 @@ int main()
         // │ EXECUTING   │ 执行动作（循迹/转向/直行/掉头）         │
         // │ ARRIVED     │ 到达终点，停车                          │
         // └─────────────┴─────────────────────────────────────────┘
+        // 配送协调器：消费服务器命令队列+推进协调状态机+到站观察+心跳
+        // （必须在nav_fsm.update()之前：goto_stop先安装导航段，update随后执行）
+        delivery.Process();
+
         nav_fsm.update();
 
         // ==================== 控制命令快照发布（每圈必发，兼作主线程心跳）====================
-        // 阶段2：运动许可沿用should_run()判定；阶段5由配送协调器接管此处
-        bool motion_permitted = should_run();
+        // 运动许可：配送模式=配送协调器（服务器命令驱动）；本地模式=沿用should_run()
+        bool motion_permitted = delivery.Enabled() ? delivery.Motion_Permitted()
+                                                   : should_run();
         run = motion_permitted ? 1 : 0;   // 兼容屏幕/调试显示
 
-        // 阶段2临时安全管理者：屏幕STOP置位的安全禁止，在导航空闲且已停稳后由主线程清除
-        // （阶段5起此职责移交配送协调器，按状态机校验后清除）
-        if (Safety_Inhibit_Active() &&
+        // 本地模式安全管理者：屏幕STOP置位的安全禁止，在导航空闲且已停稳后由主线程清除
+        // （配送模式下清除职责在配送协调器：LINK_LOSS位重连同步后清、EMERGENCY位resume后清）
+        if (!delivery.Enabled() &&
+            Safety_Inhibit_Active() &&
             nav_fsm.get_state() == NAV_STATE_IDLE &&
             Control_Is_Stopped())
         {
@@ -171,6 +187,8 @@ int main()
 
         // usleep(1000 * 1);           // 主循环休眠，避免占用过多 CPU
     }
+
+    delivery.Stop();   // 网关线程安全退出（shutdown+join）
 
     return 0;
 }

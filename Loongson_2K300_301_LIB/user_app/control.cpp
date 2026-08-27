@@ -122,6 +122,11 @@ bool Safety_Inhibit_Clear(void)   // 仅主线程调用
     return g_inhibit_reason.exchange(0, std::memory_order_acq_rel) != 0;
 }
 
+void Safety_Inhibit_Clear_Bits(uint32_t bits)   // 仅主线程调用
+{
+    g_inhibit_reason.fetch_and(~bits, std::memory_order_acq_rel);
+}
+
 bool Safety_Inhibit_Active(void)
 {
     return g_inhibit_reason.load(std::memory_order_acquire) != 0;

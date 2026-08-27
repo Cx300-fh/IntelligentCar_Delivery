@@ -130,7 +130,8 @@ bool     Control_Is_Uturning(void);              // 掉头是否进行中（5ms�
 bool     Control_Is_Stopped(void);               // 是否已停稳
 // ---- 安全禁止位：任何线程可置位；只有主线程在状态机允许时才能清除 ----
 void     Safety_Inhibit_Set(uint32_t reason_bits);   // 任意线程
-bool     Safety_Inhibit_Clear(void);                 // 仅主线程
+bool     Safety_Inhibit_Clear(void);                 // 仅主线程：清除全部
+void     Safety_Inhibit_Clear_Bits(uint32_t bits);   // 仅主线程：只清指定位（如resume只清EMERGENCY）
 bool     Safety_Inhibit_Active(void);
 uint32_t Safety_Inhibit_Reason(void);
 // ---- 安全停车（退出/致命错误时归零PWM） ----

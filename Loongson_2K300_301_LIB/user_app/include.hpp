@@ -57,5 +57,6 @@ extern "C" {
 #include "run_mode.hpp"       // 小车运行模式控制模块
 #include "wifi_manager.hpp"   // WiFi管理模块（支持屏幕配置WiFi）
 #include "obstacle.hpp"       // 障碍物检测模块
+#include "delivery_controller.hpp"   // 配送协调器（依赖上面全部模块，放最后）
 
 #endif

@@ -434,18 +434,24 @@ void Screen_Rx_Process(const uint8_t* data, ssize_t len)
     if (strcmp(cmd, "START") == 0 || strcmp(cmd, "start") == 0)
     {
         printf("[Screen] RX: %s\n", cmd);  // 打印接收到的正确指令
-        if (!screen_target_ready)
+        if (delivery.Enabled())
+        {
+            // 配送模式：导航只能由服务器goto_stop驱动（服务器权威）
+            printf("[Screen] 配送模式：本地START被忽略，等待服务器命令\n");
+            Screen_Send_Text("t_state", "WAIT SERVER");
+        }
+        else if (!screen_target_ready)
         {
             printf("[Screen] START失败：未选择目标，请先AIM设定\n");
         }
         else if (nav_fsm.start_task(screen_selected_map, screen_selected_target))
         {
-            printf("[Screen] 启动导航：地图=%d, 目标=%d\n", 
+            printf("[Screen] 启动导航：地图=%d, 目标=%d\n",
                    screen_selected_map, screen_selected_target);
         }
         else
         {
-            printf("[Screen] START失败：参数无效（地图=%d, 目标=%d）\n", 
+            printf("[Screen] START失败：参数无效（地图=%d, 目标=%d）\n",
                    screen_selected_map, screen_selected_target);
         }
         return;

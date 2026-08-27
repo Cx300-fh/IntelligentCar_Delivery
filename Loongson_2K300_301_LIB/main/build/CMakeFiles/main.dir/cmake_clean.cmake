@@ -129,6 +129,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/car_gateway.cpp.o.d"
   "CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/control.cpp.o"
   "CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/control.cpp.o.d"
+  "CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.o"
+  "CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_controller.cpp.o.d"
   "CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_protocol.cpp.o"
   "CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_protocol.cpp.o.d"
   "CMakeFiles/main.dir/home/lqkj/桌面/Loongson_2k300_301_Library_0827/Loongson_2K300_301_LIB/user_app/delivery_store.cpp.o"
