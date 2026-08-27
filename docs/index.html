@@ -170,6 +170,66 @@
       overflow-wrap: anywhere;
     }
 
+
+    .hero-title-mark {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      margin-bottom: 26px;
+      max-width: none;
+      line-height: 1;
+      text-transform: none;
+    }
+
+    .hero-title-cn {
+      display: block;
+      font-family:
+        "Songti SC",
+        "STSong",
+        "Noto Serif CJK SC",
+        "Source Han Serif SC",
+        Georgia,
+        serif;
+      font-size: clamp(76px, 11vw, 148px);
+      font-weight: 900;
+      line-height: .88;
+      letter-spacing: .03em;
+      color: var(--text);
+      text-shadow:
+        0 1px 0 rgba(255,255,255,.12),
+        0 12px 42px rgba(0,0,0,.34);
+    }
+
+    .hero-title-en {
+      display: block;
+      margin-top: 10px;
+      font-family:
+        "Arial Narrow",
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+      font-size: clamp(31px, 4.4vw, 62px);
+      font-weight: 800;
+      line-height: .95;
+      letter-spacing: .055em;
+      color: var(--green);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 560px) {
+      .hero-title-cn {
+        font-size: 68px;
+      }
+
+      .hero-title-en {
+        margin-top: 7px;
+        font-size: 28px;
+        letter-spacing: .035em;
+      }
+    }
+
     .hero-lead {
       max-width: 760px;
       color: #d9ddd8;
@@ -527,6 +587,76 @@
     }
     /* ===== MAP ONLY: modified section ends ===== */
 
+    .route-picker {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 0 0 10px;
+    }
+
+    .route-picker label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 720;
+      letter-spacing: .02em;
+    }
+
+    .route-picker select {
+      width: 100%;
+      min-height: 42px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      background: #0f1210;
+      color: var(--text);
+      outline: none;
+    }
+
+    .route-picker select:focus {
+      border-color: rgba(118,185,0,.8);
+    }
+
+    .map-node.selectable {
+      cursor: pointer;
+      transition: r .15s ease, stroke .15s ease, fill .15s ease;
+    }
+
+    .map-node.selectable:hover {
+      r: 7;
+      stroke: var(--green);
+    }
+
+    .map-node.selected-start {
+      fill: var(--green);
+      stroke: #0c0e0d;
+      stroke-width: 2.6;
+    }
+
+    .map-node.selected-end {
+      fill: var(--red);
+      stroke: #0c0e0d;
+      stroke-width: 2.6;
+    }
+
+    .map-hint {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .map-hint strong { color: var(--text); }
+
+    .route-summary {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line-soft);
+      color: var(--muted-2);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
     .map-side {
       display: flex;
       flex-direction: column;
@@ -536,7 +666,7 @@
     .panel {
       border: 1px solid var(--line);
       background: var(--surface);
-      padding: 22px;
+      padding: 18px;
     }
 
     .tabs {
@@ -915,6 +1045,7 @@
       .mission-card { width: 100%; max-width: 100%; padding: 16px; overflow: hidden; }
       .hero-actions .btn { width: 100%; }
       .metric-grid { grid-template-columns: 1fr; }
+      .route-picker { grid-template-columns: 1fr; }
       .voice-node { grid-template-columns: 1fr; }
       .map-stage, .map-stage svg { min-height: 430px; }
       section { padding: 58px 0; }
@@ -942,7 +1073,10 @@
     <div class="shell hero-grid">
       <div>
         <p class="eyebrow">Autonomous Campus Logistics</p>
-        <h1>Intelligent Car Delivery</h1>
+        <h1 class="hero-title-mark">
+          <span class="hero-title-cn">清&nbsp;&nbsp;送</span>
+          <span class="hero-title-en">THU Delivery</span>
+        </h1>
         <p class="hero-lead">Autonomous campus delivery, from order to destination.</p>
         <p class="zh">电脑端下单，小车按拓扑地图导航。<br>路况变化时动态重规划。<br>屏幕、语音、图传和数据库记录轨迹。</p>
         <div class="hero-actions">
@@ -1031,8 +1165,20 @@
               <button class="tab active" data-map="thu" type="button">THU</button>
               <button class="tab" data-map="sutd" type="button">SUTD</button>
             </div>
-            <h3 id="mapName">THU campus route</h3>
-            <p id="mapCopy">Initial route: node 3 to node 9 through node 4. Trigger congestion to make edge 4 -> 9 expensive and watch Dijkstra reroute.</p>
+            <div class="route-picker">
+              <label>
+                Pickup
+                <select id="pickupSelect" aria-label="Pickup node"></select>
+              </label>
+              <label>
+                Dropoff
+                <select id="dropoffSelect" aria-label="Dropoff node"></select>
+              </label>
+            </div>
+
+            <p class="map-hint">可用下拉框选择，也可以直接点击地图节点。第一次点击设为 <strong>Pickup</strong>，第二次点击设为 <strong>Dropoff</strong>。</p>
+            <div class="route-summary" id="routeSummary">当前路线将根据选择自动更新。</div>
+
             <div class="metric-grid">
               <div class="metric"><span>Route</span><strong id="routeText">3-4-9</strong></div>
               <div class="metric"><span>Cost</span><strong id="costText">18</strong></div>
@@ -1263,114 +1409,133 @@
     const maps = {
       thu: {
         name: "THU campus route",
-        copy: "THU geometry is traced from the supplied reference: a large western loop, an eastern loop, the raised Zijing loop, and the lower New Tsinghua Hall loop share the same junctions as the source diagram.",
+        copy: "选择任意配送节点，路径会严格沿现有道路几何生成；不会再用节点之间的直线近似道路。",
         viewBox: "0 0 900 560",
-
         roads: [
-          /* West main loop */
-          "M90 175 H500 V385 H90 Q52 385 52 347 V215 Q52 175 90 175 Z",
-
-          /* East main loop */
-          "M500 175 H780 Q820 175 820 215 V385 H500 Z",
-
-          /* North / Zijing loop */
-          "M330 175 V105 Q330 62 375 62 H585 Q630 62 630 105 V175",
-
-          /* South / New Tsinghua Hall loop */
-          "M330 385 V465 Q330 505 375 505 H780 Q820 505 820 465 V385"
+          "M120 205 H500 V450 H120 Q78 450 78 408 V250 Q78 205 120 205 Z",
+          "M500 205 H820 Q842 205 842 238 V450 H500 Z",
+          "M500 450 H842 V495 Q842 522 810 522 H545 Q500 522 500 485 Z",
+          "M500 205 V122 Q500 78 548 78 H650 Q700 78 700 122 V205 Z",
+          "M700 205 V450",
+          "M78 330 H500",
+          "M500 330 H842"
         ],
-
         nodes: [
-          {id:1,  x:480, y:62,  label:"紫荆操场", dx:-28, dy:-14, cls:"major"},
-          {id:2,  x:205, y:175, label:"理科楼", dx:-26, dy:24, cls:"major"},
-          {id:3,  x:330, y:175, label:"图书馆", dx:-24, dy:24, cls:"major"},
-          {id:4,  x:500, y:280, label:"学生宿舍", dx:14, dy:5, cls:"major"},
-          {id:5,  x:630, y:175, label:"东大操场", dx:-28, dy:24, cls:"major"},
-          {id:6,  x:52,  y:280, label:"校医院", dx:-50, dy:5, cls:"major"},
-          {id:7,  x:820, y:280, label:"东门", dx:14, dy:5, cls:"major"},
-          {id:8,  x:330, y:385, label:"大礼堂", dx:-24, dy:-14, cls:"major"},
-          {id:9,  x:500, y:385, label:"新清华学堂", dx:-34, dy:26, cls:"major"},
-          {id:10, x:650, y:385, label:"中央主楼", dx:-28, dy:-14, cls:"major"},
-          {id:11, x:820, y:385, label:"A", dx:14, dy:5, cls:"minor"},
-          {id:12, x:500, y:505, label:"照澜院", dx:-24, dy:-14, cls:"major"},
-          {id:13, x:650, y:505, label:"科技大楼", dx:-28, dy:-14, cls:"major"},
-          {id:14, x:330, y:175, label:"苏世民书院", dx:118, dy:-18, cls:"major"}
+          {id:1,  x:600, y:78,  label:"紫荆操场", dx:-18, dy:-14, cls:"major", selectable:false},
+          {id:2,  x:220, y:205, label:"理科楼", dx:-26, dy:-14, cls:"major", selectable:true},
+          {id:3,  x:365, y:205, label:"图书馆", dx:-26, dy:-14, cls:"major", selectable:true},
+          {id:4,  x:500, y:205, label:"苏世民书院", dx:12, dy:-14, cls:"major", selectable:true},
+          {id:5,  x:500, y:330, label:"5", dx:10, dy:-10, cls:"minor", selectable:false},
+          {id:6,  x:78,  y:330, label:"校医院", dx:-4, dy:-16, cls:"major", selectable:true},
+          {id:7,  x:700, y:330, label:"学生宿舍", dx:-66, dy:-16, cls:"major", selectable:true},
+          {id:8,  x:842, y:330, label:"东门", dx:12, dy:5, cls:"major", selectable:true},
+          {id:9,  x:365, y:450, label:"大礼堂", dx:-24, dy:-15, cls:"major", selectable:true},
+          {id:10, x:700, y:205, label:"东大操场", dx:12, dy:-14, cls:"major", selectable:true},
+          {id:11, x:500, y:450, label:"新清华学堂", dx:12, dy:24, cls:"major", selectable:true},
+          {id:12, x:700, y:450, label:"中央主楼", dx:-58, dy:24, cls:"major", selectable:true},
+          {id:13, x:560, y:522, label:"照澜院", dx:-26, dy:-14, cls:"major", selectable:true},
+          {id:14, x:700, y:522, label:"科技大楼", dx:-32, dy:-14, cls:"major", selectable:true}
         ],
+        edges: [
+          {a:2,b:3,d:"M220 205 H365"},
+          {a:3,b:4,d:"M365 205 H500"},
+          {a:4,b:10,d:"M500 205 H700"},
 
-        initialRoute: "M330 175 H500 V385 H330",
-        rerouteRoute: "M330 175 H500 V280 H820 V385 H500 H330",
-        oldRoute: "M330 175 H500 V385 H330",
-        anomalyRoute: "M500 280 V385",
+          {a:6,b:5,d:"M78 330 H500"},
+          {a:5,b:7,d:"M500 330 H700"},
+          {a:7,b:8,d:"M700 330 H842"},
 
-        startNode: 3,
-        endNode: 8,
-        routeNodeIds: [3,4,9,8],
-        rerouteNodeIds: [3,4,7,11,9,8],
-        routeNormal: "3-4-9-8",
-        routeCongested: "3-4-7-11-9-8",
-        costs: { normal: 18, congested: 22 },
-        eta: { normal: "4.2m", congested: "5.0m" }
+          {a:9,b:11,d:"M365 450 H500"},
+          {a:11,b:12,d:"M500 450 H700"},
+
+          {a:4,b:5,d:"M500 205 V330"},
+          {a:5,b:11,d:"M500 330 V450"},
+          {a:10,b:7,d:"M700 205 V330"},
+          {a:7,b:12,d:"M700 330 V450"},
+
+          {a:11,b:13,d:"M500 450 V485 Q500 522 545 522 H560"},
+          {a:13,b:14,d:"M560 522 H700"},
+          {a:14,b:12,d:"M700 522 H810 Q842 522 842 495 V450 H700"},
+
+          /* Western loop edges follow the rounded road, never diagonally cut across the map. */
+          {a:2,b:6,d:"M220 205 H120 Q78 205 78 250 V330"},
+          {a:6,b:9,d:"M78 330 V408 Q78 450 120 450 H365"},
+
+          /* Eastern rounded perimeter */
+          {a:8,b:12,d:"M842 330 V450 H700"}
+        ],
+        defaultStart: 3,
+        defaultEnd: 9,
+        congestionEdge: [5,11]
       },
 
       sutd: {
         name: "SUTD campus route",
-        copy: "SUTD is traced from the supplied reference. Campus Centre is the lower central junction on the A–E–F road. A route from Campus Centre to Sports & Recreation Centre must go through E before entering the E–B road.",
+        copy: "SUTD 同样按真实道路几何拼接路线。Library、Campus Centre、E、Sports Centre 等节点之间不会再出现跨道路直连。",
         viewBox: "0 0 900 560",
-
         roads: [
-          /* Outer perimeter: D → top arc → F → B → bottom arc → A → C → D */
           "M235 210 L330 92 Q348 64 392 64 H500 Q545 64 570 100 L635 155 L785 385 Q810 425 785 455 Q755 495 690 495 H300 L205 495 Q145 495 112 458 Q83 425 105 375 L170 300 L235 210 Z",
-
-          /* Auditorium / Sports road: D → E → B */
           "M235 210 L455 300 L785 385",
-
-          /* Library road: C → J → B (NO direct Library → E connection) */
           "M170 300 L350 365 L785 385",
-
-          /* Campus Centre / Housing road: A → J → E → F */
           "M300 495 L350 365 L455 300 L635 155"
         ],
-
         nodes: [
-          /* Named topology nodes */
-          {id:1, x:300, y:495, label:"A", dx:-8, dy:24, cls:"major"},
-          {id:2, x:785, y:385, label:"B", dx:14, dy:5, cls:"major"},
-          {id:3, x:170, y:300, label:"C", dx:-20, dy:4, cls:"major"},
-          {id:4, x:235, y:210, label:"D", dx:-10, dy:-16, cls:"major"},
-          {id:5, x:455, y:300, label:"E", dx:-8, dy:-16, cls:"major"},
-          {id:6, x:635, y:155, label:"F", dx:12, dy:-8, cls:"major"},
-
-          /* Campus Centre is exactly the lower central junction in the source map. */
-          {id:10, x:350, y:365, label:"Campus Centre", dx:12, dy:24, cls:"major"},
-
-          /* Functional labels anchored on the exact road they describe */
-          {id:7,  x:260, y:336, label:"Library", dx:-40, dy:24, cls:"major"},
-          {id:8,  x:337, y:252, label:"Auditorium", dx:-46, dy:-16, cls:"major"},
-          {id:9,  x:545, y:228, label:"Staff & Student Housing", dx:-18, dy:-18, cls:"minor"},
-          {id:12, x:705, y:265, label:"POOL", dx:12, dy:-12, cls:"major"},
-          {id:13, x:620, y:343, label:"Sports & Recreation Centre", dx:-28, dy:-16, cls:"minor"}
+          {id:1,  x:300, y:495, label:"A", dx:-8, dy:24, cls:"major", selectable:true},
+          {id:2,  x:785, y:385, label:"B", dx:14, dy:5, cls:"major", selectable:true},
+          {id:3,  x:170, y:300, label:"C", dx:-20, dy:4, cls:"major", selectable:true},
+          {id:4,  x:235, y:210, label:"D", dx:-10, dy:-16, cls:"major", selectable:true},
+          {id:5,  x:455, y:300, label:"E", dx:-8, dy:-16, cls:"major", selectable:true},
+          {id:6,  x:635, y:155, label:"F", dx:12, dy:-8, cls:"major", selectable:true},
+          {id:10, x:350, y:365, label:"Campus Centre", dx:12, dy:24, cls:"major", selectable:true},
+          {id:7,  x:260, y:336, label:"Library", dx:-40, dy:24, cls:"major", selectable:true},
+          {id:8,  x:337, y:252, label:"Auditorium", dx:-46, dy:-16, cls:"major", selectable:true},
+          {id:9,  x:545, y:228, label:"Staff & Student Housing", dx:-18, dy:-18, cls:"minor", selectable:true},
+          {id:12, x:705, y:265, label:"POOL", dx:12, dy:-12, cls:"major", selectable:true},
+          {id:13, x:620, y:343, label:"Sports & Recreation Centre", dx:-28, dy:-16, cls:"minor", selectable:true}
         ],
+        edges: [
+          /* D -> E -> B corridor */
+          {a:4,b:8,d:"M235 210 L337 252"},
+          {a:8,b:5,d:"M337 252 L455 300"},
+          {a:5,b:13,d:"M455 300 L620 343"},
+          {a:13,b:2,d:"M620 343 L785 385"},
 
-        /* Demo route: Library → Campus Centre → E → Sports Centre. */
-        initialRoute: "M260 336 L350 365 L455 300 L620 343",
-        rerouteRoute: "M260 336 L170 300 L105 375 Q83 425 112 458 Q145 495 205 495 H300 L350 365 L455 300 L620 343",
-        oldRoute: "M260 336 L350 365 L455 300 L620 343",
-        anomalyRoute: "M455 300 L620 343",
+          /* C -> Library -> Campus Centre -> B road */
+          {a:3,b:7,d:"M170 300 L260 336"},
+          {a:7,b:10,d:"M260 336 L350 365"},
+          {a:10,b:2,d:"M350 365 L785 385"},
 
-        startNode: 7,
-        endNode: 13,
-        routeNodeIds: [7,10,5,13],
-        rerouteNodeIds: [7,3,1,10,5,13],
-        routeNormal: "LIB-CC-E-SRC",
-        routeCongested: "LIB-C-A-CC-E-SRC",
-        costs: { normal: 15, congested: 19 },
-        eta: { normal: "3.6m", congested: "4.3m" }
+          /* A -> Campus Centre -> E -> F road */
+          {a:1,b:10,d:"M300 495 L350 365"},
+          {a:10,b:5,d:"M350 365 L455 300"},
+          {a:5,b:9,d:"M455 300 L545 228"},
+          {a:9,b:6,d:"M545 228 L635 155"},
+
+          /* F -> Pool -> B perimeter */
+          {a:6,b:12,d:"M635 155 L705 265"},
+          {a:12,b:2,d:"M705 265 L785 385"},
+
+          /* Outer left/bottom perimeter */
+          {a:4,b:3,d:"M235 210 L170 300"},
+          {a:3,b:1,d:"M170 300 L105 375 Q83 425 112 458 Q145 495 205 495 H300"},
+          {a:1,b:2,d:"M300 495 H690 Q755 495 785 455 Q810 425 785 385"}
+        ],
+        defaultStart: 7,
+        defaultEnd: 13,
+        congestionEdge: [5,13]
       }
     };
 
-    const state = { map: "thu", congested: false };
-    const svgNS = "http://www.w3.org/2000/svg";
+    const state = {
+      map: "thu",
+      congested: false,
+      pickup: 3,
+      dropoff: 9,
+      clickMode: "pickup",
+      congestionEdge: null
+    };
 
+    const svgNS = "http://www.w3.org/2000/svg";
     const routeSvg = document.getElementById("routeSvg");
     const baseRoads = document.getElementById("baseRoads");
     const currentRoute = document.getElementById("currentRoute");
@@ -1383,9 +1548,10 @@
     const costText = document.getElementById("costText");
     const etaText = document.getElementById("etaText");
     const edgeStatus = document.getElementById("edgeStatus");
-    const mapName = document.getElementById("mapName");
-    const mapCopy = document.getElementById("mapCopy");
     const heroRoute = document.getElementById("heroRoute");
+    const pickupSelect = document.getElementById("pickupSelect");
+    const dropoffSelect = document.getElementById("dropoffSelect");
+    const routeSummary = document.getElementById("routeSummary");
 
     let routeAnimationFrame = 0;
     let routeAnimationToken = 0;
@@ -1407,6 +1573,7 @@
     }
 
     function appendText(group, x, y, text, cls = "map-label") {
+      if (!text) return null;
       const label = svgEl("text", { x, y, class: cls });
       label.textContent = text;
       group.appendChild(label);
@@ -1417,59 +1584,302 @@
       return map.nodes.find((node) => node.id === id);
     }
 
+    function edgeByNodes(map, a, b) {
+      return map.edges.find(edge =>
+        (edge.a === a && edge.b === b) ||
+        (edge.a === b && edge.b === a)
+      );
+    }
+
+    function edgeLength(map, edge) {
+      const tmp = svgEl("path", { d: edge.d });
+      routeSvg.appendChild(tmp);
+      const len = tmp.getTotalLength();
+      tmp.remove();
+      return len;
+    }
+
+    function edgeMatches(pair, edge) {
+      if (!pair) return false;
+      return (edge.a === pair[0] && edge.b === pair[1]) ||
+             (edge.a === pair[1] && edge.b === pair[0]);
+    }
+
+    function getEdgeWeight(map, edge) {
+      let w = edgeLength(map, edge);
+
+      // Congestion is applied to an edge on the CURRENT normal route,
+      // rather than a hard-coded campus edge that may be irrelevant to
+      // the user's selected pickup/dropoff.
+      if (state.congested && edgeMatches(state.congestionEdge, edge)) {
+        w += 1000;
+      }
+      return w;
+    }
+
+    function dijkstra(map, startId, endId) {
+      const ids = map.nodes.map(n => n.id);
+      const dist = new Map(ids.map(id => [id, Infinity]));
+      const prev = new Map();
+      const visited = new Set();
+      dist.set(startId, 0);
+
+      while (visited.size < ids.length) {
+        let current = null;
+        let best = Infinity;
+
+        ids.forEach(id => {
+          if (!visited.has(id) && dist.get(id) < best) {
+            best = dist.get(id);
+            current = id;
+          }
+        });
+
+        if (current === null || current === endId) break;
+        visited.add(current);
+
+        map.edges.forEach(edge => {
+          let neighbor = null;
+          if (edge.a === current) neighbor = edge.b;
+          else if (edge.b === current) neighbor = edge.a;
+          if (neighbor === null || visited.has(neighbor)) return;
+
+          const alt = dist.get(current) + getEdgeWeight(map, edge);
+          if (alt < dist.get(neighbor)) {
+            dist.set(neighbor, alt);
+            prev.set(neighbor, current);
+          }
+        });
+      }
+
+      if (!Number.isFinite(dist.get(endId))) return [];
+
+      const path = [];
+      let cur = endId;
+      while (cur !== undefined) {
+        path.unshift(cur);
+        if (cur === startId) break;
+        cur = prev.get(cur);
+      }
+      return path[0] === startId ? path : [];
+    }
+
+    function samePath(a, b) {
+      if (a.length !== b.length) return false;
+      return a.every((id, i) => id === b[i]);
+    }
+
+    function chooseCongestionEdge(map, startId, endId) {
+      // First calculate the uncongested route.
+      const previousCongested = state.congested;
+      const previousEdge = state.congestionEdge;
+      state.congested = false;
+      state.congestionEdge = null;
+      const normalPath = dijkstra(map, startId, endId);
+
+      // Prefer a middle edge, because congesting the first/last edge often
+      // has no meaningful alternative. Try every route edge until we find
+      // one that actually changes Dijkstra's result.
+      const candidateIndices = [];
+      const edgeCount = Math.max(0, normalPath.length - 1);
+      if (edgeCount > 0) {
+        const mid = Math.floor((edgeCount - 1) / 2);
+        for (let offset = 0; offset < edgeCount; offset++) {
+          const left = mid - offset;
+          const right = mid + offset;
+          if (left >= 0 && !candidateIndices.includes(left)) candidateIndices.push(left);
+          if (right < edgeCount && !candidateIndices.includes(right)) candidateIndices.push(right);
+        }
+      }
+
+      let chosen = null;
+      for (const i of candidateIndices) {
+        const pair = [normalPath[i], normalPath[i + 1]];
+        state.congested = true;
+        state.congestionEdge = pair;
+        const reroute = dijkstra(map, startId, endId);
+        if (reroute.length && !samePath(normalPath, reroute)) {
+          chosen = pair;
+          break;
+        }
+      }
+
+      // If this OD pair has no alternate route, still mark a middle edge;
+      // cost will rise, but route may remain unchanged.
+      if (!chosen && edgeCount > 0) {
+        const i = candidateIndices[0] ?? 0;
+        chosen = [normalPath[i], normalPath[i + 1]];
+      }
+
+      state.congested = previousCongested;
+      state.congestionEdge = previousEdge;
+      return chosen;
+    }
+
+    function reversePathD(d) {
+      const temp = svgEl("path", { d });
+      routeSvg.appendChild(temp);
+
+      const length = temp.getTotalLength();
+      const sampleCount = Math.max(8, Math.ceil(length / 18));
+      const pts = [];
+
+      for (let i = sampleCount; i >= 0; i--) {
+        const p = temp.getPointAtLength(length * i / sampleCount);
+        pts.push([p.x, p.y]);
+      }
+
+      temp.remove();
+
+      return pts.map((p, i) =>
+        `${i === 0 ? "M" : "L"} ${p[0].toFixed(2)} ${p[1].toFixed(2)}`
+      ).join(" ");
+    }
+
+    function orientedEdgeD(map, edge, fromId, toId) {
+      if (edge.a === fromId && edge.b === toId) return edge.d;
+      return reversePathD(edge.d);
+    }
+
+    function combineRouteGeometry(map, nodeIds) {
+      if (nodeIds.length < 2) return "";
+
+      const parts = [];
+      for (let i = 0; i < nodeIds.length - 1; i++) {
+        const from = nodeIds[i];
+        const to = nodeIds[i + 1];
+        const edge = edgeByNodes(map, from, to);
+        if (!edge) return "";
+
+        let d = orientedEdgeD(map, edge, from, to);
+        if (i > 0) {
+          d = d.replace(/^\s*M\s*[-\d.]+\s+[-\d.]+/i, "");
+        }
+        parts.push(d.trim());
+      }
+      return parts.join(" ");
+    }
+
+    function populateSelectors() {
+      const map = maps[state.map];
+      const selectable = map.nodes.filter(n => n.selectable);
+
+      pickupSelect.innerHTML = "";
+      dropoffSelect.innerHTML = "";
+
+      selectable.forEach(node => {
+        const a = document.createElement("option");
+        a.value = node.id;
+        a.textContent = node.label;
+        pickupSelect.appendChild(a);
+
+        const b = document.createElement("option");
+        b.value = node.id;
+        b.textContent = node.label;
+        dropoffSelect.appendChild(b);
+      });
+
+      pickupSelect.value = String(state.pickup);
+      dropoffSelect.value = String(state.dropoff);
+    }
+
+    function setEndpoints(startId, endId) {
+      if (startId === endId) {
+        const map = maps[state.map];
+        const fallback = map.nodes.find(n => n.selectable && n.id !== startId);
+        if (fallback) endId = fallback.id;
+      }
+
+      state.pickup = startId;
+      state.dropoff = endId;
+      state.congested = false;
+      state.congestionEdge = null;
+      pickupSelect.value = String(startId);
+      dropoffSelect.value = String(endId);
+      renderMap();
+    }
+
     function drawRoadNetwork(map) {
       map.roads.forEach((d) => appendPath(baseRoads, d, "base-road-bed"));
       map.roads.forEach((d) => appendPath(baseRoads, d, "base-road"));
     }
 
-    function drawNodes(map) {
-      const activeIds = new Set(
-        state.congested ? map.rerouteNodeIds : map.routeNodeIds
-      );
+    function drawNodes(map, activeIds) {
+      const activeSet = new Set(activeIds);
 
       map.nodes.forEach((node) => {
         let cls = "map-node";
+        if (node.selectable) cls += " selectable";
+        if (node.id === state.pickup) cls += " selected-start";
+        else if (node.id === state.dropoff) cls += " selected-end";
+        else if (activeSet.has(node.id)) cls += " route";
 
-        if (node.id === map.startNode) cls += " key";
-        else if (node.id === map.endNode) cls += " end";
-        else if (activeIds.has(node.id)) cls += " route";
-
-        nodesGroup.appendChild(svgEl("circle", {
+        const circle = svgEl("circle", {
           cx: node.x,
           cy: node.y,
-          r: node.id === map.startNode || node.id === map.endNode ? 7 : 4,
-          class: cls
-        }));
+          r: node.id === state.pickup || node.id === state.dropoff ? 7 : 4,
+          class: cls,
+          tabindex: node.selectable ? 0 : -1,
+          role: node.selectable ? "button" : "img",
+          "aria-label": node.selectable ? `${node.label}，点击设置${state.clickMode === "pickup" ? "起点" : "终点"}` : node.label
+        });
 
-        if (node.label) {
-          appendText(
-            nodesGroup,
-            node.x + node.dx,
-            node.y + node.dy,
-            node.label,
-            `map-label ${node.cls || ""}`.trim()
-          );
+        if (node.selectable) {
+          circle.addEventListener("click", () => handleNodePick(node.id));
+          circle.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleNodePick(node.id);
+            }
+          });
         }
+
+        nodesGroup.appendChild(circle);
+
+        appendText(
+          nodesGroup,
+          node.x + node.dx,
+          node.y + node.dy,
+          node.label,
+          `map-label ${node.cls || ""}`.trim()
+        );
       });
+    }
+
+    function handleNodePick(nodeId) {
+      if (state.clickMode === "pickup") {
+        state.pickup = nodeId;
+        if (state.dropoff === nodeId) {
+          const map = maps[state.map];
+          const alt = map.nodes.find(n => n.selectable && n.id !== nodeId);
+          if (alt) state.dropoff = alt.id;
+        }
+        state.clickMode = "dropoff";
+      } else {
+        if (nodeId !== state.pickup) state.dropoff = nodeId;
+        state.clickMode = "pickup";
+      }
+
+      state.congested = false;
+      state.congestionEdge = null;
+      pickupSelect.value = String(state.pickup);
+      dropoffSelect.value = String(state.dropoff);
+      renderMap();
     }
 
     function animateVehicle(path, token) {
       cancelAnimationFrame(routeAnimationFrame);
-
       const length = path.getTotalLength();
-      const duration = 6500;
+      const duration = Math.max(4200, Math.min(9000, length * 10));
       const startTime = performance.now();
 
       function frame(now) {
         if (token !== routeAnimationToken) return;
-
         const elapsed = (now - startTime) % duration;
         const progress = elapsed / duration;
         const point = path.getPointAtLength(progress * length);
-
         vehicleDot.setAttribute("cx", point.x);
         vehicleDot.setAttribute("cy", point.y);
-
         routeAnimationFrame = requestAnimationFrame(frame);
       }
 
@@ -1478,14 +1888,10 @@
 
     function animateRouteDraw(path) {
       const length = path.getTotalLength();
-
       path.style.strokeDasharray = `${length}`;
       path.style.strokeDashoffset = `${length}`;
       path.getBoundingClientRect();
-
-      path.style.transition =
-        "stroke-dashoffset 1.15s cubic-bezier(.2,.7,.2,1)";
-
+      path.style.transition = "stroke-dashoffset 1.0s cubic-bezier(.2,.7,.2,1)";
       requestAnimationFrame(() => {
         path.style.strokeDashoffset = "0";
       });
@@ -1493,14 +1899,12 @@
 
     function renderMap() {
       const map = maps[state.map];
-      const activeD =
-        state.congested ? map.rerouteRoute : map.initialRoute;
+      const nodePath = dijkstra(map, state.pickup, state.dropoff);
 
       routeAnimationToken += 1;
       const token = routeAnimationToken;
 
       routeSvg.setAttribute("viewBox", map.viewBox);
-
       clear(baseRoads);
       clear(currentRoute);
       clear(oldRoute);
@@ -1509,48 +1913,64 @@
 
       drawRoadNetwork(map);
 
-      appendPath(oldRoute, map.oldRoute, "old-road");
-      appendPath(anomalyRoad, map.anomalyRoute, "anomaly-road");
+      if (nodePath.length < 2) {
+        routeText.textContent = "—";
+        costText.textContent = "—";
+        etaText.textContent = "—";
+        routeSummary.textContent = "当前两点之间没有可用路径。";
+        drawNodes(map, []);
+        return;
+      }
 
-      const routePath =
-        appendPath(currentRoute, activeD, "route-road");
+      const d = combineRouteGeometry(map, nodePath);
+      const routePath = appendPath(currentRoute, d, "route-road");
 
-      drawNodes(map);
+      if (state.congested && state.congestionEdge) {
+        const [a,b] = state.congestionEdge;
+        const edge = edgeByNodes(map, a, b);
+        if (edge) appendPath(anomalyRoad, orientedEdgeD(map, edge, a, b), "anomaly-road");
+      }
 
+      drawNodes(map, nodePath);
       mapStage.classList.toggle("congested", state.congested);
 
-      const routeValue =
-        state.congested ? map.routeCongested : map.routeNormal;
+      const startNode = nodeById(map, state.pickup);
+      const endNode = nodeById(map, state.dropoff);
 
-      routeText.textContent = routeValue;
-      heroRoute.textContent = routeValue.replaceAll("-", " -> ");
-      costText.textContent =
-        state.congested ? map.costs.congested : map.costs.normal;
-      etaText.textContent =
-        state.congested ? map.eta.congested : map.eta.normal;
-      edgeStatus.textContent =
-        state.congested
-          ? "Dynamic edge cost increased"
-          : "Normal traffic";
+      const totalCost = nodePath.slice(1).reduce((sum, id, i) => {
+        const edge = edgeByNodes(map, nodePath[i], id);
+        return sum + getEdgeWeight(map, edge);
+      }, 0);
 
-      mapName.textContent = map.name;
-      mapCopy.textContent = map.copy;
-
-      const startNode = nodeById(map, map.startNode);
-
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        vehicleDot.setAttribute("cx", startNode.x);
-        vehicleDot.setAttribute("cy", startNode.y);
+      routeText.textContent = nodePath.join("-");
+      heroRoute.textContent = nodePath.join(" -> ");
+      costText.textContent = Math.round(totalCost);
+      etaText.textContent = `${Math.max(1.2, totalCost / 80).toFixed(1)}m`;
+      if (state.congested && state.congestionEdge) {
+        edgeStatus.textContent = `Congestion: ${state.congestionEdge[0]} → ${state.congestionEdge[1]} (+1000)`;
       } else {
-        animateRouteDraw(routePath);
+        edgeStatus.textContent = "Normal traffic";
+      }
+      routeSummary.textContent = `${startNode.label} → ${endNode.label} · ${nodePath.length} nodes`;
 
+      vehicleDot.setAttribute("cx", startNode.x);
+      vehicleDot.setAttribute("cy", startNode.y);
+
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        animateRouteDraw(routePath);
         setTimeout(() => {
-          if (token === routeAnimationToken) {
-            animateVehicle(routePath, token);
-          }
-        }, 1150);
+          if (token === routeAnimationToken) animateVehicle(routePath, token);
+        }, 1000);
       }
     }
+
+    pickupSelect.addEventListener("change", () => {
+      setEndpoints(Number(pickupSelect.value), state.dropoff);
+    });
+
+    dropoffSelect.addEventListener("change", () => {
+      setEndpoints(state.pickup, Number(dropoffSelect.value));
+    });
 
     document.querySelectorAll(".tab").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1561,17 +1981,41 @@
         button.classList.add("active");
         state.map = button.dataset.map;
         state.congested = false;
+        state.congestionEdge = null;
+        state.pickup = maps[state.map].defaultStart;
+        state.dropoff = maps[state.map].defaultEnd;
+        state.clickMode = "pickup";
+        populateSelectors();
         renderMap();
       });
     });
 
     document.getElementById("congestionBtn").addEventListener("click", () => {
-      state.congested = true;
+      const map = maps[state.map];
+
+      // Toggle behavior: click once to simulate, click again to clear.
+      if (state.congested) {
+        state.congested = false;
+        state.congestionEdge = null;
+      } else {
+        state.congestionEdge = chooseCongestionEdge(
+          map,
+          state.pickup,
+          state.dropoff
+        );
+        state.congested = true;
+      }
+
       renderMap();
     });
 
     document.getElementById("resetBtn").addEventListener("click", () => {
       state.congested = false;
+      state.congestionEdge = null;
+      state.pickup = maps[state.map].defaultStart;
+      state.dropoff = maps[state.map].defaultEnd;
+      state.clickMode = "pickup";
+      populateSelectors();
       renderMap();
     });
 
@@ -1584,6 +2028,7 @@
       loopSteps[activeStep].classList.add("active");
     }, 2200);
 
+    populateSelectors();
     renderMap();
   </script>
 </body>
