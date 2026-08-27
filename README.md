@@ -7,6 +7,7 @@
 ## Demo 入口
 
 - 交互式项目展示页：打开 [`docs/index.html`](./docs/index.html)
+- GitHub Pages 预期地址：<https://cx300-fh.github.io/IntelligentCar_Delivery/>
 - 真实电脑端控制台：
 
 ```bash
