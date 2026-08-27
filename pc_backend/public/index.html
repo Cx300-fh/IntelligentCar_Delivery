@@ -150,8 +150,15 @@
       gap: 18px;
       align-content: start;
     }
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      padding: 0 18px 18px;
+    }
     @media (max-width: 860px) {
       main { grid-template-columns: 1fr; }
+      .data-grid { grid-template-columns: 1fr; }
       header { align-items: flex-start; flex-direction: column; }
     }
   </style>
@@ -210,8 +217,31 @@
     </div>
   </main>
 
+  <div class="data-grid">
+    <section>
+      <h2>订单历史</h2>
+      <pre id="ordersLog"></pre>
+    </section>
+    <section>
+      <h2>边权配置</h2>
+      <pre id="edgesLog"></pre>
+    </section>
+    <section>
+      <h2>语音日志</h2>
+      <pre id="voiceLog"></pre>
+    </section>
+    <section>
+      <h2>小车状态快照</h2>
+      <pre id="statusLog"></pre>
+    </section>
+  </div>
+
   <script>
     const logEl = document.querySelector('#log');
+    const ordersLogEl = document.querySelector('#ordersLog');
+    const edgesLogEl = document.querySelector('#edgesLog');
+    const voiceLogEl = document.querySelector('#voiceLog');
+    const statusLogEl = document.querySelector('#statusLog');
     const dotEl = document.querySelector('#dot');
     const statusTextEl = document.querySelector('#statusText');
     const frameEl = document.querySelector('#frame');
@@ -230,7 +260,13 @@
       });
       const data = await res.json();
       log(data);
+      refreshPersistedData();
       return data;
+    }
+
+    async function getJson(url) {
+      const res = await fetch(url);
+      return res.json();
     }
 
     function formJson(form) {
@@ -255,6 +291,20 @@
       postJson('/api/map/refresh-weights', { map_id: Number(mapId), context: { weather: 'normal' } });
     });
 
+    async function refreshPersistedData() {
+      const mapId = document.querySelector('#edgeForm select[name="map_id"]').value;
+      const [orders, edges, voice, status] = await Promise.all([
+        getJson('/api/orders?limit=20'),
+        getJson(`/api/edges?map_id=${mapId}`),
+        getJson('/api/voice-logs?limit=20'),
+        getJson('/api/status/history?limit=20')
+      ]);
+      ordersLogEl.textContent = JSON.stringify(orders.orders || [], null, 2);
+      edgesLogEl.textContent = JSON.stringify(edges.edges || [], null, 2);
+      voiceLogEl.textContent = JSON.stringify(voice.logs || [], null, 2);
+      statusLogEl.textContent = JSON.stringify(status.history || [], null, 2);
+    }
+
     const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}`);
     ws.addEventListener('open', () => {
       dotEl.classList.add('online');
@@ -272,8 +322,13 @@
         frameEmptyEl.hidden = true;
         return;
       }
+      if (['status_response', 'voice_result', 'edge_update_result'].includes(message.type)) {
+        refreshPersistedData();
+      }
       log(message);
     });
+
+    refreshPersistedData();
   </script>
 </body>
 </html>
