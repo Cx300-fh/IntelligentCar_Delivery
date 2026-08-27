@@ -3,9 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Intelligent Car Delivery</title>
+  <title>THU Delivery</title>
   <meta name="description" content="Autonomous campus delivery system with dynamic routing, voice interaction, UDP gateway, and persistent mission tracing.">
   <style>
+
+    @font-face {
+      font-family: "Yishanbei";
+      src: url("./assets/fonts/Yishanbei.ttf?v=20260827-1") format("truetype");
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+    }
+
 
     @font-face {
       font-family: "Prism";
@@ -240,20 +249,19 @@
     .hero-title-cn {
       display: block;
       font-family:
+        "Yishanbei",
+        "STKaiti",
+        "KaiTi",
         "Songti SC",
-        "STSong",
-        "Noto Serif CJK SC",
-        "Source Han Serif SC",
-        Georgia,
         serif;
-      font-size: clamp(76px, 11vw, 148px);
-      font-weight: 900;
-      line-height: .88;
-      letter-spacing: .03em;
+      font-size: clamp(66px, 9.4vw, 126px);
+      font-weight: 400;
+      line-height: .92;
+      letter-spacing: .08em;
       color: var(--text);
       text-shadow:
-        0 1px 0 rgba(255,255,255,.12),
-        0 12px 42px rgba(0,0,0,.34);
+        0 1px 0 rgba(255,255,255,.10),
+        0 10px 34px rgba(0,0,0,.30);
     }
 
     .hero-title-en {
@@ -276,7 +284,7 @@
 
     @media (max-width: 560px) {
       .hero-title-cn {
-        font-size: 68px;
+        font-size: 58px;
       }
 
       .hero-title-en {
@@ -1112,9 +1120,9 @@
 <body>
   <div class="topbar">
     <div class="shell nav">
-      <a class="brand" href="#top" aria-label="Intelligent Car Delivery home">
+      <a class="brand" href="#top" aria-label="THU Delivery home">
         <img class="brand-logo" src="./assets/brand/logo.svg?v=20260827-1" alt="" aria-hidden="true">
-        Intelligent Car Delivery
+        THU Delivery
       </a>
       <div class="nav-links" aria-label="Page navigation">
         <a href="#loop">Loop</a>
