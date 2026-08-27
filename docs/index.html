@@ -9,10 +9,48 @@
 
     @font-face {
       font-family: "Prism";
-      src: url("assets/fonts/Prism.otf") format("opentype");
+      src: url("./assets/fonts/Prism.otf?v=20260827-2") format("opentype");
       font-style: normal;
       font-weight: 400;
       font-display: swap;
+    }
+
+
+
+    /* Brand display font for English headings */
+    h1,
+    h2,
+    h3,
+    .brand,
+    .eyebrow,
+    .loop-kicker,
+    .tag,
+    .status-pill,
+    .metric span,
+    .mission-top,
+    .route-summary,
+    .section-head h2,
+    .journey-step h3,
+    .voice-node .tag,
+    .panel h3 {
+      font-family:
+        "Prism",
+        "Arial Narrow",
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+      font-weight: 400;
+    }
+
+    /* Chinese text keeps the system Chinese font stack */
+    .zh,
+    .hero-title-cn,
+    [lang="zh-CN"] .zh {
+      font-family:
+        "PingFang SC",
+        "Microsoft YaHei",
+        "Noto Sans CJK SC",
+        sans-serif;
     }
 
     :root {
@@ -227,10 +265,10 @@
         "Helvetica Neue",
         Arial,
         sans-serif;
-      font-size: clamp(31px, 4.4vw, 62px);
-      font-weight: 700;
-      line-height: .95;
-      letter-spacing: .045em;
+      font-size: clamp(34px, 4.8vw, 66px);
+      font-weight: 400;
+      line-height: .92;
+      letter-spacing: .035em;
       color: var(--green);
       text-transform: none;
       white-space: nowrap;
@@ -243,10 +281,11 @@
 
       .hero-title-en {
         margin-top: 7px;
-        font-size: 28px;
-        letter-spacing: .035em;
+        font-size: 30px;
+        letter-spacing: .025em;
       }
     }
+
 
     .hero-lead {
       max-width: 760px;
@@ -1074,7 +1113,7 @@
   <div class="topbar">
     <div class="shell nav">
       <a class="brand" href="#top" aria-label="Intelligent Car Delivery home">
-        <img class="brand-logo" src="assets/brand/logo.svg" alt="" aria-hidden="true">
+        <img class="brand-logo" src="./assets/brand/logo.svg?v=20260827-1" alt="" aria-hidden="true">
         Intelligent Car Delivery
       </a>
       <div class="nav-links" aria-label="Page navigation">
