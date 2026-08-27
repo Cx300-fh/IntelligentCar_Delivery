@@ -250,7 +250,8 @@
     .hero-title-cn {
       display: block;
       position: relative;
-      top: -18px;
+      top: -42px;
+      left: 18px;
       font-family:
         "Yishanbei",
         "STKaiti",
@@ -259,7 +260,7 @@
         serif;
       font-size: clamp(64px, 8.8vw, 116px);
       font-weight: 400;
-      line-height: .86;
+      line-height: .84;
       letter-spacing: .12em;
       color: var(--text);
       text-shadow:
@@ -269,7 +270,7 @@
 
     .hero-title-en {
       display: block;
-      margin-top: -8px;
+      margin-top: -22px;
       font-family:
         "Prism",
         "Arial Narrow",
@@ -287,7 +288,8 @@
 
     @media (max-width: 560px) {
       .hero-title-cn {
-        top: -6px;
+        top: -10px;
+        left: 0;
         font-size: 54px;
       }
 
@@ -348,8 +350,10 @@
     }
 
     .mission-card {
-      width: min(100%, 390px);
+      width: min(100%, 360px);
       justify-self: end;
+      align-self: center;
+      transform: translate(-10px, 54px);
       border: 1px solid rgba(241,243,240,.14);
       border-radius: 18px;
       background:
@@ -380,12 +384,12 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      color: rgba(241,243,240,.68);
-      font-size: 11px;
-      letter-spacing: .055em;
+      color: rgba(241,243,240,.82);
+      font-size: 14px;
+      letter-spacing: .035em;
       text-transform: uppercase;
       border-bottom: 0;
-      padding-bottom: 4px;
+      padding-bottom: 2px;
     }
 
     .mission-top .status-pill {
@@ -398,8 +402,8 @@
 
     .route-strip {
       position: relative;
-      height: 86px;
-      margin: 14px 0 10px;
+      height: 92px;
+      margin: 16px 0 0;
     }
 
     .route-strip::before {
@@ -454,59 +458,6 @@
     .stop:nth-child(3) { left: 43%; }
     .stop:nth-child(4) { left: 78%; }
 
-    .mission-list {
-      display: grid;
-      gap: 10px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .mission-list li {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 10px 0;
-      border-top: 1px solid var(--line-soft);
-      color: var(--muted-2);
-      font-size: 14px;
-    }
-
-    .mission-list strong { color: var(--text); text-align: right; }
-
-
-    .mission-list {
-      margin: 8px 0 0;
-      padding: 0;
-      list-style: none;
-      display: grid;
-      gap: 0;
-      border-top: 1px solid rgba(241,243,240,.08);
-    }
-
-    .mission-list li {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 18px;
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(241,243,240,.07);
-      color: rgba(241,243,240,.50);
-      font-size: 11px;
-    }
-
-    .mission-list li:last-child {
-      border-bottom: 0;
-      padding-bottom: 2px;
-    }
-
-    .mission-list strong {
-      color: rgba(241,243,240,.90);
-      font-size: 12px;
-      font-weight: 620;
-      text-align: right;
-    }
 
     section { padding: 86px 0; }
 
@@ -1235,12 +1186,6 @@
           <div class="stop active">Pickup</div>
           <div class="stop">Dropoff</div>
         </div>
-        <ul class="mission-list">
-          <li><span>Map</span><strong>THU</strong></li>
-          <li><span>Route</span><strong id="heroRoute">3 -> 4 -> 9</strong></li>
-          <li><span>Station prompt</span><strong>请放入物品</strong></li>
-          <li><span>Channel</span><strong>HTTP + UDP + UART</strong></li>
-        </ul>
       </aside>
     </div>
   </header>
