@@ -46,8 +46,9 @@ static void Test_Ndjson()
     CHECK(lines.size() == 2);
     CHECK(lines[0] == "{\"b\":2}");
     CHECK(lines[1] == "{\"c\":3}");
-    CHECK(dec.buffered() == 7);
+    CHECK(dec.buffered() == 6);   // 残留半条 {"d":4 = 6字节
     lines.clear();
+    dec.Reset();           // 分场景测试：清除残留半条（流式分帧中残留会被下一行\n结束，属正常行为）
 
     // \r\n 去除 + 空行跳过
     char crlf[] = "\r\n{\"e\":5}\r\n\n";

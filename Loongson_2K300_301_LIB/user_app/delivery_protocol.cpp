@@ -287,6 +287,8 @@ static ParseResult Parse_Error_Obj(const json& j, ErrorInfo* e)
 //================================================================================
 ParseResult Delivery_Parse_Server_Message(const std::string& line, ServerMessage* out)
 {
+    *out = ServerMessage();   // 复用变量时必须清零，避免上次解析残留污染本次结果
+
     json j;
     try {
         j = json::parse(line);
