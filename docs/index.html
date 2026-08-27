@@ -173,8 +173,8 @@
       min-height: 100svh;
       position: relative;
       display: grid;
-      align-items: end;
-      padding: 110px 0 42px;
+      align-items: center;
+      padding: 96px 0 34px;
       overflow: hidden;
       isolation: isolate;
     }
@@ -205,6 +205,7 @@
       grid-template-columns: minmax(0, .92fr) minmax(290px, .42fr);
       gap: 48px;
       align-items: end;
+      transform: translateY(64px);
     }
 
     .hero-grid > *,
@@ -240,7 +241,7 @@
       flex-direction: column;
       align-items: flex-start;
       gap: 4px;
-      margin-bottom: 26px;
+      margin-bottom: 20px;
       max-width: none;
       line-height: 1;
       text-transform: none;
@@ -249,17 +250,17 @@
     .hero-title-cn {
       display: block;
       position: relative;
-      top: -12px;
+      top: -18px;
       font-family:
         "Yishanbei",
         "STKaiti",
         "KaiTi",
         "Songti SC",
         serif;
-      font-size: clamp(58px, 8.2vw, 108px);
+      font-size: clamp(64px, 8.8vw, 116px);
       font-weight: 400;
-      line-height: .88;
-      letter-spacing: .13em;
+      line-height: .86;
+      letter-spacing: .12em;
       color: var(--text);
       text-shadow:
         0 1px 0 rgba(255,255,255,.08),
@@ -268,7 +269,7 @@
 
     .hero-title-en {
       display: block;
-      margin-top: 0;
+      margin-top: -8px;
       font-family:
         "Prism",
         "Arial Narrow",
@@ -286,8 +287,8 @@
 
     @media (max-width: 560px) {
       .hero-title-cn {
-        top: -7px;
-        font-size: 50px;
+        top: -6px;
+        font-size: 54px;
       }
 
       .hero-title-en {
