@@ -80,12 +80,30 @@ static void send_status_response(const struct sockaddr_in& src, bool ok, const c
 
     const NavStatus& status = nav_fsm.get_status();
     const NavTask& task = nav_fsm.get_task();
+    const SchedulerEvent& event = order_scheduler.get_last_event();
     char response[ROUTE_SERVER_BUF_LEN];
+    char path_buf[80];
+    int path_pos = 0;
+
+    path_pos += snprintf(path_buf + path_pos, sizeof(path_buf) - path_pos, "[");
+    for (int i = 0; i < status.path_len && i < NAV_MAX_PATH_LEN && path_pos < (int)sizeof(path_buf) - 4; i++) {
+        path_pos += snprintf(path_buf + path_pos, sizeof(path_buf) - path_pos,
+                             "%s%d", i == 0 ? "" : ",", status.path[i]);
+        if (path_pos >= (int)sizeof(path_buf) - 4) {
+            path_pos = (int)sizeof(path_buf) - 4;
+            break;
+        }
+    }
+    snprintf(path_buf + path_pos, sizeof(path_buf) - path_pos, "]");
 
     int len = snprintf(response, sizeof(response),
         "{\"type\":\"status_response\",\"ok\":%s,\"action\":\"%s\","
-        "\"message\":\"%s\",\"map_id\":%d,\"target_id\":%d,"
-        "\"current_node\":%d,\"route_len\":%d,\"pending_station\":%s}",
+        "\"message\":\"%s\",\"map_id\":%d,\"target_id\":%d,\"current_node\":%d,"
+        "\"route_len\":%d,\"pending_station\":%s,\"state\":\"%s\","
+        "\"nav_action\":\"%s\",\"prev_node\":%d,\"next_node\":%d,"
+        "\"expected_next_node\":%d,\"path\":%s,\"path_index\":%d,"
+        "\"task_active\":%s,\"pending_text_zh\":\"%s\",\"pending_text_en\":\"%s\","
+        "\"scheduler_event\":\"%s\",\"order_id\":%d}",
         ok ? "true" : "false",
         action ? action : "",
         message ? message : "",
@@ -93,11 +111,39 @@ static void send_status_response(const struct sockaddr_in& src, bool ok, const c
         task.target_id,
         status.current_id > 0 ? status.current_id : 0,
         order_scheduler.get_current_route_len(),
-        order_scheduler.has_pending_station_action() ? "true" : "false");
+        order_scheduler.has_pending_station_action() ? "true" : "false",
+        get_nav_state_name(status.state),
+        get_action_name(status.current_action),
+        status.prev_id > 0 ? status.prev_id : 0,
+        status.next_id > 0 ? status.next_id : 0,
+        status.expected_next_id > 0 ? status.expected_next_id : 0,
+        path_buf,
+        status.path_index,
+        task.active ? "true" : "false",
+        order_scheduler.get_pending_action_text_zh(),
+        order_scheduler.get_pending_action_text_en(),
+        get_scheduler_event_name(event.type),
+        event.order_id);
 
     if (len > 0 && len < (int)sizeof(response)) {
         sendto(route_server_fd, response, len, 0,
                (const struct sockaddr*)&src, sizeof(src));
+    } else {
+        int fallback_len = snprintf(response, sizeof(response),
+            "{\"type\":\"status_response\",\"ok\":%s,\"action\":\"%s\","
+            "\"message\":\"status too long\",\"map_id\":%d,\"target_id\":%d,"
+            "\"current_node\":%d,\"route_len\":%d,\"pending_station\":%s}",
+            ok ? "true" : "false",
+            action ? action : "",
+            task.map_id,
+            task.target_id,
+            status.current_id > 0 ? status.current_id : 0,
+            order_scheduler.get_current_route_len(),
+            order_scheduler.has_pending_station_action() ? "true" : "false");
+        if (fallback_len > 0 && fallback_len < (int)sizeof(response)) {
+            sendto(route_server_fd, response, fallback_len, 0,
+                   (const struct sockaddr*)&src, sizeof(src));
+        }
     }
 }
 
