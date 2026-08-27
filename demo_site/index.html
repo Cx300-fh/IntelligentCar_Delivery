@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>智能外卖/物流车系统 Demo</title>
+  <style>
+    :root {
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      color: #1e2421;
+      background: #f5f7f2;
+      --panel: #ffffff;
+      --line: #d9dfd3;
+      --muted: #667169;
+      --green: #167a68;
+      --blue: #2563a9;
+      --amber: #b46b00;
+      --red: #a93b3b;
+      --ink: #1e2421;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f5f7f2; letter-spacing: 0; }
+    header {
+      min-height: 86vh;
+      display: grid;
+      grid-template-columns: minmax(320px, 0.95fr) minmax(420px, 1.25fr);
+      gap: 28px;
+      align-items: center;
+      padding: 42px clamp(18px, 5vw, 72px);
+      background:
+        linear-gradient(120deg, rgba(22,122,104,0.10), transparent 45%),
+        linear-gradient(0deg, #ffffff, #f5f7f2);
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 6vw, 72px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+    h2 { margin: 0 0 14px; font-size: 23px; }
+    h3 { margin: 0 0 8px; font-size: 16px; }
+    p { color: var(--muted); line-height: 1.7; }
+    .lead { font-size: 18px; max-width: 720px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+    a.button, button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      background: var(--green);
+      text-decoration: none;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    a.button.secondary, button.secondary { color: var(--green); background: #fff; }
+    .dashboard {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.88);
+      box-shadow: 0 20px 70px rgba(41, 56, 48, 0.14);
+      overflow: hidden;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfa;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .live-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 0 rgba(22,122,104,0.35);
+      animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse {
+      70% { box-shadow: 0 0 0 10px rgba(22,122,104,0); }
+      100% { box-shadow: 0 0 0 0 rgba(22,122,104,0); }
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 14px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 80px;
+      background: #fff;
+    }
+    .metric strong { display: block; font-size: 24px; margin-bottom: 4px; }
+    .metric span { color: var(--muted); font-size: 13px; }
+    .map-panel {
+      grid-column: 1 / -1;
+      min-height: 260px;
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #eef4ef;
+      overflow: hidden;
+    }
+    .road {
+      position: absolute;
+      height: 5px;
+      background: #9aa8a0;
+      transform-origin: left center;
+      border-radius: 20px;
+    }
+    .road.hot { background: var(--amber); animation: hotroad 2.2s ease-in-out infinite; }
+    @keyframes hotroad { 50% { filter: brightness(1.25); } }
+    .node {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      margin: -16px 0 0 -16px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      background: var(--blue);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(31, 45, 38, 0.18);
+    }
+    .node.pickup { background: var(--green); }
+    .node.dropoff { background: var(--red); }
+    .car {
+      position: absolute;
+      width: 26px;
+      height: 18px;
+      border-radius: 5px;
+      background: #17211c;
+      left: 16%;
+      top: 70%;
+      transform: translate(-50%, -50%);
+      animation: drive 6s ease-in-out infinite;
+      z-index: 5;
+    }
+    .car:after {
+      content: "";
+      position: absolute;
+      inset: 4px 5px;
+      border-radius: 3px;
+      background: #59d6bd;
+    }
+    @keyframes drive {
+      0%, 100% { left: 16%; top: 70%; }
+      28% { left: 34%; top: 48%; }
+      55% { left: 58%; top: 38%; }
+      82% { left: 78%; top: 24%; }
+    }
+    main { padding: 32px clamp(18px, 5vw, 72px) 54px; }
+    .section-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin: 18px 0 34px;
+    }
+    section, .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .wide { grid-column: 1 / -1; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .tabs button { padding: 8px 12px; }
+    .tabs button.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .map-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .node-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 9px;
+      background: #f9faf7;
+      color: var(--ink);
+      font-size: 13px;
+    }
+    .timeline {
+      display: grid;
+      gap: 10px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+    .step-num {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--green);
+      font-weight: 800;
+    }
+    .messages {
+      display: grid;
+      gap: 10px;
+      overflow: hidden;
+    }
+    .message {
+      border-left: 4px solid var(--blue);
+      background: #f7f9fb;
+      padding: 10px;
+      border-radius: 6px;
+      animation: slide 4.5s ease-in-out infinite;
+    }
+    .message:nth-child(2) { animation-delay: 0.6s; border-left-color: var(--green); }
+    .message:nth-child(3) { animation-delay: 1.2s; border-left-color: var(--amber); }
+    @keyframes slide {
+      0%, 100% { transform: translateX(0); opacity: 1; }
+      50% { transform: translateX(8px); opacity: 0.78; }
+    }
+    code, pre {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 13px;
+    }
+    pre {
+      margin: 0;
+      overflow: auto;
+      background: #17211c;
+      color: #e8f3ef;
+      border-radius: 8px;
+      padding: 14px;
+      line-height: 1.55;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 9px; text-align: left; }
+    footer {
+      padding: 22px clamp(18px, 5vw, 72px);
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+    @media (max-width: 920px) {
+      header, .section-grid, .map-details { grid-template-columns: 1fr; }
+      header { min-height: auto; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *:before, *:after { animation: none !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>智能外卖/物流车系统</h1>
+      <p class="lead">电脑端下单，小车端导航；订单、地图边权、语音命令和状态全部联通。这个展示页用于快速了解完整 Demo，不连接真实小车。</p>
+      <div class="hero-actions">
+        <a class="button" href="../pc_backend/public/index.html">查看电脑端控制台</a>
+        <a class="button secondary" href="../README.md">返回 README</a>
+      </div>
+    </div>
+    <div class="dashboard" aria-label="项目运行示意">
+      <div class="topbar"><span>System Demo</span><span style="display:flex;align-items:center;gap:8px"><span class="live-dot"></span>Live flow</span></div>
+      <div class="hero-grid">
+        <div class="metric"><strong>2</strong><span>THU / SUTD 地图</span></div>
+        <div class="metric"><strong>4</strong><span>SQLite 持久化表</span></div>
+        <div class="metric"><strong>8898</strong><span>小车订单控制 UDP</span></div>
+        <div class="metric"><strong>8888</strong><span>JPEG 图传 UDP</span></div>
+        <div class="map-panel" id="heroMap"></div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="section-grid">
+      <section>
+        <h2>订单调度</h2>
+        <p>电脑端创建订单，小车按“先取件后送达”的约束生成站点序列，并支持顺路插单。</p>
+      </section>
+      <section>
+        <h2>动态路径</h2>
+        <p>每条边由基础距离、人工权重、动态路况权重共同决定，封路边会被路径规划跳过。</p>
+      </section>
+      <section>
+        <h2>语音交互</h2>
+        <p>起点和终点可本地播报；语音识别文本通过 UDP 交给电脑端规则或外部模型理解。</p>
+      </section>
+
+      <section class="wide">
+        <h2>地图展示</h2>
+        <div class="tabs">
+          <button id="thuBtn" class="active" type="button">THU 清华</button>
+          <button id="sutdBtn" class="secondary" type="button">SUTD</button>
+        </div>
+        <div class="map-details">
+          <div class="map-panel" id="detailMap"></div>
+          <div>
+            <h3 id="mapTitle">THU 清华地图</h3>
+            <p id="mapText"></p>
+            <div class="node-list" id="nodeList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>订单流程</h2>
+        <div class="timeline">
+          <div class="step"><span class="step-num">1</span><div><h3>电脑创建订单</h3><p>选择地图、起点和终点。</p></div></div>
+          <div class="step"><span class="step-num">2</span><div><h3>小车前往起点</h3><p>到达后提示请放入物品。</p></div></div>
+          <div class="step"><span class="step-num">3</span><div><h3>动态规划路线</h3><p>结合拥堵、天气、人工难走权重。</p></div></div>
+          <div class="step"><span class="step-num">4</span><div><h3>到终点完成</h3><p>提示请取走物品，确认后落库。</p></div></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>消息流</h2>
+        <div class="messages">
+          <div class="message"><code>HTTP 3000</code> 浏览器提交订单</div>
+          <div class="message"><code>UDP 8898</code> 后端转发给小车</div>
+          <div class="message"><code>WebSocket</code> 状态和图像推回前端</div>
+        </div>
+      </section>
+
+      <section>
+        <h2>状态协议</h2>
+        <pre>{
+  "state": "EXECUTING",
+  "nav_action": "FOLLOW",
+  "path": [3, 4, 9],
+  "scheduler_event": "ROUTE_UPDATED"
+}</pre>
+      </section>
+
+      <section class="wide">
+        <h2>数据库与接口</h2>
+        <table>
+          <thead><tr><th>表/API</th><th>用途</th></tr></thead>
+          <tbody>
+            <tr><td><code>orders</code></td><td>保存订单、地图、起点、终点、状态和最后响应</td></tr>
+            <tr><td><code>edge_conditions</code></td><td>保存人工权重、动态权重和封路配置</td></tr>
+            <tr><td><code>voice_command_logs</code></td><td>保存语音文本、解析动作和模型/规则来源</td></tr>
+            <tr><td><code>car_status_snapshots</code></td><td>保存小车实时状态快照</td></tr>
+            <tr><td><code>POST /api/orders</code></td><td>电脑端创建订单并转发给小车</td></tr>
+            <tr><td><code>POST /api/map/refresh-weights</code></td><td>刷新模拟动态路况并下发边权</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="wide">
+        <h2>图片位置</h2>
+        <p>正式展示图请覆盖到以下路径：<code>MD_Image/demo/order_creation_ui.png</code>、<code>MD_Image/demo/car_screen_pickup.png</code>、<code>MD_Image/demo/map_route_demo.png</code>、<code>MD_Image/demo/system_architecture.png</code>。</p>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    智能外卖/物流车系统 Demo。真实控制页面位于 <code>pc_backend</code>，本展示页仅用于项目说明。
+  </footer>
+
+  <script>
+    const maps = {
+      thu: {
+        title: 'THU 清华地图',
+        text: '地图 ID 为 1，节点 1..14，路口节点为 3、4、5、9、10、12。示例订单从图书馆到大礼堂，路线会受人工权重和动态路况影响。',
+        nodes: ['紫荆操场', '理科楼', '图书馆', '苏世民书院', '东大操场', '校医院', '学生宿舍', '东门', '大礼堂', '新清华学堂', '中央主楼', 'A点', '照澜院', '科技大楼'],
+        points: [[16,70,1], [24,35,2], [34,48,3,'pickup'], [47,52,4], [39,72,5], [18,18,6], [58,62,7], [58,82,8], [36,20,9,'dropoff'], [68,42,10], [82,47,11], [76,76,12], [54,18,13], [88,24,14]],
+        edges: [[1,3], [1,5], [2,3], [2,6], [3,4,'hot'], [4,5], [4,7], [5,8], [6,9], [9,10], [9,13], [7,10], [10,11], [11,12], [8,12], [12,14], [13,14]]
+      },
+      sutd: {
+        title: 'SUTD 地图',
+        text: '地图 ID 为 2，节点 1..12，路口节点为 1、2、3、4、5、6、10。示例订单在教学楼、图书馆、宿舍与公共设施之间流转。',
+        nodes: ['A', 'B', 'C', 'D', 'E', 'F', 'LIB', 'AUD', 'SSH', 'CC', 'POOL', 'SRC'],
+        points: [[16,54,1,'pickup'], [28,74,2], [30,30,3], [50,32,4], [66,56,5], [74,30,6], [40,16,7], [58,42,8], [82,56,9,'dropoff'], [52,70,10], [60,84,11], [42,86,12]],
+        edges: [[1,2], [1,3], [1,10], [2,11,'hot'], [2,12], [3,4], [3,7], [4,6], [4,8], [5,8], [5,9], [5,10], [5,12], [6,9], [6,11], [7,10]]
+      }
+    };
+
+    function renderMap(target, map) {
+      target.innerHTML = '<div class="car"></div>';
+      const pointById = new Map(map.points.map(([x, y, id]) => [id, { x, y }]));
+      for (const [from, to, state] of map.edges) {
+        const a = pointById.get(from);
+        const b = pointById.get(to);
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const len = Math.hypot(dx, dy);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        const road = document.createElement('div');
+        road.className = `road ${state === 'hot' ? 'hot' : ''}`;
+        road.style.left = `${a.x}%`;
+        road.style.top = `${a.y}%`;
+        road.style.width = `${len}%`;
+        road.style.transform = `rotate(${angle}deg)`;
+        target.appendChild(road);
+      }
+      for (const [x, y, id, role] of map.points) {
+        const node = document.createElement('div');
+        node.className = `node ${role || ''}`;
+        node.style.left = `${x}%`;
+        node.style.top = `${y}%`;
+        node.textContent = id;
+        target.appendChild(node);
+      }
+    }
+
+    function setMap(key) {
+      const map = maps[key];
+      document.querySelector('#mapTitle').textContent = map.title;
+      document.querySelector('#mapText').textContent = map.text;
+      document.querySelector('#nodeList').innerHTML = map.nodes.map((name) => `<span class="chip">${name}</span>`).join('');
+      document.querySelector('#thuBtn').classList.toggle('active', key === 'thu');
+      document.querySelector('#sutdBtn').classList.toggle('active', key === 'sutd');
+      renderMap(document.querySelector('#detailMap'), map);
+    }
+
+    document.querySelector('#thuBtn').addEventListener('click', () => setMap('thu'));
+    document.querySelector('#sutdBtn').addEventListener('click', () => setMap('sutd'));
+    renderMap(document.querySelector('#heroMap'), maps.thu);
+    setMap('thu');
+  </script>
+</body>
+</html>
