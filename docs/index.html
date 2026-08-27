@@ -202,8 +202,8 @@
 
     .hero-grid {
       display: grid;
-      grid-template-columns: minmax(0, .85fr) minmax(320px, .55fr);
-      gap: 60px;
+      grid-template-columns: minmax(0, .92fr) minmax(290px, .42fr);
+      gap: 48px;
       align-items: end;
     }
 
@@ -248,25 +248,27 @@
 
     .hero-title-cn {
       display: block;
+      position: relative;
+      top: -12px;
       font-family:
         "Yishanbei",
         "STKaiti",
         "KaiTi",
         "Songti SC",
         serif;
-      font-size: clamp(66px, 9.4vw, 126px);
+      font-size: clamp(58px, 8.2vw, 108px);
       font-weight: 400;
-      line-height: .92;
-      letter-spacing: .08em;
+      line-height: .88;
+      letter-spacing: .13em;
       color: var(--text);
       text-shadow:
-        0 1px 0 rgba(255,255,255,.10),
-        0 10px 34px rgba(0,0,0,.30);
+        0 1px 0 rgba(255,255,255,.08),
+        0 8px 28px rgba(0,0,0,.28);
     }
 
     .hero-title-en {
       display: block;
-      margin-top: 10px;
+      margin-top: 0;
       font-family:
         "Prism",
         "Arial Narrow",
@@ -284,7 +286,8 @@
 
     @media (max-width: 560px) {
       .hero-title-cn {
-        font-size: 58px;
+        top: -7px;
+        font-size: 50px;
       }
 
       .hero-title-en {
@@ -344,27 +347,58 @@
     }
 
     .mission-card {
-      border: 1px solid rgba(241, 243, 240, .18);
-      background: rgba(15, 18, 16, .76);
-      backdrop-filter: blur(18px);
-      box-shadow: var(--shadow);
-      padding: 18px;
+      width: min(100%, 390px);
+      justify-self: end;
+      border: 1px solid rgba(241,243,240,.14);
+      border-radius: 18px;
+      background:
+        linear-gradient(145deg, rgba(24,28,25,.86), rgba(13,16,14,.72));
+      backdrop-filter: blur(22px);
+      box-shadow:
+        0 24px 80px rgba(0,0,0,.34),
+        inset 0 1px 0 rgba(255,255,255,.035);
+      padding: 20px 20px 18px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .mission-card::before {
+      content: "";
+      position: absolute;
+      width: 150px;
+      height: 150px;
+      right: -70px;
+      top: -80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(118,185,0,.13), transparent 70%);
+      pointer-events: none;
     }
 
     .mission-top {
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      gap: 14px;
-      color: var(--muted);
-      font-size: 13px;
-      border-bottom: 1px solid var(--line-soft);
-      padding-bottom: 14px;
+      gap: 12px;
+      color: rgba(241,243,240,.68);
+      font-size: 11px;
+      letter-spacing: .055em;
+      text-transform: uppercase;
+      border-bottom: 0;
+      padding-bottom: 4px;
+    }
+
+    .mission-top .status-pill {
+      min-height: 24px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      letter-spacing: .04em;
     }
 
     .route-strip {
       position: relative;
-      height: 112px;
-      margin: 20px 0;
+      height: 86px;
+      margin: 14px 0 10px;
     }
 
     .route-strip::before {
@@ -372,7 +406,7 @@
       position: absolute;
       left: 15px;
       right: 15px;
-      top: 49px;
+      top: 38px;
       height: 2px;
       background: rgba(241,243,240,.18);
     }
@@ -380,7 +414,7 @@
     .route-progress {
       position: absolute;
       left: 15px;
-      top: 49px;
+      top: 38px;
       height: 2px;
       width: 72%;
       background: var(--green);
@@ -392,7 +426,7 @@
 
     .stop {
       position: absolute;
-      top: 31px;
+      top: 22px;
       transform: translateX(-50%);
       display: grid;
       justify-items: center;
@@ -439,6 +473,39 @@
     }
 
     .mission-list strong { color: var(--text); text-align: right; }
+
+
+    .mission-list {
+      margin: 8px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0;
+      border-top: 1px solid rgba(241,243,240,.08);
+    }
+
+    .mission-list li {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(241,243,240,.07);
+      color: rgba(241,243,240,.50);
+      font-size: 11px;
+    }
+
+    .mission-list li:last-child {
+      border-bottom: 0;
+      padding-bottom: 2px;
+    }
+
+    .mission-list strong {
+      color: rgba(241,243,240,.90);
+      font-size: 12px;
+      font-weight: 620;
+      text-align: right;
+    }
 
     section { padding: 86px 0; }
 
@@ -779,6 +846,13 @@
     .metric strong {
       font-size: 24px;
       line-height: 1;
+    }
+
+
+    .metric strong {
+      font-size: clamp(22px, 2.2vw, 30px);
+      line-height: 1;
+      letter-spacing: -.02em;
     }
 
     .control-row {
@@ -1138,11 +1212,11 @@
     <div class="shell hero-grid">
       <div>
         <h1 class="hero-title-mark">
-          <span class="hero-title-cn">清&nbsp;&nbsp;送</span>
+          <span class="hero-title-cn">清送</span>
           <span class="hero-title-en">THU Delivery</span>
         </h1>
         <p class="hero-lead">Autonomous campus delivery, from order to destination.</p>
-        <p class="zh">电脑端下单，小车按拓扑地图导航。<br>路况变化时动态重规划。<br>屏幕、语音、图传和数据库记录轨迹。</p>
+        <p class="zh">电脑端下单，小车按拓扑地图导航<br>路况变化时动态重规划<br>屏幕、语音、图传和数据库记录轨迹</p>
         <div class="hero-actions">
           <a class="btn primary" href="#map">Watch Demo</a>
           <a class="btn" href="#system">Explore System</a>
@@ -1239,8 +1313,6 @@
                 <select id="dropoffSelect" aria-label="Dropoff node"></select>
               </label>
             </div>
-
-            <p class="map-hint">可用下拉框选择，也可以直接点击地图节点。第一次点击设为 <strong>Pickup</strong>，第二次点击设为 <strong>Dropoff</strong>。</p>
             <div class="route-summary" id="routeSummary">当前路线将根据选择自动更新。</div>
 
             <div class="metric-grid">
@@ -1267,7 +1339,7 @@
     <section class="shell">
       <div class="section-head">
         <h2>From order to arrival.</h2>
-        <p class="zh">站点交互不是额外页面，而是配送流程的一部分。屏幕与语音使用同一语义事件，后续可切换中文或英文播报 ID。</p>
+        
       </div>
       <div class="journey">
         <div class="journey-track">
@@ -1405,24 +1477,6 @@
       </details>
     </section>
 
-    <section class="shell">
-      <div class="data-flow">
-        <div>
-          <p class="eyebrow">Persistent Operations</p>
-          <p class="statement">Every decision leaves a trace.</p>
-          <p class="zh">调度结果、路况权重、语音命令和车辆状态都进入电脑端 SQLite。演示结束后仍能复盘：谁下了单、哪条边变贵、语音命令如何解析、小车当时在哪里。</p>
-        </div>
-        <div class="database">
-          <h3>SQLite tables</h3>
-          <div class="table-list">
-            <div class="table-row"><strong>orders</strong><span>mission state and car response</span></div>
-            <div class="table-row"><strong>edge_conditions</strong><span>manual weight, dynamic weight, blocked</span></div>
-            <div class="table-row"><strong>voice_command_logs</strong><span>text, action, source, request, result</span></div>
-            <div class="table-row"><strong>car_status_snapshots</strong><span>navigation and scheduler state</span></div>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <section class="shell">
       <div class="section-head">
