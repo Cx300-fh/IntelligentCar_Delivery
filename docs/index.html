@@ -409,7 +409,11 @@
       position: relative;
       min-height: 560px;
       border: 1px solid var(--line);
-      background: #0f1210;
+      background:
+        linear-gradient(rgba(241,243,240,.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(241,243,240,.028) 1px, transparent 1px),
+        #0f1210;
+      background-size: 44px 44px;
       overflow: hidden;
     }
 
@@ -420,37 +424,18 @@
       display: block;
     }
 
-    .campus-fill { fill: #111512; }
-
-    .campus-grid {
-      stroke: rgba(241,243,240,.035);
-      stroke-width: 1;
-    }
-
-    .building {
-      fill: rgba(241,243,240,.035);
-      stroke: rgba(241,243,240,.10);
-      stroke-width: 1;
-    }
-
-    .building-detail {
-      fill: none;
-      stroke: rgba(241,243,240,.07);
-      stroke-width: 1;
-    }
-
     .base-road-bed {
       fill: none;
-      stroke: rgba(241,243,240,.115);
-      stroke-width: 15;
+      stroke: rgba(241,243,240,.12);
+      stroke-width: 14;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
 
     .base-road {
       fill: none;
-      stroke: rgba(241,243,240,.34);
-      stroke-width: 2.1;
+      stroke: rgba(241,243,240,.42);
+      stroke-width: 2.2;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
@@ -458,7 +443,7 @@
     .route-road {
       fill: none;
       stroke: var(--green);
-      stroke-width: 5;
+      stroke-width: 5.5;
       stroke-linecap: round;
       stroke-linejoin: round;
       filter: drop-shadow(0 0 8px rgba(118,185,0,.42));
@@ -466,7 +451,7 @@
 
     .old-road {
       fill: none;
-      stroke: rgba(241,243,240,.24);
+      stroke: rgba(241,243,240,.25);
       stroke-width: 4;
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -489,38 +474,49 @@
     .map-stage.congested .old-road { opacity: 1; }
 
     .map-node {
-      fill: rgba(241,243,240,.34);
-      stroke: #0c0e0d;
-      stroke-width: 2;
+      fill: #0f1210;
+      stroke: rgba(241,243,240,.72);
+      stroke-width: 2.2;
     }
 
-    .map-node.key { fill: var(--green); }
-    .map-node.end { fill: var(--red); }
-    .map-node.current { fill: var(--blue); }
+    .map-node.key {
+      fill: var(--green);
+      stroke: #0c0e0d;
+      stroke-width: 2.4;
+    }
+
+    .map-node.end {
+      fill: var(--red);
+      stroke: #0c0e0d;
+      stroke-width: 2.4;
+    }
+
+    .map-node.route {
+      fill: var(--blue);
+      stroke: #0c0e0d;
+    }
 
     .map-label {
-      fill: rgba(241,243,240,.72);
+      fill: rgba(241,243,240,.76);
       font-size: 12px;
       font-weight: 680;
       paint-order: stroke;
       stroke: #0f1210;
       stroke-width: 4px;
       stroke-linejoin: round;
+      pointer-events: none;
     }
 
     .map-label.major {
-      fill: rgba(241,243,240,.94);
+      fill: rgba(241,243,240,.96);
       font-size: 14px;
-      font-weight: 760;
+      font-weight: 780;
     }
 
-    .marker-caption {
-      fill: rgba(241,243,240,.88);
+    .map-label.minor {
+      fill: rgba(241,243,240,.60);
       font-size: 11px;
-      font-weight: 760;
-      paint-order: stroke;
-      stroke: #0f1210;
-      stroke-width: 4px;
+      font-weight: 650;
     }
 
     .vehicle-dot {
@@ -1019,9 +1015,7 @@
 
       <div class="map-lab">
         <div class="map-stage" id="mapStage" aria-label="Interactive route map">
-          <svg id="routeSvg" viewBox="0 0 900 560" role="img" aria-labelledby="mapTitle mapDesc">
-            <title id="mapTitle">Dynamic routing map</title>
-            <desc id="mapDesc">Interactive THU and SUTD map with current route and congestion reroute.</desc>
+          <svg id="routeSvg" viewBox="0 0 900 560" role="img" aria-label="Interactive THU and SUTD route map">
             <g id="baseRoads"></g>
             <g id="oldRoute"></g>
             <g id="anomalyRoad"></g>
@@ -1269,106 +1263,108 @@
     const maps = {
       thu: {
         name: "THU campus route",
-        copy: "Initial route: Library to Auditorium along the supplied THU campus road layout. Trigger congestion to force a longer road-following reroute.",
+        copy: "THU geometry is traced from the supplied reference: a large western loop, an eastern loop, the raised Zijing loop, and the lower New Tsinghua Hall loop share the same junctions as the source diagram.",
         viewBox: "0 0 900 560",
 
         roads: [
-          "M115 205 H505 V390 H115 Q78 390 78 350 V247 Q78 205 115 205 Z",
-          "M505 205 H770 Q822 205 822 252 V390 H505 Z",
-          "M505 390 H822 V465 Q822 505 780 505 H545 Q505 505 505 468 Z",
-          "M505 205 V125 Q505 78 555 78 H650 Q700 78 700 125 V205 Z",
-          "M700 205 V390",
-          "M78 300 H505",
-          "M505 300 H822"
+          /* West main loop */
+          "M90 175 H500 V385 H90 Q52 385 52 347 V215 Q52 175 90 175 Z",
+
+          /* East main loop */
+          "M500 175 H780 Q820 175 820 215 V385 H500 Z",
+
+          /* North / Zijing loop */
+          "M330 175 V105 Q330 62 375 62 H585 Q630 62 630 105 V175",
+
+          /* South / New Tsinghua Hall loop */
+          "M330 385 V465 Q330 505 375 505 H780 Q820 505 820 465 V385"
         ],
 
-        buildings: [
-          {x:185, y:135, w:112, h:46, label:"理科楼"},
-          {x:330, y:135, w:118, h:46, label:"图书馆"},
-          {x:545, y:104, w:118, h:52, label:"苏世民书院"},
-          {x:684, y:238, w:98, h:52, label:"东大操场"},
-          {x:612, y:318, w:105, h:48, label:"学生宿舍"},
-          {x:602, y:408, w:116, h:42, label:"中央主楼"},
-          {x:372, y:408, w:112, h:42, label:"新清华学堂"},
-          {x:392, y:460, w:86, h:34, label:"照澜院"},
-          {x:635, y:460, w:100, h:34, label:"科技大楼"}
+        nodes: [
+          {id:1,  x:480, y:62,  label:"紫荆操场", dx:-28, dy:-14, cls:"major"},
+          {id:2,  x:205, y:175, label:"理科楼", dx:-26, dy:24, cls:"major"},
+          {id:3,  x:330, y:175, label:"图书馆", dx:-24, dy:24, cls:"major"},
+          {id:4,  x:500, y:280, label:"学生宿舍", dx:14, dy:5, cls:"major"},
+          {id:5,  x:630, y:175, label:"东大操场", dx:-28, dy:24, cls:"major"},
+          {id:6,  x:52,  y:280, label:"校医院", dx:-50, dy:5, cls:"major"},
+          {id:7,  x:820, y:280, label:"东门", dx:14, dy:5, cls:"major"},
+          {id:8,  x:330, y:385, label:"大礼堂", dx:-24, dy:-14, cls:"major"},
+          {id:9,  x:500, y:385, label:"新清华学堂", dx:-34, dy:26, cls:"major"},
+          {id:10, x:650, y:385, label:"中央主楼", dx:-28, dy:-14, cls:"major"},
+          {id:11, x:820, y:385, label:"A", dx:14, dy:5, cls:"minor"},
+          {id:12, x:500, y:505, label:"照澜院", dx:-24, dy:-14, cls:"major"},
+          {id:13, x:650, y:505, label:"科技大楼", dx:-28, dy:-14, cls:"major"},
+          {id:14, x:330, y:175, label:"苏世民书院", dx:118, dy:-18, cls:"major"}
         ],
 
-        labels: [
-          [565,63,"紫荆操场","major"],
-          [18,306,"校医院","major"],
-          [837,306,"东门","major"],
-          [357,375,"大礼堂","major"]
-        ],
+        initialRoute: "M330 175 H500 V385 H330",
+        rerouteRoute: "M330 175 H500 V280 H820 V385 H500 H330",
+        oldRoute: "M330 175 H500 V385 H330",
+        anomalyRoute: "M500 280 V385",
 
-        points: {
-          1:[78,300], 2:[220,205], 3:[388,205], 4:[505,205],
-          5:[505,300], 6:[505,390], 7:[700,205], 8:[822,300],
-          9:[388,390], 10:[700,300], 11:[822,390], 12:[700,390],
-          13:[505,468], 14:[700,505]
-        },
-
-        initialRoute: "M388 205 H505 V390 H388",
-        rerouteRoute: "M388 205 H505 V300 H700 V390 H505 H388",
-        oldRoute: "M388 205 H505 V390 H388",
-        anomalyRoute: "M505 300 V390",
-        start: [388,205],
-        end: [388,390],
-        routeNormal: "3-4-9",
-        routeCongested: "3-5-10-12-9",
+        startNode: 3,
+        endNode: 8,
+        routeNodeIds: [3,4,9,8],
+        rerouteNodeIds: [3,4,7,11,9,8],
+        routeNormal: "3-4-9-8",
+        routeCongested: "3-4-7-11-9-8",
         costs: { normal: 18, congested: 22 },
-        eta: { normal: "4.2m", congested: "5.0m" },
-        markerLabels: { start: "图书馆", end: "大礼堂" }
+        eta: { normal: "4.2m", congested: "5.0m" }
       },
 
       sutd: {
         name: "SUTD campus route",
-        copy: "SUTD follows the supplied sketch: one continuous perimeter loop with the D-E-B transverse road and the A-E-F diagonal connection inside.",
+        copy: "SUTD is traced from the supplied reference. Campus Centre is the lower central junction on the A–E–F road. A route from Campus Centre to Sports & Recreation Centre must go through E before entering the E–B road.",
         viewBox: "0 0 900 560",
 
         roads: [
-          "M205 485 Q118 455 125 380 L250 145 Q280 88 340 88 H500 Q545 88 570 132 L770 380 Q805 425 765 468 Q742 490 700 490 H205 Z",
-          "M190 300 L445 350 L690 420",
-          "M235 225 L445 350 L690 420",
-          "M300 490 L445 350 L570 132",
-          "M445 350 L570 132"
+          /* Outer perimeter: D → top arc → F → B → bottom arc → A → C → D */
+          "M235 210 L330 92 Q348 64 392 64 H500 Q545 64 570 100 L635 155 L785 385 Q810 425 785 455 Q755 495 690 495 H300 L205 495 Q145 495 112 458 Q83 425 105 375 L170 300 L235 210 Z",
+
+          /* Auditorium / Sports road: D → E → B */
+          "M235 210 L455 300 L785 385",
+
+          /* Library road: C → J → B (NO direct Library → E connection) */
+          "M170 300 L350 365 L785 385",
+
+          /* Campus Centre / Housing road: A → J → E → F */
+          "M300 495 L350 365 L455 300 L635 155"
         ],
 
-        buildings: [
-          {x:225, y:330, w:120, h:48, label:"Library"},
-          {x:335, y:255, w:118, h:48, label:"Auditorium"},
-          {x:460, y:195, w:125, h:55, label:"Staff & Student Housing"},
-          {x:575, y:330, w:140, h:55, label:"Sports & Recreation Centre"},
-          {x:620, y:220, w:92, h:48, label:"POOL"},
-          {x:390, y:410, w:118, h:48, label:"Campus Centre"}
+        nodes: [
+          /* Named topology nodes */
+          {id:1, x:300, y:495, label:"A", dx:-8, dy:24, cls:"major"},
+          {id:2, x:785, y:385, label:"B", dx:14, dy:5, cls:"major"},
+          {id:3, x:170, y:300, label:"C", dx:-20, dy:4, cls:"major"},
+          {id:4, x:235, y:210, label:"D", dx:-10, dy:-16, cls:"major"},
+          {id:5, x:455, y:300, label:"E", dx:-8, dy:-16, cls:"major"},
+          {id:6, x:635, y:155, label:"F", dx:12, dy:-8, cls:"major"},
+
+          /* Campus Centre is exactly the lower central junction in the source map. */
+          {id:10, x:350, y:365, label:"Campus Centre", dx:12, dy:24, cls:"major"},
+
+          /* Functional labels anchored on the exact road they describe */
+          {id:7,  x:260, y:336, label:"Library", dx:-40, dy:24, cls:"major"},
+          {id:8,  x:337, y:252, label:"Auditorium", dx:-46, dy:-16, cls:"major"},
+          {id:9,  x:545, y:228, label:"Staff & Student Housing", dx:-18, dy:-18, cls:"minor"},
+          {id:12, x:705, y:265, label:"POOL", dx:12, dy:-12, cls:"major"},
+          {id:13, x:620, y:343, label:"Sports & Recreation Centre", dx:-28, dy:-16, cls:"minor"}
         ],
 
-        labels: [
-          [292,505,"A","major"],
-          [780,430,"B","major"],
-          [170,302,"C","major"],
-          [225,215,"D","major"],
-          [452,342,"E","major"],
-          [580,126,"F","major"]
-        ],
+        /* Demo route: Library → Campus Centre → E → Sports Centre. */
+        initialRoute: "M260 336 L350 365 L455 300 L620 343",
+        rerouteRoute: "M260 336 L170 300 L105 375 Q83 425 112 458 Q145 495 205 495 H300 L350 365 L455 300 L620 343",
+        oldRoute: "M260 336 L350 365 L455 300 L620 343",
+        anomalyRoute: "M455 300 L620 343",
 
-        points: {
-          1:[300,490], 2:[690,420], 3:[190,300], 4:[235,225],
-          5:[445,350], 6:[570,132], 7:[270,360], 8:[690,420],
-          9:[530,235], 10:[445,350], 11:[650,250], 12:[620,340]
-        },
-
-        initialRoute: "M270 360 L445 350 L690 420",
-        rerouteRoute: "M270 360 L300 490 L445 350 L690 420",
-        oldRoute: "M270 360 L445 350 L690 420",
-        anomalyRoute: "M445 350 L690 420",
-        start: [270,360],
-        end: [690,420],
-        routeNormal: "LIB-E-B",
-        routeCongested: "LIB-A-E-B",
+        startNode: 7,
+        endNode: 13,
+        routeNodeIds: [7,10,5,13],
+        rerouteNodeIds: [7,3,1,10,5,13],
+        routeNormal: "LIB-CC-E-SRC",
+        routeCongested: "LIB-C-A-CC-E-SRC",
         costs: { normal: 15, congested: 19 },
-        eta: { normal: "3.6m", congested: "4.3m" },
-        markerLabels: { start: "Library", end: "Sports" }
+        eta: { normal: "3.6m", congested: "4.3m" }
       }
     };
 
@@ -1417,111 +1413,44 @@
       return label;
     }
 
-    function renderBuildings(group, map) {
-      map.buildings.forEach((b) => {
-        group.appendChild(svgEl("rect", {
-          x: b.x,
-          y: b.y,
-          width: b.w,
-          height: b.h,
-          rx: 2,
-          class: "building"
-        }));
-
-        for (let y = b.y + 12; y < b.y + b.h - 5; y += 12) {
-          group.appendChild(svgEl("line", {
-            x1: b.x + 9,
-            y1: y,
-            x2: b.x + b.w - 9,
-            y2: y,
-            class: "building-detail"
-          }));
-        }
-
-        appendText(
-          group,
-          b.x + 6,
-          b.y + b.h + 17,
-          b.label,
-          b.label.length > 18 ? "map-label" : "map-label major"
-        );
-      });
-
-      map.labels.forEach(([x, y, label, kind]) => {
-        appendText(group, x, y, label, `map-label ${kind || ""}`.trim());
-      });
+    function nodeById(map, id) {
+      return map.nodes.find((node) => node.id === id);
     }
 
     function drawRoadNetwork(map) {
-      baseRoads.appendChild(svgEl("rect", {
-        x: 0,
-        y: 0,
-        width: 900,
-        height: 560,
-        class: "campus-fill"
-      }));
-
-      for (let x = 40; x < 900; x += 44) {
-        baseRoads.appendChild(svgEl("line", {
-          x1: x, y1: 0, x2: x, y2: 560, class: "campus-grid"
-        }));
-      }
-
-      for (let y = 40; y < 560; y += 44) {
-        baseRoads.appendChild(svgEl("line", {
-          x1: 0, y1: y, x2: 900, y2: y, class: "campus-grid"
-        }));
-      }
-
-      const buildingsGroup = svgEl("g", { class: "campus-buildings" });
-      renderBuildings(buildingsGroup, map);
-      baseRoads.appendChild(buildingsGroup);
-
       map.roads.forEach((d) => appendPath(baseRoads, d, "base-road-bed"));
       map.roads.forEach((d) => appendPath(baseRoads, d, "base-road"));
-
-      Object.entries(map.points).forEach(([id, [x, y]]) => {
-        const dot = svgEl("circle", {
-          cx: x,
-          cy: y,
-          r: 2.8,
-          class: "map-node"
-        });
-        dot.dataset.node = id;
-        baseRoads.appendChild(dot);
-      });
     }
 
-    function drawMarkers(map) {
-      nodesGroup.appendChild(svgEl("circle", {
-        cx: map.start[0],
-        cy: map.start[1],
-        r: 7,
-        class: "map-node key"
-      }));
-
-      nodesGroup.appendChild(svgEl("circle", {
-        cx: map.end[0],
-        cy: map.end[1],
-        r: 7,
-        class: "map-node end"
-      }));
-
-      appendText(
-        nodesGroup,
-        map.start[0] + 11,
-        map.start[1] - 11,
-        map.markerLabels.start,
-        "marker-caption"
+    function drawNodes(map) {
+      const activeIds = new Set(
+        state.congested ? map.rerouteNodeIds : map.routeNodeIds
       );
 
-      appendText(
-        nodesGroup,
-        map.end[0] + 11,
-        map.end[1] - 11,
-        map.markerLabels.end,
-        "marker-caption"
-      );
+      map.nodes.forEach((node) => {
+        let cls = "map-node";
+
+        if (node.id === map.startNode) cls += " key";
+        else if (node.id === map.endNode) cls += " end";
+        else if (activeIds.has(node.id)) cls += " route";
+
+        nodesGroup.appendChild(svgEl("circle", {
+          cx: node.x,
+          cy: node.y,
+          r: node.id === map.startNode || node.id === map.endNode ? 7 : 4,
+          class: cls
+        }));
+
+        if (node.label) {
+          appendText(
+            nodesGroup,
+            node.x + node.dx,
+            node.y + node.dy,
+            node.label,
+            `map-label ${node.cls || ""}`.trim()
+          );
+        }
+      });
     }
 
     function animateVehicle(path, token) {
@@ -1586,7 +1515,7 @@
       const routePath =
         appendPath(currentRoute, activeD, "route-road");
 
-      drawMarkers(map);
+      drawNodes(map);
 
       mapStage.classList.toggle("congested", state.congested);
 
@@ -1607,9 +1536,11 @@
       mapName.textContent = map.name;
       mapCopy.textContent = map.copy;
 
+      const startNode = nodeById(map, map.startNode);
+
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        vehicleDot.setAttribute("cx", map.start[0]);
-        vehicleDot.setAttribute("cy", map.start[1]);
+        vehicleDot.setAttribute("cx", startNode.x);
+        vehicleDot.setAttribute("cy", startNode.y);
       } else {
         animateRouteDraw(routePath);
 
