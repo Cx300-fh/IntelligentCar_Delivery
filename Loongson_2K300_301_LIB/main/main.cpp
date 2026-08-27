@@ -61,8 +61,8 @@ int main()
     // 导航状态机初始化
     nav_fsm.init();
 
-    // 定时器初始化
-    lq_signal_set_exit_cb([](){ timer_0.stop(); });
+    // 定时器初始化（Ctrl+C退出时：先停定时器，再归零PWM安全停车）
+    lq_signal_set_exit_cb([](){ timer_0.stop(); Control_Safe_Shutdown(); });
     timer_0.set_seconds_ms(5, my_timer_0_callback);     // 设置定时器回调，5ms执行一次
 
     while (ls_system_running.load())
@@ -80,15 +80,8 @@ int main()
             Draw_RGB();                 // 绘制所有可视化内容（边线、Tag等）
             Send_Image(1);              // 图传发送图像 (0-不发送, 1-原图, 2-灰度图, 3-二值化图, 4-合并色块图, 5-红色块图, 6-黄色块图)
         } else {
-            return 0;  // 摄像头初始化失败，直接退出程序
-        }
-
-        run = should_run();  // 判断小车是否应该运行
-
-        // 里程计在 WAITING 状态结束时清零，重新开始累计，用于结束转向动作
-        if (mile_clear_flag==1){
-            mile = 0;
-            mile_clear_flag = 0;
+            Control_Safe_Shutdown();  // 摄像头初始化失败：安全停车后退出
+            return 0;
         }
 
         // 至此，图像处理完成，可用数据：
@@ -109,6 +102,27 @@ int main()
         // │ ARRIVED     │ 到达终点，停车                          │
         // └─────────────┴─────────────────────────────────────────┘
         nav_fsm.update();
+
+        // ==================== 控制命令快照发布（每圈必发，兼作主线程心跳）====================
+        // 阶段2：运动许可沿用should_run()判定；阶段5由配送协调器接管此处
+        bool motion_permitted = should_run();
+        run = motion_permitted ? 1 : 0;   // 兼容屏幕/调试显示
+
+        // 阶段2临时安全管理者：屏幕STOP置位的安全禁止，在导航空闲且已停稳后由主线程清除
+        // （阶段5起此职责移交配送协调器，按状态机校验后清除）
+        if (Safety_Inhibit_Active() &&
+            nav_fsm.get_state() == NAV_STATE_IDLE &&
+            Control_Is_Stopped())
+        {
+            Safety_Inhibit_Clear();
+        }
+
+        // 循迹左边界判定（原dir_control中的逻辑移至主线程，5ms不再读nav_fsm）
+        int follow_left_cmd = compute_follow_left();
+
+        Control_Publish_Command(motion_permitted, STOP_MODE_NONE,
+                                (int32_t)nav_fsm.get_action(), follow_left_cmd,
+                                target_speed, ele_current);
 
         // 获取当前导航动作（用于运动控制）
         // ┌───────────────────┬────────────────────────────────┐

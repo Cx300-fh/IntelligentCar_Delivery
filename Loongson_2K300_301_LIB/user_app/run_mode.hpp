@@ -15,7 +15,7 @@
 #define UTURN_MILE_LIMIT_2    5000    // 掉头状态维持的里程（编码器脉冲数）第二段
 
 // 外部变量声明
-extern volatile uint8_t is_uturning;     // 掉头进行中标志位（1=正在掉头）
+// is_uturning 已移入5ms控制线程私有状态，跨线程读取请使用 Control_Is_Uturning()
 
 /**
  * @brief 获取小车的运行速度
@@ -33,6 +33,13 @@ int get_run_speed(int target_speed);
  * @return true 表示应该运行，false 表示停止
  */
 bool should_run(void);
+
+/**
+ * @brief 计算循迹左边界标志（主线程调用，结果经命令快照下发5ms线程）
+ * @return 1=沿左边界循迹（第一个路口且无来向信息时），0=正常居中循迹
+ * @details 原dir_control(5ms)中的判定逻辑移至主线程，消除5ms对nav_fsm的直接访问
+ */
+int compute_follow_left(void);
 
 /**
  * @brief 中线偏置操作，用于在转向时调整循迹中线

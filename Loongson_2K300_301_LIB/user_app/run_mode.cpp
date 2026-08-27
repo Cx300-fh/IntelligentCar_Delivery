@@ -10,7 +10,30 @@
 #include "control.hpp"
 
 // 变量定义
-volatile uint8_t is_uturning = 0;     // 掉头进行中标志位（1=正在掉头）
+// is_uturning 已移入5ms控制线程私有状态（control.cpp g_uturn_stage），跨线程读取用 Control_Is_Uturning()
+
+/**
+ * @brief 计算循迹左边界标志（主线程调用）
+ * @details 原dir_control(5ms线程)中的判定移至此处：
+ *          无来向信息或首个节点时，若下一节点是路口则沿左边界走
+ */
+int compute_follow_left(void)
+{
+    const NavStatus& nav_status = nav_fsm.get_status();
+
+    if (nav_status.has_prev_info == false || nav_status.is_first_node == true)
+    {
+        Dijkstra* dijkstra = nav_fsm.get_dijkstra();
+        if (dijkstra != nullptr) {
+            bool is_intersection = dijkstra->is_intersection_node(nav_status.current_id);
+            if (nav_status.next_id != 0 && is_intersection == true)
+            {
+                return 1;  // 遇到的第一个路口默认沿着左边界走，能左转就左转，不能左转就直行
+            }
+        }
+    }
+    return 0;
+}
 
 // 补线配置
 #define LEFT_SCAN_COL       30      // 左转扫描列
@@ -134,13 +157,13 @@ static void construct_midline(int target_col, int target_row)
 void midline_offset(void)
 {
     // 如果正在掉头，不操作中线
-    if (is_uturning) {
+    if (Control_Is_Uturning()) {
         return;
     }
 
     // 获取当前动作类型
     ActionType action = nav_fsm.get_action();
-    if (mile >= TURN_MILE_LIMIT) action = ACTION_FOLLOW;  // 如果里程清零后又达到一定数值，停止补线
+    if (Control_Get_Mile() >= TURN_MILE_LIMIT) action = ACTION_FOLLOW;  // 里程清零后又达到限值，停止补线
 
     int scan_col = -1;
 
@@ -160,7 +183,7 @@ void midline_offset(void)
             return;
     }
 
-    if (mile >= TURN_MILE_LIMIT) scan_col = -1;  // 如果里程清零后又达到一定数值，停止补线
+    if (Control_Get_Mile() >= TURN_MILE_LIMIT) scan_col = -1;  // 里程清零后又达到限值，停止补线
 
     if (scan_col == -1) {
         return;  // 未设置扫描列，直接返回
@@ -179,31 +202,21 @@ void midline_offset(void)
 
 /**
  * @brief 更新运行模式状态
+ * @deprecated 掉头标志位已移入5ms控制线程自持（见control.cpp dir_control），
+ *             本函数保留空实现以兼容旧调用点
  */
 void update_run_mode(void)
 {
-    // 获取当前动作类型
-    ActionType action = nav_fsm.get_action();
-
-    // 处理掉头状态
-    if (action == ACTION_UTURN) {
-        // 设置掉头标志位
-        is_uturning = 1;
-    }
-    // 注意：is_uturning 的清零需要通过 set_uturn_done() 外部调用
-    // 或者当动作类型不再是 ACTION_UTURN 时自动清零
-    else if (is_uturning && action != ACTION_UTURN) {
-        // 如果动作类型已经改变且不再是掉头，自动清零标志位
-        is_uturning = 0;
-    }
+    // 掉头状态机（进入/阶段推进/退出）已全部在5ms控制线程内闭环，
+    // 主线程不再写掉头标志位
 }
 
 /**
  * @brief 设置掉头完成
+ * @deprecated 掉头阶段由5ms线程按里程阈值自行退出，本函数保留空实现以兼容旧调用点
  */
 void set_uturn_done(void)
 {
-    is_uturning = 0;
 }
 
 /**
@@ -211,7 +224,7 @@ void set_uturn_done(void)
  */
 bool is_uturn_in_progress(void)
 {
-    return (is_uturning != 0);
+    return Control_Is_Uturning();
 }
 
 /**
@@ -220,17 +233,17 @@ bool is_uturn_in_progress(void)
  */
 void uturning()
 {
-    // 状态机
-    if (is_uturning == 0)
+    // 状态机（掉头阶段经控制反馈快照读取）
+    if (!Control_Is_Uturning())
     {
         angle_yaw = 0;
     }
-    else if (is_uturning == 1)
+    else if (Control_Get_Telemetry().uturn_stage == 1)
     {
         // 左转
         if (angle_yaw > 200)
         {
-            set_uturn_done();  // 掉头完成，清除标志位
+            set_uturn_done();  // 掉头完成（空实现，实际退出由5ms线程里程阈值决定）
         }
     }
 }

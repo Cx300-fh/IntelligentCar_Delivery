@@ -457,8 +457,10 @@ void Screen_Rx_Process(const uint8_t* data, ssize_t len)
         strcmp(cmd, "PAUSE") == 0 || strcmp(cmd, "pause") == 0)
     {
         printf("[Screen] RX: %s\n", cmd);  // 打印接收到的正确指令
+        // 串口屏线程安全例外：只允许置位安全禁止（受控快停），清除由主线程负责
+        Safety_Inhibit_Set(INHIBIT_REASON_MANUAL);
         nav_fsm.cancel_task();
-        printf("[Screen] 急停/取消任务\n");
+        printf("[Screen] 急停/取消任务（安全禁止已置位）\n");
         return;
     }
 

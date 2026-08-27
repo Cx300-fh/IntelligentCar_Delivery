@@ -434,8 +434,8 @@ void NavigationFSM::handle_at_node(void) {
             // 决策：判断是否走反（预期的下一个点是上一个点）
             if (status.next_id == status.prev_id) {
                 // 朝向反了，需要掉头返回
-                is_uturning = 1;  // 设置标志位，用于后续判断是否需要恢复循迹，并在差速控制中做特殊处理
-                mile = 0;  // 清零里程，用于后续判断何时退出掉头动作
+                // 掉头阶段状态由5ms控制线程自持（见dir_control），这里只请求清零里程
+                Control_Request_Mile_Clear();  // 清零里程，用于后续判断何时退出掉头动作
                 printf("[Nav] 决策：掉头返回\n");
                 status.current_action = ACTION_UTURN;
                 status.state = NAV_STATE_WAITING;
@@ -519,7 +519,7 @@ void NavigationFSM::handle_waiting(void) {
 
     if (elapsed >= status.wait_duration_ms) {
         // 等待结束，开始执行动作
-        mile_clear_flag = 1;  // 里程计清除标志
+        Control_Request_Mile_Clear();  // 请求5ms线程清零里程（重新累计，用于结束转向动作）
         status.state = NAV_STATE_EXECUTING;
         status.voice_announced = false;  // 重置语音播报标志
         printf("[Nav] 等待结束，执行动作：%s\n", get_action_name(status.current_action));
@@ -541,7 +541,7 @@ void NavigationFSM::handle_waiting(void) {
  */
 void NavigationFSM::handle_executing(void) {
 
-    if (is_uturning!=0) return;  // 掉头中不处理新节点
+    if (Control_Is_Uturning()) return;  // 掉头中不处理新节点（状态由5ms控制线程持有）
 
     // 检测是否到达下一个节点（新Tag）
     if (tag_id >= 0 && det_found && tag_id != status.current_id) {
