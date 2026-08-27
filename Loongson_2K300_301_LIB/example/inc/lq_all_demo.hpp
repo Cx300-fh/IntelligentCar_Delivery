@@ -32,5 +32,8 @@ void lq_bh1750_demo(void);          // BH1750 光照传感器测试
 void lq_bd1202_gps_demo(void);      // BD1202 GPS模块测试
 void lq_dht11_demo(void);           // DHT11 温湿度传感器测试
 void lq_tracking_demo(void);        // 8 路灰度循迹传感器测试
+void lq_rgb_led_demo(void);         // 按键控制三色 RGB 灯
+void lq_tft18_demo();               // TFT18 测试
+void lq_tft18_show_img_demo(void);  // 显示摄像头图像到 TFT18 屏幕上
 
 #endif

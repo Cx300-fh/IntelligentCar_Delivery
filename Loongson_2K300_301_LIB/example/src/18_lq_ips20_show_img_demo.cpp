@@ -35,3 +35,29 @@ void lq_ips20_show_img_demo(void)
         lq_ips20_drv_road_color(0, 0, frame);
     }
 }
+
+/********************************************************************************
+ * @brief   显示摄像头图像到 TFT18 屏幕上.
+ * @param   none.
+ * @return  none.
+ * @note    摄像头图像会被实时显示在 TFT18 屏幕上，用户可以通过调整摄像头参数来改变显示效果.
+ * @note    使用了两种图像获取方式，可以根据需要选择其中一种.
+ ********************************************************************************/
+void lq_tft18_show_img_demo(void)
+{
+    cv::Mat frame, gray;
+    lq_camera_ex cam(160, 120, 180);
+
+    lq_tft18_drv_init(0);
+    lq_tft18_drv_cls(U16BLUE);
+
+    // cam.set_exposure_manual(50); // 设置手动曝光
+
+    sleep(1);
+    while (ls_system_running.load())
+    {
+        // frame = cam.get_frame_raw();
+        cam.get_frame_raw_gray(frame, gray);
+        lq_tft18_drv_road_color(0, 0, frame);
+    }
+}

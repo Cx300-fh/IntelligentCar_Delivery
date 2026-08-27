@@ -34,6 +34,7 @@ function main() {
     delete_folder ../tools/LQ_Dep_libs/ffmpeg_install
     delete_folder ../tools/LQ_Dep_libs/ncnn_install
     delete_folder ../tools/LQ_Dep_libs/opencv_install
+    delete_folder ../tools/LQ_Dep_libs/apriltag_install
     delete_folder ../tools/loongson-gnu-toolchain-8.3-x86_64-loongarch64-linux-gnu-rc1.6
 
     echo -e "\033[32m[$(date +%Y-%m-%d\ %H:%M:%S)] [INFO ] 所有指定文件/文件夹已删除!\033[0m"

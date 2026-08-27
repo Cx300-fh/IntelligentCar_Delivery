@@ -17,7 +17,7 @@
 # 依赖库配置
 TARGET_DIR="LQ_Dep_libs"            # 目标依赖库根目录名称
 
-DEP_LIBS="opencv_install ncnn_install ffmpeg_install"   # 配置需要检测的依赖库列表
+DEP_LIBS="opencv_install ncnn_install ffmpeg_install apriltag_install"   # 配置需要检测的依赖库列表
 # 各库pkg-config检测名
 PKG_CONFIG_NAMES="\
     opencv4 \
@@ -26,6 +26,7 @@ PKG_CONFIG_NAMES="\
     libavcodec \
     libavdevice \
     libavutil \
+    apriltag \
 "
 
 # 路径配置

@@ -30,7 +30,7 @@
 #define DEVICE_ID_NAME          ( "ls,lq_i2c_lsm6dsr" ) /* 设备名称, 请勿修改 */
 #define DETECT_INTERVAL_MS      ( 500 )                 /* 定义循环检测设备的时间间隔 (毫秒), 感觉间隔时间不合适, 可适当修改（0.5s） */
 #define DEVICE_CNT              ( 1 )                   /* 设备数量, 请勿修改 */
-#define LSM6DSR_DEV_ADDR        ( 0x6b )                /* LSM6DSR设备地址, 请勿修改 */
+#define LSM6DSR_DEV_ADDR        ( 0x70 )                /* LSM6DSR设备地址, 请勿修改 */
 #define DEVICE_NAME             ( "lq_i2c_lsm6dsr" )    /* 设备文件名称, 请勿修改 */
 
 /* LSM6DSR 相关幻数号, 请勿修改 */

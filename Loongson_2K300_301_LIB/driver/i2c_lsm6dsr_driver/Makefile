@@ -1,5 +1,5 @@
 # 本文件中只需要修改 KDIR 的路径，指定一下内核根目录的路径
-KDIR?=/home/linux/Desktop/linux-4.19-loongson-embeded
+KDIR?=/home/yzk/桌面/linux-4.19-loongson-embeded
 ARCH:=loongarch
 CROSS_COMPILE:=loongarch64-linux-gnu-
 PWD?=$(shell pwd)

@@ -13,7 +13,7 @@ typedef enum
     LSM6DSR_BASE_ADDR   = 0x35,
     LSM6DSR_ADDR        = (LSM6DSR_BASE_ADDR << 1) + LSM6DSR_AD0,  // IIC通信设备 写地址 读则加一
 
-    LSM6DSR_DRV_ID      = 0x6B,     //设备ID
+    LSM6DSR_DRV_ID      = 0x70,     //设备ID
     LSM6DSR_WHO_AM      = 0x0F,     //设备ID寄存器
 
     LSM6DSR_FUNC_CFG    = 0X01,     //控制寄存器

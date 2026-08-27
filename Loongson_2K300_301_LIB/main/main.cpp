@@ -33,12 +33,129 @@
  ********************************************************************************/
 
 #include "main.hpp"
+#include "include.hpp"
+
+
+lq_timer timer_0;
+
+
+// 定时器回调函数
+void my_timer_0_callback(void)
+{
+    Ultima_Control();  // 调用综合控制函数
+
+    // // 获取陀螺仪姿态传感器数据
+    // lsm6dsr.get_lsm6dsr_gyro(&ax, &ay, &az, &gx, &gy, &gz);
+    
+    // // 更新yaw角（偏航角速度积分）
+    // update_angle_yaw((float)gz);
+
+    // obstacle_avoidance(); // 避障状态机
+}
+
 
 int main()
 {
+    All_Init(); // 初始化
+
+    // 导航状态机初始化
+    nav_fsm.init();
+
+    // 定时器初始化
+    lq_signal_set_exit_cb([](){ timer_0.stop(); });
+    timer_0.set_seconds_ms(5, my_timer_0_callback);     // 设置定时器回调，5ms执行一次
+
     while (ls_system_running.load())
     {
-        usleep(100 * 1000);
+        Calculate_FPS();            // 计算FPS（每秒更新一次fps_observe变量，不打印）
+
+        // 仅在摄像头初始化成功时执行图像处理
+        if (image_init_ok) {
+            Image_Process();            // 图像总采集处理
+            Boundary_Extract();         // 迷宫扫线提取边界并计算循迹偏差
+            // midline_offset();           // 转向动作处理（暂时的中线偏置或固定舵机输出）(未使用，采用舵机固定输出)
+            ele_current = bias_calculate();  // 计算循迹偏差
+            Tag_Scan_Process();         // 标签识别处理
+            detect_obstacle(image_frame);    // 色块识别（红/黄色块）
+            Draw_RGB();                 // 绘制所有可视化内容（边线、Tag等）
+            Send_Image(1);              // 图传发送图像 (0-不发送, 1-原图, 2-灰度图, 3-二值化图, 4-合并色块图, 5-红色块图, 6-黄色块图)
+        } else {
+            return 0;  // 摄像头初始化失败，直接退出程序
+        }
+
+        run = should_run();  // 判断小车是否应该运行
+
+        // 里程计在 WAITING 状态结束时清零，重新开始累计，用于结束转向动作
+        if (mile_clear_flag==1){
+            mile = 0;
+            mile_clear_flag = 0;
+        }
+
+        // 至此，图像处理完成，可用数据：
+        // ├─ 图像:   RGB原图、灰度图、二值化图
+        // ├─ 边界:   border_msg(边界信息), ele_current(循迹偏差)
+        // ├─ AprilTag: tag_id, tag_angle, tag_dir_ns/ew, tag_center_x/y, tag_dir_ns/ew_name
+        // └─ 帧率:   fps_observe
+
+        // 导航状态机更新
+        // ┌─────────────┬─────────────────────────────────────────┐
+        // │ 状态        │ 说明                                    │
+        // ├─────────────┼─────────────────────────────────────────┤
+        // │ IDLE        │ 等待指令，小车静止                      │
+        // │ SEARCHING   │ 盲走阶段，循迹寻找第一个Tag             │
+        // │ AT_NODE     │ 到达节点，决策（走错路/路口/查表转向）  │
+        // │ WAITING     │ 等待3秒，播报位置                       │
+        // │ EXECUTING   │ 执行动作（循迹/转向/直行/掉头）         │
+        // │ ARRIVED     │ 到达终点，停车                          │
+        // └─────────────┴─────────────────────────────────────────┘
+        nav_fsm.update();
+
+        // 获取当前导航动作（用于运动控制）
+        // ┌───────────────────┬────────────────────────────────┐
+        // │ 动作              │ 控制逻辑                       │
+        // ├───────────────────┼────────────────────────────────┤
+        // │ ACTION_FOLLOW     │ 循迹行驶（使用ele_current偏差）│
+        // │ ACTION_STRAIGHT   │ 直行过路口                     │
+        // │ ACTION_TURN_LEFT  │ 左转                           │
+        // │ ACTION_TURN_RIGHT │ 右转                           │
+        // │ ACTION_UTURN      │ 掉头                           │
+        // │ ACTION_STOP       │ 停车                           │
+        // └───────────────────┴────────────────────────────────┘
+        // TODO: 根据current_action实现对应的方向环与速度环控制（舵机、差速、电机）
+        ActionType current_action = nav_fsm.get_action();
+
+        // 屏幕指令控制导航（处理逻辑在 screen.cpp Screen_Rx_Process()）
+        // ┌─────────────┬─────────────────────────────────────────┐
+        // │ 指令        │ 功能                                    │
+        // ├─────────────┼─────────────────────────────────────────┤
+        // │ AIM,map,tgt │ 设定地图和目标点（仅保存，不启动）      │
+        // │ START       │ 使用已设定的地图和目标点启动导航        │
+        // │ STOP/PAUSE  │ 急停/取消当前任务                       │
+        // └─────────────┴─────────────────────────────────────────┘
+
+        // 每6帧发送一次屏幕数据（避免串口过载）
+        static int screen_send_cnt = 0;
+        if (++screen_send_cnt >= 10) {
+            Screen_Send_All();
+            screen_send_cnt = 0;
+        }
+
+        // 陶晶驰屏幕心跳包：每200ms发送一次，保持屏幕在线状态
+        // 防止屏幕认为龙芯未启动而跳转初始化界面并清空地图/目标点
+        static uint32_t last_hb_time = 0;
+        uint32_t current_time = lq_get_tick_ms();
+        if (current_time - last_hb_time >= 200) {  // 200ms间隔
+            Screen_Send_Heartbeat();
+            last_hb_time = current_time;
+        }
+
+        // WiFi状态定时检查（每3秒检查一次连接状态）
+        WiFi_Periodic_Check();
+
+        // 实时调试信息（需要时取消注释）
+        // Print_Data();              // 打印传感器/导航数据到调试串口
+
+        // usleep(1000 * 1);           // 主循环休眠，避免占用过多 CPU
     }
 
     return 0;

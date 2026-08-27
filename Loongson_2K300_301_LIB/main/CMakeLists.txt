@@ -52,6 +52,13 @@ endif()
 # 查找 ffmpeg 动态库
 # pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavdevice libavutil)
 
+# 查找 AprilTag 动态库
+pkg_check_modules(APRILTAG REQUIRED apriltag)
+
+message(STATUS "APRILTAG_FOUND = ${APRILTAG_FOUND}")
+message(STATUS "APRILTAG_INCLUDE_DIRS = ${APRILTAG_INCLUDE_DIRS}")
+message(STATUS "APRILTAG_LDFLAGS = ${APRILTAG_LDFLAGS}")
+
 link_directories(
     ${PROJECT_SOURCE_DIR}/../libraries/drv/src/  # 静态库的存放路径
 )
@@ -64,6 +71,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${OPENCV_INCLUDE_DIRS}                      # OpenCV 头文件路径
     ${NCNN_INCLUDE_DIRS}                        # ncnn 头文件路径
     # ${FFMPEG_INCLUDE_DIRS}  # ffmpeg 头文件路径
+    ${APRILTAG_INCLUDE_DIRS}                    # apriltag 头文件路径
 )
 
 # 连接库
@@ -74,4 +82,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     ${NCNN_LDFLAGS}
     ${OPENCV_LDFLAGS}
     # ${FFMPEG_LDFLAGS}
+    ${APRILTAG_LDFLAGS}
+    m
 )
