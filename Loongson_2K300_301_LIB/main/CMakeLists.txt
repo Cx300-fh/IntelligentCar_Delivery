@@ -35,6 +35,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/../libraries/drv/inc
     ${PROJECT_SOURCE_DIR}/../example/inc
     ${PROJECT_SOURCE_DIR}/../user_app
+    ${PROJECT_SOURCE_DIR}/../third_party
 )
 
 # 查找 pkgconfig 工具（必须，用于解析 .pc 文件）
