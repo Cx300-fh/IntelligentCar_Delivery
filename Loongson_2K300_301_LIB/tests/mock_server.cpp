@@ -28,6 +28,7 @@
 
 static bool g_observe = false;
 static int  g_goto_node = 13;
+static int  g_silent_after_s = -1;   // >0: 连接N秒后停止回话(连接保持,模拟WiFi断)
 
 static uint64_t Now_Ms() {
     struct timespec ts;
@@ -127,6 +128,8 @@ int main(int argc, char** argv)
             }
         } else if (strcmp(argv[i], "--observe") == 0) {
             g_observe = true;
+        } else if (strcmp(argv[i], "--silent-after") == 0 && i + 1 < argc) {
+            g_silent_after_s = atoi(argv[++i]);
         }
     }
 
@@ -149,6 +152,7 @@ int main(int argc, char** argv)
     if (cfd < 0) { printf("[mock] accept失败\n"); return 1; }
     close(lfd);
     printf("[mock] 车端已连接\n");
+    uint64_t t_conn = Now_Ms();
 
     uint64_t seq = 0, cmd_ver = 0;
     uint64_t t0 = Now_Ms();
@@ -186,19 +190,28 @@ int main(int argc, char** argv)
 
                 if (t == "hello") {
                     got_hello = true;
-                    if (Send_Line(cfd, Hello_Ack_Json(seq))) t_hello_ack = Now_Ms();
-                    printf(">> hello_ack\n");
-                    if (smoke || g_observe) {
-                        Send_Line(cfd, Sync_Json(seq));
-                        t_sync = Now_Ms();
-                        printf(">> state_sync\n");
+                    bool silent_now = (g_silent_after_s > 0 &&
+                                       Now_Ms() - t_conn >= (uint64_t)g_silent_after_s * 1000);
+                    if (!silent_now) {
+                        if (Send_Line(cfd, Hello_Ack_Json(seq))) t_hello_ack = Now_Ms();
+                        printf(">> hello_ack\n");
+                        if (smoke || g_observe) {
+                            Send_Line(cfd, Sync_Json(seq));
+                            t_sync = Now_Ms();
+                            printf(">> state_sync\n");
+                        }
+                    } else {
+                        printf("[mock] 已进入静默（连接保持，模拟WiFi断）\n");
                     }
                 } else if (t == "heartbeat") {
                     printf("   [hb] node=%s action=%s nav=%s\n",
                            J_Field(L, "current_node").c_str(),
                            J_Field(L, "current_action").c_str(),
                            J_Field(L, "navigation_state").c_str());
-                    if (!smoke || Now_Ms() - t_hello_ack > 500) {
+                    bool silent_now = (g_silent_after_s > 0 &&
+                                       Now_Ms() - t_conn >= (uint64_t)g_silent_after_s * 1000);
+                    if (!silent_now &&
+                        (!smoke || Now_Ms() - t_hello_ack > 500)) {
                         Send_Line(cfd, Hb_Ack_Json(seq));
                     }
                 } else if (t == "sync_ack") {
