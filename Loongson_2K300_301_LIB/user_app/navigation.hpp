@@ -68,8 +68,9 @@ struct NavTask {
     bool active;            // 任务是否激活
     int map_id;             // 地图ID
     int target_id;          // 目标节点ID
-    
-    NavTask() : active(false), map_id(0), target_id(0) {}
+    bool paused;            // 暂停标志（hold用：保留任务和定位，停车）
+
+    NavTask() : active(false), map_id(0), target_id(0), paused(false) {}
 };
 
 // 导航状态数据
@@ -108,13 +109,18 @@ struct NavStatus {
 
     int dist;
 
+    // 目标到站锁存：ARRIVED进入时置位，配送协调器经consume_target_arrival()消费
+    // 同一目标只置位一次；到站后导航不自行继续
+    bool target_arrived;
+
     NavStatus()
         : state(NAV_STATE_IDLE), current_action(ACTION_NONE),
           current_id(-1), prev_id(-1), next_id(-1), expected_next_id(-1),
           path_len(0), path_index(0),
           wait_start_ms(0), wait_duration_ms(3000),
           is_first_node(true), has_prev_info(false),
-          route_flag(0), arrived_announced(false), voice_announced(false), last_announced_id(-1), dist(0) {
+          route_flag(0), arrived_announced(false), voice_announced(false), last_announced_id(-1), dist(0),
+          target_arrived(false) {
         for (int i = 0; i < NAV_MAX_PATH_LEN; i++) path[i] = 0;
     }
 };
@@ -130,9 +136,31 @@ public:
     // 初始化
     void init(void);
     
-    // 启动导航任务
+    // 启动导航任务（本地模式：盲走SEARCHING寻找首个Tag）
     bool start_task(int map_id, int target_id);
-    
+
+    // ==================== 配送模式分段导航接口（阶段5新增） ====================
+    // 分段导航：位置已知时从当前点直接规划到新目标，不盲走
+    // 前提：status.current_id有效（位置已知）；地图相同则保留定位（prev_id等）
+    // 目标==当前位置：不启动电机，直接进入ARRIVED并置到站锁存
+    // 规划失败或位置未知返回false（调用方按POSITION_UNKNOWN/UNREACHABLE_TARGET拒绝）
+    bool start_leg(int map_id, int target_id);
+
+    // 消费目标到站锁存：读到(map_id,node_id)并清零；无到站返回false
+    // 到站后导航保持ARRIVED停车，不自行前往下一站，等待下一次start_leg
+    bool consume_target_arrival(int* map_id, int* node_id);
+
+    // 暂停（hold）：保留任务、路径和定位，停车；恢复时从当前位置重新评估
+    void pause_task(void);
+    // 恢复：从当前位置重规划并继续；任务未激活或位置无效返回false
+    bool resume_task(void);
+
+    // 中间节点稳定时间（原固定3秒改为可配置；0=识别后立即通过）
+    void set_node_settle_ms(uint32_t ms) { node_settle_ms_ = ms; }
+    uint32_t get_node_settle_ms(void) const { return node_settle_ms_; }
+    // 中间节点位置语音播报开关（默认关：任务书要求中间节点不播业务语音）
+    void set_announce_intermediate(bool en) { announce_intermediate_ = en; }
+
     // 取消导航任务
     void cancel_task(void);
     
@@ -166,6 +194,8 @@ private:
     NavTask task;           // 当前任务
     NavStatus status;       // 当前状态
     Dijkstra* dijkstra;     // 路径规划器
+    uint32_t node_settle_ms_ = 200;       // 中间节点稳定时间（默认200ms，实车标定）
+    bool announce_intermediate_ = false;  // 中间节点语音播报（默认关）
 
     // 查表查找转向动作
     int lookup_turn_action(int prev_id, int current_id, int next_id);

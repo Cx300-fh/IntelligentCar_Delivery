@@ -276,10 +276,130 @@ void NavigationFSM::cancel_task(void) {
         // TODO: 语音播报 - 任务取消
         // Voice_Broadcast_Cancel();
     }
-    
+
     task.active = false;
+    task.paused = false;
     status.state = NAV_STATE_IDLE;
     status.current_action = ACTION_STOP;
+}
+
+/*============================================================================
+ *                    配送模式分段导航接口（阶段5新增）
+ *============================================================================*/
+
+/**
+ * @brief 分段导航：位置已知时从当前点直接规划到新目标
+ * @details 与start_task（盲走）的区别：
+ *   - 不进入SEARCHING，保留current_id/prev_id定位（同地图时）
+ *   - 直接replan后进入EXECUTING循迹，到下一个Tag自然进入AT_NODE决策
+ *   - 目标==当前位置：不启动电机，直接ARRIVED+锁存到站
+ */
+bool NavigationFSM::start_leg(int map_id, int target_id) {
+    if (target_id <= 0) {
+        printf("[Nav] start_leg错误：目标ID无效\n");
+        return false;
+    }
+    // 位置未知（V1禁止盲走，由配送协调器拒绝goto_stop）
+    if (status.current_id <= 0) {
+        printf("[Nav] start_leg错误：当前位置未知，拒绝分段导航\n");
+        return false;
+    }
+    // 地图切换时旧定位失效，按位置未知处理（V1单图运行，不做跨图保留）
+    if (task.active && task.map_id != map_id) {
+        printf("[Nav] start_leg错误：跨地图切换（%d→%d），旧定位失效\n",
+               task.map_id, map_id);
+        return false;
+    }
+
+    int keep_cur = status.current_id;
+    int keep_prev = status.prev_id;
+    bool keep_has_prev = status.has_prev_info;
+
+    task.active = true;
+    task.paused = false;
+    task.map_id = map_id;
+    task.target_id = target_id;
+
+    // 重置状态但保留定位信息
+    status = NavStatus();
+    status.current_id = keep_cur;
+    status.prev_id = keep_prev;
+    status.has_prev_info = keep_has_prev;
+    status.is_first_node = false;   // 已知位置，不是盲走起点
+
+    dijkstra->set_map(map_id);
+
+    // 目标==当前位置：不启动电机，直接到站锁存
+    if (keep_cur == target_id) {
+        status.state = NAV_STATE_ARRIVED;
+        status.current_action = ACTION_STOP;
+        printf("[Nav] start_leg：目标即当前位置(%s)，直接到站\n",
+               dijkstra->get_node_name(target_id));
+        return true;
+    }
+
+    if (!replan_path()) {
+        // 规划失败：保持停车，任务回退为非激活
+        task.active = false;
+        status.state = NAV_STATE_IDLE;
+        status.current_action = ACTION_STOP;
+        return false;
+    }
+
+    // 从当前路段出发：循迹到下一个Tag后由AT_NODE正常决策
+    status.current_action = ACTION_FOLLOW;
+    status.state = NAV_STATE_EXECUTING;
+
+    printf("[Nav] start_leg：从%s出发 → 目标%s（保留定位）\n",
+           dijkstra->get_node_name(keep_cur),
+           dijkstra->get_node_name(target_id));
+    return true;
+}
+
+/**
+ * @brief 消费目标到站锁存（配送协调器每帧调用）
+ */
+bool NavigationFSM::consume_target_arrival(int* map_id, int* node_id) {
+    if (!status.target_arrived) return false;
+    if (map_id) *map_id = task.map_id;
+    if (node_id) *node_id = task.target_id;
+    status.target_arrived = false;   // 同一到站只消费一次
+    return true;
+}
+
+/**
+ * @brief 暂停（hold）：保留任务/路径/定位，仅停车
+ */
+void NavigationFSM::pause_task(void) {
+    if (!task.active) return;
+    task.paused = true;
+    status.current_action = ACTION_STOP;
+    printf("[Nav] 任务暂停（保留目标%s与定位）\n",
+           dijkstra->get_node_name(task.target_id));
+}
+
+/**
+ * @brief 恢复：从当前位置重新评估路径并继续
+ */
+bool NavigationFSM::resume_task(void) {
+    if (!task.active) return false;
+    if (!task.paused) return true;   // 本就在运行
+    if (status.current_id <= 0) {
+        printf("[Nav] resume错误：位置未知\n");
+        return false;
+    }
+    task.paused = false;
+    // 偏航可能发生在暂停期间，从当前位置重新规划
+    if (!replan_path()) {
+        printf("[Nav] resume错误：无法规划\n");
+        return false;
+    }
+    status.current_action = ACTION_FOLLOW;
+    status.state = NAV_STATE_EXECUTING;
+    printf("[Nav] 任务恢复：从%s继续 → %s\n",
+           dijkstra->get_node_name(status.current_id),
+           dijkstra->get_node_name(task.target_id));
+    return true;
 }
 
 /**
@@ -298,7 +418,13 @@ void NavigationFSM::update(void) {
         status.state = NAV_STATE_IDLE;
         return;
     }
-    
+
+    // 暂停（hold）：保留任务和定位，停车不动
+    if (task.paused) {
+        status.current_action = ACTION_STOP;
+        return;
+    }
+
     // 状态机主循环：根据当前状态分发到对应处理函数
     switch (status.state) {
         case NAV_STATE_IDLE:
@@ -398,7 +524,7 @@ void NavigationFSM::handle_at_node(void) {
         return;
     }
     
-    // ===== 起点处理（盲走策略）=====
+    // ===== 起点处理（盲走策略，仅本地模式start_task进入）=====
     if (status.is_first_node) {
         // 规划路径且更新路径索引和下一个目标 ID
         replan_path();
@@ -409,7 +535,7 @@ void NavigationFSM::handle_at_node(void) {
         status.current_action = ACTION_FOLLOW;
         status.state = NAV_STATE_WAITING;
         status.wait_start_ms = get_current_ms();
-        status.wait_duration_ms = 3000;
+        status.wait_duration_ms = 3000;   // 本地模式起点盲走前3秒（人为观察用）
 
         printf("[Nav] 起点：等待3秒后盲走（左转优先，不行则执行）\n");
         return;
@@ -440,6 +566,7 @@ void NavigationFSM::handle_at_node(void) {
                 status.current_action = ACTION_UTURN;
                 status.state = NAV_STATE_WAITING;
                 status.wait_start_ms = get_current_ms();
+                status.wait_duration_ms = node_settle_ms_;   // 掉头前同样只做短暂稳定
                 return;
             } else {
                 // 没走反，从当前点重新规划路径到目标
@@ -487,42 +614,37 @@ void NavigationFSM::handle_at_node(void) {
         printf("[Nav] 非路口或无prev信息，继续循迹\n");
     }
 
-    // 设置等待状态
+    // 节点稳定期：Tag消抖/转向准备（原固定3秒改为可配置，任务书十一.3）
     status.state = NAV_STATE_WAITING;
     status.wait_start_ms = get_current_ms();
-    status.wait_duration_ms = 3000;
-    
-    // 进入等待状态
-    status.state = NAV_STATE_WAITING;
-    status.wait_start_ms = get_current_ms();
-    status.wait_duration_ms = 3000;
+    status.wait_duration_ms = node_settle_ms_;
 }
 
 /**
- * @brief 处理WAITING状态（等待3秒）
- * @details 
- *   到达节点后停车等待3秒：
- *   - 用于语音播报位置
- *   - 给操作人员观察时间
- *   - 等待结束后切换到EXECUTING执行动作
+ * @brief 处理WAITING状态（节点稳定期）
+ * @details
+ *   原固定3秒改为可配置稳定期（node_settle_ms_，默认200ms）：
+ *   - 中间节点：Tag消抖/转向准备，不播语音不进业务（任务书十一.3）
+ *   - 起点盲走（本地模式）：保留3秒并播报位置
  */
 void NavigationFSM::handle_waiting(void) {
     uint32_t elapsed = get_current_ms() - status.wait_start_ms;
 
-    // 在等待开始时播报到站语音（仅在等待的第一帧播放）
-    if (!status.voice_announced || status.current_id != status.last_announced_id) {
-        // 播报当前位置语音
+    // 位置语音：仅本地模式起点或显式开启中间节点播报时（中间节点默认不播）
+    if ((status.is_first_node || announce_intermediate_) &&
+        (!status.voice_announced || status.current_id != status.last_announced_id)) {
         Voice_Play_Current_Node(task.map_id, status.current_id);
         status.voice_announced = true;
         status.last_announced_id = status.current_id;
     }
 
     if (elapsed >= status.wait_duration_ms) {
-        // 等待结束，开始执行动作
+        // 稳定期结束，开始执行动作
         Control_Request_Mile_Clear();  // 请求5ms线程清零里程（重新累计，用于结束转向动作）
         status.state = NAV_STATE_EXECUTING;
         status.voice_announced = false;  // 重置语音播报标志
-        printf("[Nav] 等待结束，执行动作：%s\n", get_action_name(status.current_action));
+        printf("[Nav] 稳定期结束(%ums)，执行动作：%s\n",
+               (unsigned)status.wait_duration_ms, get_action_name(status.current_action));
     }
 }
 
@@ -568,15 +690,19 @@ void NavigationFSM::handle_executing(void) {
 
 /**
  * @brief 处理ARRIVED状态（到达终点）
- * @details 
+ * @details
  *   到达目标点：
  *   - 动作设置为STOP，停车
  *   - 任务标记为非激活
- *   - 播报到达信息
+ *   - 置到站锁存（target_arrived），由配送协调器消费后生成arrived事件
+ *   - 到站后不自行前往下一站，等待下一次start_leg/goto_stop
  */
 void NavigationFSM::handle_arrived(void) {
     status.current_action = ACTION_STOP;
-    task.active = false;
+    if (task.active) {
+        task.active = false;
+        status.target_arrived = true;   // 到站锁存：一次到站只消费一次
+    }
 
     // 播报到达终点语音（仅播报一次）
     if (!status.arrived_announced) {
@@ -584,7 +710,8 @@ void NavigationFSM::handle_arrived(void) {
         usleep(200 * 1000);  // 等待ASRPRO超时断帧，避免地名与END粘连成一帧
         Voice_Play_Arrived();  // 发送END终点指令
         status.arrived_announced = true;
-        printf("[Nav] 到达终点：%s（已播报）\n", dijkstra->get_node_name(task.target_id));
+        printf("[Nav] 到达终点：%s（已播报，到站锁存已置位）\n",
+               dijkstra->get_node_name(task.target_id));
     } else {
         printf("[Nav] 到达终点：%s\n", dijkstra->get_node_name(task.target_id));
     }
