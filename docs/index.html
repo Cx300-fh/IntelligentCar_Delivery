@@ -148,9 +148,7 @@
     .map-lab > *,
     .voice-demo > *,
     .data-flow > *,
-    .footer-grid > * {
-      min-width: 0;
-    }
+    .footer-grid > * { min-width: 0; }
 
     .eyebrow {
       margin: 0 0 18px;
@@ -161,6 +159,7 @@
     }
 
     h1, h2, h3, p { margin-top: 0; }
+
     h1 {
       margin-bottom: 22px;
       max-width: 980px;
@@ -317,6 +316,7 @@
     .mission-list strong { color: var(--text); text-align: right; }
 
     section { padding: 86px 0; }
+
     .section-head {
       display: grid;
       grid-template-columns: minmax(0, .88fr) minmax(260px, .42fr);
@@ -373,6 +373,7 @@
     }
 
     .loop-step:last-child { border-right: 0; }
+
     .loop-step::before {
       content: attr(data-index);
       position: absolute;
@@ -403,15 +404,12 @@
       align-items: stretch;
     }
 
+    /* ===== MAP ONLY: modified section starts ===== */
     .map-stage {
       position: relative;
       min-height: 560px;
       border: 1px solid var(--line);
-      background:
-        linear-gradient(rgba(241,243,240,.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(241,243,240,.035) 1px, transparent 1px),
-        #0f1210;
-      background-size: 44px 44px;
+      background: #0f1210;
       overflow: hidden;
     }
 
@@ -422,35 +420,67 @@
       display: block;
     }
 
-    .base-road {
-      stroke: rgba(241,243,240,.22);
-      stroke-width: 1.4;
+    .campus-fill { fill: #111512; }
+
+    .campus-grid {
+      stroke: rgba(241,243,240,.035);
+      stroke-width: 1;
+    }
+
+    .building {
+      fill: rgba(241,243,240,.035);
+      stroke: rgba(241,243,240,.10);
+      stroke-width: 1;
+    }
+
+    .building-detail {
+      fill: none;
+      stroke: rgba(241,243,240,.07);
+      stroke-width: 1;
+    }
+
+    .base-road-bed {
+      fill: none;
+      stroke: rgba(241,243,240,.115);
+      stroke-width: 15;
       stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .base-road {
+      fill: none;
+      stroke: rgba(241,243,240,.34);
+      stroke-width: 2.1;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .route-road {
+      fill: none;
       stroke: var(--green);
       stroke-width: 5;
       stroke-linecap: round;
-      fill: none;
-      filter: drop-shadow(0 0 8px rgba(118,185,0,.45));
-      stroke-dasharray: 9 12;
-      animation: flow 1.1s linear infinite;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 8px rgba(118,185,0,.42));
     }
 
     .old-road {
-      stroke: rgba(241,243,240,.26);
+      fill: none;
+      stroke: rgba(241,243,240,.24);
       stroke-width: 4;
       stroke-linecap: round;
-      fill: none;
+      stroke-linejoin: round;
       opacity: 0;
-      transition: opacity .45s ease;
+      transition: opacity .35s ease;
     }
 
     .anomaly-road {
+      fill: none;
       stroke: var(--orange);
       stroke-width: 5;
       stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 10 9;
       opacity: 0;
       transition: opacity .35s ease;
     }
@@ -458,11 +488,9 @@
     .map-stage.congested .anomaly-road,
     .map-stage.congested .old-road { opacity: 1; }
 
-    @keyframes flow { to { stroke-dashoffset: -21; } }
-
     .map-node {
-      fill: rgba(241,243,240,.42);
-      stroke: rgba(12,14,13,.9);
+      fill: rgba(241,243,240,.34);
+      stroke: #0c0e0d;
       stroke-width: 2;
     }
 
@@ -471,15 +499,37 @@
     .map-node.current { fill: var(--blue); }
 
     .map-label {
-      fill: var(--muted-2);
+      fill: rgba(241,243,240,.72);
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 680;
+      paint-order: stroke;
+      stroke: #0f1210;
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+
+    .map-label.major {
+      fill: rgba(241,243,240,.94);
+      font-size: 14px;
+      font-weight: 760;
+    }
+
+    .marker-caption {
+      fill: rgba(241,243,240,.88);
+      font-size: 11px;
+      font-weight: 760;
+      paint-order: stroke;
+      stroke: #0f1210;
+      stroke-width: 4px;
     }
 
     .vehicle-dot {
       fill: var(--text);
-      filter: drop-shadow(0 0 10px rgba(118,185,0,.8));
+      stroke: var(--green);
+      stroke-width: 3;
+      filter: drop-shadow(0 0 10px rgba(118,185,0,.85));
     }
+    /* ===== MAP ONLY: modified section ends ===== */
 
     .map-side {
       display: flex;
@@ -856,9 +906,7 @@
       .loop { grid-template-columns: 1fr; }
       .loop-step { min-height: 180px; border-right: 0; border-bottom: 1px solid var(--line-soft); }
       .architecture,
-      .campus {
-        grid-template-columns: 1fr;
-      }
+      .campus { grid-template-columns: 1fr; }
       .journey { overflow-x: auto; }
     }
 
@@ -979,7 +1027,7 @@
             <g id="anomalyRoad"></g>
             <g id="currentRoute"></g>
             <g id="nodes"></g>
-            <circle class="vehicle-dot" id="vehicleDot" r="8" cx="255" cy="340"></circle>
+            <circle class="vehicle-dot" id="vehicleDot" r="8" cx="388" cy="205"></circle>
           </svg>
         </div>
 
@@ -990,7 +1038,7 @@
               <button class="tab" data-map="sutd" type="button">SUTD</button>
             </div>
             <h3 id="mapName">THU campus route</h3>
-            <p id="mapCopy">Initial route: node 3 to node 9 through node 4. Trigger congestion to make edge 4 -> 9 expensive and watch Dijkstra choose 3 -> 7 -> 9.</p>
+            <p id="mapCopy">Initial route: node 3 to node 9 through node 4. Trigger congestion to make edge 4 -> 9 expensive and watch Dijkstra reroute.</p>
             <div class="metric-grid">
               <div class="metric"><span>Route</span><strong id="routeText">3-4-9</strong></div>
               <div class="metric"><span>Cost</span><strong id="costText">18</strong></div>
@@ -1221,39 +1269,113 @@
     const maps = {
       thu: {
         name: "THU campus route",
-        copy: "Initial route: node 3 to node 9 through node 4. Trigger congestion to make edge 4 -> 9 expensive and watch Dijkstra choose 3 -> 7 -> 9.",
-        nodes: {
-          1:[110,420], 2:[170,300], 3:[255,340], 4:[430,285], 5:[545,210],
-          6:[625,90], 7:[470,420], 8:[690,395], 9:[735,250], 10:[320,160],
-          11:[195,145], 12:[585,315], 13:[790,125], 14:[105,220]
+        copy: "Initial route: Library to Auditorium along the supplied THU campus road layout. Trigger congestion to force a longer road-following reroute.",
+        viewBox: "0 0 900 560",
+
+        roads: [
+          "M115 205 H505 V390 H115 Q78 390 78 350 V247 Q78 205 115 205 Z",
+          "M505 205 H770 Q822 205 822 252 V390 H505 Z",
+          "M505 390 H822 V465 Q822 505 780 505 H545 Q505 505 505 468 Z",
+          "M505 205 V125 Q505 78 555 78 H650 Q700 78 700 125 V205 Z",
+          "M700 205 V390",
+          "M78 300 H505",
+          "M505 300 H822"
+        ],
+
+        buildings: [
+          {x:185, y:135, w:112, h:46, label:"理科楼"},
+          {x:330, y:135, w:118, h:46, label:"图书馆"},
+          {x:545, y:104, w:118, h:52, label:"苏世民书院"},
+          {x:684, y:238, w:98, h:52, label:"东大操场"},
+          {x:612, y:318, w:105, h:48, label:"学生宿舍"},
+          {x:602, y:408, w:116, h:42, label:"中央主楼"},
+          {x:372, y:408, w:112, h:42, label:"新清华学堂"},
+          {x:392, y:460, w:86, h:34, label:"照澜院"},
+          {x:635, y:460, w:100, h:34, label:"科技大楼"}
+        ],
+
+        labels: [
+          [565,63,"紫荆操场","major"],
+          [18,306,"校医院","major"],
+          [837,306,"东门","major"],
+          [357,375,"大礼堂","major"]
+        ],
+
+        points: {
+          1:[78,300], 2:[220,205], 3:[388,205], 4:[505,205],
+          5:[505,300], 6:[505,390], 7:[700,205], 8:[822,300],
+          9:[388,390], 10:[700,300], 11:[822,390], 12:[700,390],
+          13:[505,468], 14:[700,505]
         },
-        roads: [[1,2],[2,3],[3,4],[4,5],[5,6],[3,7],[7,9],[4,9],[4,10],[10,11],[11,14],[5,12],[12,8],[8,9],[9,13]],
-        initial: [3,4,9],
-        reroute: [3,7,9],
-        anomaly: [4,9],
-        old: [3,4,9],
+
+        initialRoute: "M388 205 H505 V390 H388",
+        rerouteRoute: "M388 205 H505 V300 H700 V390 H505 H388",
+        oldRoute: "M388 205 H505 V390 H388",
+        anomalyRoute: "M505 300 V390",
+        start: [388,205],
+        end: [388,390],
+        routeNormal: "3-4-9",
+        routeCongested: "3-5-10-12-9",
         costs: { normal: 18, congested: 22 },
-        eta: { normal: "4.2m", congested: "5.0m" }
+        eta: { normal: "4.2m", congested: "5.0m" },
+        markerLabels: { start: "图书馆", end: "大礼堂" }
       },
+
       sutd: {
         name: "SUTD campus route",
-        copy: "SUTD keeps the same node-based order interface. Congestion shifts the path from 2 -> 4 -> 8 to 2 -> 5 -> 8.",
-        nodes: {
-          1:[120,270], 2:[230,355], 3:[265,185], 4:[430,300], 5:[455,430], 6:[600,340],
-          7:[700,205], 8:[740,385], 9:[560,155], 10:[355,95], 11:[145,455], 12:[770,95]
+        copy: "SUTD follows the supplied sketch: one continuous perimeter loop with the D-E-B transverse road and the A-E-F diagonal connection inside.",
+        viewBox: "0 0 900 560",
+
+        roads: [
+          "M205 485 Q118 455 125 380 L250 145 Q280 88 340 88 H500 Q545 88 570 132 L770 380 Q805 425 765 468 Q742 490 700 490 H205 Z",
+          "M190 300 L445 350 L690 420",
+          "M235 225 L445 350 L690 420",
+          "M300 490 L445 350 L570 132",
+          "M445 350 L570 132"
+        ],
+
+        buildings: [
+          {x:225, y:330, w:120, h:48, label:"Library"},
+          {x:335, y:255, w:118, h:48, label:"Auditorium"},
+          {x:460, y:195, w:125, h:55, label:"Staff & Student Housing"},
+          {x:575, y:330, w:140, h:55, label:"Sports & Recreation Centre"},
+          {x:620, y:220, w:92, h:48, label:"POOL"},
+          {x:390, y:410, w:118, h:48, label:"Campus Centre"}
+        ],
+
+        labels: [
+          [292,505,"A","major"],
+          [780,430,"B","major"],
+          [170,302,"C","major"],
+          [225,215,"D","major"],
+          [452,342,"E","major"],
+          [580,126,"F","major"]
+        ],
+
+        points: {
+          1:[300,490], 2:[690,420], 3:[190,300], 4:[235,225],
+          5:[445,350], 6:[570,132], 7:[270,360], 8:[690,420],
+          9:[530,235], 10:[445,350], 11:[650,250], 12:[620,340]
         },
-        roads: [[1,2],[1,3],[2,4],[2,5],[3,4],[3,10],[10,9],[4,6],[5,6],[5,8],[6,8],[6,7],[7,12],[7,9]],
-        initial: [2,4,6,8],
-        reroute: [2,5,8],
-        anomaly: [4,6],
-        old: [2,4,6,8],
+
+        initialRoute: "M270 360 L445 350 L690 420",
+        rerouteRoute: "M270 360 L300 490 L445 350 L690 420",
+        oldRoute: "M270 360 L445 350 L690 420",
+        anomalyRoute: "M445 350 L690 420",
+        start: [270,360],
+        end: [690,420],
+        routeNormal: "LIB-E-B",
+        routeCongested: "LIB-A-E-B",
         costs: { normal: 15, congested: 19 },
-        eta: { normal: "3.6m", congested: "4.3m" }
+        eta: { normal: "3.6m", congested: "4.3m" },
+        markerLabels: { start: "Library", end: "Sports" }
       }
     };
 
     const state = { map: "thu", congested: false };
     const svgNS = "http://www.w3.org/2000/svg";
+
+    const routeSvg = document.getElementById("routeSvg");
     const baseRoads = document.getElementById("baseRoads");
     const currentRoute = document.getElementById("currentRoute");
     const oldRoute = document.getElementById("oldRoute");
@@ -1269,96 +1391,242 @@
     const mapCopy = document.getElementById("mapCopy");
     const heroRoute = document.getElementById("heroRoute");
 
+    let routeAnimationFrame = 0;
+    let routeAnimationToken = 0;
+
     function clear(el) {
       while (el.firstChild) el.removeChild(el.firstChild);
     }
 
-    function makeLine(a, b, cls) {
-      const line = document.createElementNS(svgNS, "line");
-      line.setAttribute("x1", a[0]);
-      line.setAttribute("y1", a[1]);
-      line.setAttribute("x2", b[0]);
-      line.setAttribute("y2", b[1]);
-      line.setAttribute("class", cls);
-      return line;
+    function svgEl(name, attrs = {}) {
+      const el = document.createElementNS(svgNS, name);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      return el;
     }
 
-    function makePath(route, cls) {
-      const map = maps[state.map];
-      const path = document.createElementNS(svgNS, "path");
-      const d = route.map((node, index) => {
-        const point = map.nodes[node];
-        return `${index === 0 ? "M" : "L"} ${point[0]} ${point[1]}`;
-      }).join(" ");
-      path.setAttribute("d", d);
-      path.setAttribute("class", cls);
+    function appendPath(group, d, cls) {
+      const path = svgEl("path", { d, class: cls });
+      group.appendChild(path);
       return path;
+    }
+
+    function appendText(group, x, y, text, cls = "map-label") {
+      const label = svgEl("text", { x, y, class: cls });
+      label.textContent = text;
+      group.appendChild(label);
+      return label;
+    }
+
+    function renderBuildings(group, map) {
+      map.buildings.forEach((b) => {
+        group.appendChild(svgEl("rect", {
+          x: b.x,
+          y: b.y,
+          width: b.w,
+          height: b.h,
+          rx: 2,
+          class: "building"
+        }));
+
+        for (let y = b.y + 12; y < b.y + b.h - 5; y += 12) {
+          group.appendChild(svgEl("line", {
+            x1: b.x + 9,
+            y1: y,
+            x2: b.x + b.w - 9,
+            y2: y,
+            class: "building-detail"
+          }));
+        }
+
+        appendText(
+          group,
+          b.x + 6,
+          b.y + b.h + 17,
+          b.label,
+          b.label.length > 18 ? "map-label" : "map-label major"
+        );
+      });
+
+      map.labels.forEach(([x, y, label, kind]) => {
+        appendText(group, x, y, label, `map-label ${kind || ""}`.trim());
+      });
+    }
+
+    function drawRoadNetwork(map) {
+      baseRoads.appendChild(svgEl("rect", {
+        x: 0,
+        y: 0,
+        width: 900,
+        height: 560,
+        class: "campus-fill"
+      }));
+
+      for (let x = 40; x < 900; x += 44) {
+        baseRoads.appendChild(svgEl("line", {
+          x1: x, y1: 0, x2: x, y2: 560, class: "campus-grid"
+        }));
+      }
+
+      for (let y = 40; y < 560; y += 44) {
+        baseRoads.appendChild(svgEl("line", {
+          x1: 0, y1: y, x2: 900, y2: y, class: "campus-grid"
+        }));
+      }
+
+      const buildingsGroup = svgEl("g", { class: "campus-buildings" });
+      renderBuildings(buildingsGroup, map);
+      baseRoads.appendChild(buildingsGroup);
+
+      map.roads.forEach((d) => appendPath(baseRoads, d, "base-road-bed"));
+      map.roads.forEach((d) => appendPath(baseRoads, d, "base-road"));
+
+      Object.entries(map.points).forEach(([id, [x, y]]) => {
+        const dot = svgEl("circle", {
+          cx: x,
+          cy: y,
+          r: 2.8,
+          class: "map-node"
+        });
+        dot.dataset.node = id;
+        baseRoads.appendChild(dot);
+      });
+    }
+
+    function drawMarkers(map) {
+      nodesGroup.appendChild(svgEl("circle", {
+        cx: map.start[0],
+        cy: map.start[1],
+        r: 7,
+        class: "map-node key"
+      }));
+
+      nodesGroup.appendChild(svgEl("circle", {
+        cx: map.end[0],
+        cy: map.end[1],
+        r: 7,
+        class: "map-node end"
+      }));
+
+      appendText(
+        nodesGroup,
+        map.start[0] + 11,
+        map.start[1] - 11,
+        map.markerLabels.start,
+        "marker-caption"
+      );
+
+      appendText(
+        nodesGroup,
+        map.end[0] + 11,
+        map.end[1] - 11,
+        map.markerLabels.end,
+        "marker-caption"
+      );
+    }
+
+    function animateVehicle(path, token) {
+      cancelAnimationFrame(routeAnimationFrame);
+
+      const length = path.getTotalLength();
+      const duration = 6500;
+      const startTime = performance.now();
+
+      function frame(now) {
+        if (token !== routeAnimationToken) return;
+
+        const elapsed = (now - startTime) % duration;
+        const progress = elapsed / duration;
+        const point = path.getPointAtLength(progress * length);
+
+        vehicleDot.setAttribute("cx", point.x);
+        vehicleDot.setAttribute("cy", point.y);
+
+        routeAnimationFrame = requestAnimationFrame(frame);
+      }
+
+      routeAnimationFrame = requestAnimationFrame(frame);
+    }
+
+    function animateRouteDraw(path) {
+      const length = path.getTotalLength();
+
+      path.style.strokeDasharray = `${length}`;
+      path.style.strokeDashoffset = `${length}`;
+      path.getBoundingClientRect();
+
+      path.style.transition =
+        "stroke-dashoffset 1.15s cubic-bezier(.2,.7,.2,1)";
+
+      requestAnimationFrame(() => {
+        path.style.strokeDashoffset = "0";
+      });
     }
 
     function renderMap() {
       const map = maps[state.map];
-      const route = state.congested ? map.reroute : map.initial;
+      const activeD =
+        state.congested ? map.rerouteRoute : map.initialRoute;
+
+      routeAnimationToken += 1;
+      const token = routeAnimationToken;
+
+      routeSvg.setAttribute("viewBox", map.viewBox);
+
       clear(baseRoads);
       clear(currentRoute);
       clear(oldRoute);
       clear(anomalyRoad);
       clear(nodesGroup);
 
-      const seen = new Set();
-      map.roads.forEach(([from, to]) => {
-        const key = [from, to].sort((a, b) => a - b).join("-");
-        if (seen.has(key)) return;
-        seen.add(key);
-        baseRoads.appendChild(makeLine(map.nodes[from], map.nodes[to], "base-road"));
-      });
+      drawRoadNetwork(map);
 
-      oldRoute.appendChild(makePath(map.old, "old-road"));
-      anomalyRoad.appendChild(makeLine(map.nodes[map.anomaly[0]], map.nodes[map.anomaly[1]], "anomaly-road"));
-      currentRoute.appendChild(makePath(route, "route-road"));
+      appendPath(oldRoute, map.oldRoute, "old-road");
+      appendPath(anomalyRoad, map.anomalyRoute, "anomaly-road");
 
-      Object.entries(map.nodes).forEach(([id, point]) => {
-        const numericId = Number(id);
-        const circle = document.createElementNS(svgNS, "circle");
-        circle.setAttribute("cx", point[0]);
-        circle.setAttribute("cy", point[1]);
-        circle.setAttribute("r", route.includes(numericId) ? 7 : 3.8);
-        const cls = numericId === route[0] ? "map-node key" : numericId === route[route.length - 1] ? "map-node end" : route.includes(numericId) ? "map-node current" : "map-node";
-        circle.setAttribute("class", cls);
-        nodesGroup.appendChild(circle);
+      const routePath =
+        appendPath(currentRoute, activeD, "route-road");
 
-        if (route.includes(numericId) || numericId === map.anomaly[0] || numericId === map.anomaly[1]) {
-          const label = document.createElementNS(svgNS, "text");
-          label.setAttribute("x", point[0] + 10);
-          label.setAttribute("y", point[1] - 10);
-          label.setAttribute("class", "map-label");
-          label.textContent = id;
-          nodesGroup.appendChild(label);
-        }
-      });
-
-      const start = map.nodes[route[0]];
-      vehicleDot.setAttribute("cx", start[0]);
-      vehicleDot.setAttribute("cy", start[1]);
-      const motion = document.createElementNS(svgNS, "animateMotion");
-      motion.setAttribute("dur", "5s");
-      motion.setAttribute("repeatCount", "indefinite");
-      motion.setAttribute("path", makePath(route, "route-road").getAttribute("d"));
-      clear(vehicleDot);
-      vehicleDot.appendChild(motion);
+      drawMarkers(map);
 
       mapStage.classList.toggle("congested", state.congested);
-      routeText.textContent = route.join("-");
-      heroRoute.textContent = route.join(" -> ");
-      costText.textContent = state.congested ? map.costs.congested : map.costs.normal;
-      etaText.textContent = state.congested ? map.eta.congested : map.eta.normal;
-      edgeStatus.textContent = state.congested ? `Edge ${map.anomaly.join(" -> ")} cost +15` : "Normal traffic";
+
+      const routeValue =
+        state.congested ? map.routeCongested : map.routeNormal;
+
+      routeText.textContent = routeValue;
+      heroRoute.textContent = routeValue.replaceAll("-", " -> ");
+      costText.textContent =
+        state.congested ? map.costs.congested : map.costs.normal;
+      etaText.textContent =
+        state.congested ? map.eta.congested : map.eta.normal;
+      edgeStatus.textContent =
+        state.congested
+          ? "Dynamic edge cost increased"
+          : "Normal traffic";
+
       mapName.textContent = map.name;
       mapCopy.textContent = map.copy;
+
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        vehicleDot.setAttribute("cx", map.start[0]);
+        vehicleDot.setAttribute("cy", map.start[1]);
+      } else {
+        animateRouteDraw(routePath);
+
+        setTimeout(() => {
+          if (token === routeAnimationToken) {
+            animateVehicle(routePath, token);
+          }
+        }, 1150);
+      }
     }
 
     document.querySelectorAll(".tab").forEach((button) => {
       button.addEventListener("click", () => {
-        document.querySelectorAll(".tab").forEach((tab) => tab.classList.remove("active"));
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+
         button.classList.add("active");
         state.map = button.dataset.map;
         state.congested = false;
@@ -1378,6 +1646,7 @@
 
     const loopSteps = [...document.querySelectorAll(".loop-step")];
     let activeStep = 0;
+
     setInterval(() => {
       loopSteps.forEach((step) => step.classList.remove("active"));
       activeStep = (activeStep + 1) % loopSteps.length;
