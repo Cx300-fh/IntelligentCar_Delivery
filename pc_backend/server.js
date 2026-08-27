@@ -8,11 +8,15 @@ const { CarClient } = require('./carClient');
 const { ImageReceiver } = require('./imageReceiver');
 const { VoiceGateway } = require('./voiceGateway');
 const { MapWeights } = require('./mapWeights');
+const { AppDatabase } = require('./database');
 
 const carClient = new CarClient(config);
 const imageReceiver = new ImageReceiver(config);
 const voiceGateway = new VoiceGateway(config);
 const mapWeights = new MapWeights(config);
+const database = new AppDatabase(config.dbPath);
+
+mapWeights.loadConditions(database.loadEdgeConditions());
 
 const runtimeStatus = {
   started_at: new Date().toISOString(),
@@ -21,6 +25,7 @@ const runtimeStatus = {
   car_route_port: config.carRoutePort,
   image_port: config.imagePort,
   voice_model_port: config.voiceModelPort,
+  db_path: config.dbPath,
   last_error: null
 };
 
@@ -102,6 +107,9 @@ async function handleApi(req, res) {
         ok: true,
         runtime: runtimeStatus,
         car: carClient.lastStatus,
+        database: {
+          latest_car_status: database.latestCarStatus()
+        },
         image: imageReceiver.getStatus(),
         voice: voiceGateway.getStatus()
       });
@@ -126,6 +134,44 @@ async function handleApi(req, res) {
       return;
     }
 
+    if (req.method === 'GET' && url.pathname === '/api/orders') {
+      const limit = Number(url.searchParams.get('limit') || 100);
+      sendJson(res, 200, {
+        ok: true,
+        orders: database.listOrders(limit)
+      });
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname.startsWith('/api/orders/')) {
+      const orderId = Number(url.pathname.split('/').pop());
+      const order = database.getOrder(orderId);
+      sendJson(res, order ? 200 : 404, {
+        ok: Boolean(order),
+        order,
+        error: order ? undefined : 'order not found'
+      });
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/voice-logs') {
+      const limit = Number(url.searchParams.get('limit') || 100);
+      sendJson(res, 200, {
+        ok: true,
+        logs: database.listVoiceLogs(limit)
+      });
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/status/history') {
+      const limit = Number(url.searchParams.get('limit') || 100);
+      sendJson(res, 200, {
+        ok: true,
+        history: database.listCarStatusHistory(limit)
+      });
+      return;
+    }
+
     const body = await readJson(req);
 
     if (req.method === 'POST' && url.pathname === '/api/orders') {
@@ -136,6 +182,7 @@ async function handleApi(req, res) {
         dropoff_node: requireNumber(body, 'dropoff_node')
       };
       const response = await carClient.submitOrder(order);
+      database.upsertOrder(order, response.ok ? 'submitted' : 'rejected', response);
       sendJson(res, 200, { ok: true, car_response: response });
       return;
     }
@@ -167,7 +214,9 @@ async function handleApi(req, res) {
         dynamic_penalty: Number(body.dynamic_penalty || 0),
         blocked: Boolean(body.blocked)
       });
+      database.upsertEdgeCondition(condition);
       const response = await carClient.updateEdge(condition);
+      database.upsertEdgeCondition(condition, response);
       broadcast({
         type: 'edge_update_result',
         condition,
@@ -182,11 +231,14 @@ async function handleApi(req, res) {
       const updates = await mapWeights.refreshDynamicWeights(mapId, body.context || {});
       const results = [];
       for (const update of updates) {
+        database.upsertEdgeCondition(update);
         try {
+          const carResponse = await carClient.updateEdge(update);
+          database.upsertEdgeCondition(update, carResponse);
           results.push({
             ok: true,
             condition: update,
-            car_response: await carClient.updateEdge(update)
+            car_response: carResponse
           });
         } catch (error) {
           results.push({
@@ -248,6 +300,9 @@ wss.on('connection', (socket) => {
     type: 'status',
     runtime: runtimeStatus,
     car: carClient.lastStatus,
+    database: {
+      latest_car_status: database.latestCarStatus()
+    },
     image: imageReceiver.getStatus(),
     voice: voiceGateway.getStatus()
   }));
@@ -287,7 +342,15 @@ wss.on('connection', (socket) => {
 });
 
 carClient.on('log', broadcastLog);
-carClient.on('car_message', (message) => broadcast(message));
+carClient.on('car_message', (message) => {
+  if (message.type === 'status_response') {
+    database.insertCarStatus(message);
+    if (message.order_id) {
+      database.updateOrderResponse(message.order_id, message.ok ? 'active' : 'error', message);
+    }
+  }
+  broadcast(message);
+});
 carClient.on('car_error', (message) => broadcast(message));
 
 imageReceiver.on('log', broadcastLog);
@@ -296,7 +359,15 @@ imageReceiver.on('image_error', (message) => broadcast(message));
 
 voiceGateway.on('log', broadcastLog);
 voiceGateway.on('voice_command', (message) => broadcast(message));
-voiceGateway.on('voice_result', (message) => broadcast(message));
+voiceGateway.on('voice_result', (message) => {
+  database.insertVoiceLog({
+    request: voiceGateway.lastCommand,
+    response: message,
+    source: message.source,
+    remote: message.remote
+  });
+  broadcast(message);
+});
 voiceGateway.on('voice_error', (message) => broadcast(message));
 
 server.listen(config.httpPort, config.host, () => {
@@ -312,6 +383,7 @@ function shutdown() {
   carClient.close();
   imageReceiver.close();
   voiceGateway.close();
+  database.close();
   server.close(() => process.exit(0));
 }
 
