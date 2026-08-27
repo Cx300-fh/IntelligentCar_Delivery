@@ -250,7 +250,7 @@
     .hero-title-cn {
       display: block;
       position: relative;
-      top: -42px;
+      top: -58px;
       left: 18px;
       font-family:
         "Yishanbei",
@@ -776,7 +776,7 @@
 
     .metric-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 10px;
       margin-top: 16px;
     }
@@ -1262,8 +1262,7 @@
             <div class="route-summary" id="routeSummary">当前路线将根据选择自动更新。</div>
 
             <div class="metric-grid">
-              <div class="metric"><span>Route</span><strong id="routeText">3-4-9</strong></div>
-              <div class="metric"><span>Cost</span><strong id="costText">18</strong></div>
+                            <div class="metric"><span>Cost</span><strong id="costText">18</strong></div>
               <div class="metric"><span>ETA</span><strong id="etaText">4.2m</strong></div>
             </div>
             <div class="control-row">
@@ -1608,7 +1607,7 @@
     const nodesGroup = document.getElementById("nodes");
     const vehicleDot = document.getElementById("vehicleDot");
     const mapStage = document.getElementById("mapStage");
-    const routeText = document.getElementById("routeText");
+    const routeText = document.getElementById("routeText"); // optional: Route metric removed
     const costText = document.getElementById("costText");
     const etaText = document.getElementById("etaText");
     const edgeStatus = document.getElementById("edgeStatus");
@@ -1978,7 +1977,7 @@
       drawRoadNetwork(map);
 
       if (nodePath.length < 2) {
-        routeText.textContent = "—";
+        if (routeText) routeText.textContent = "—";
         costText.textContent = "—";
         etaText.textContent = "—";
         routeSummary.textContent = "当前两点之间没有可用路径。";
@@ -2006,7 +2005,7 @@
         return sum + getEdgeWeight(map, edge);
       }, 0);
 
-      routeText.textContent = nodePath.join("-");
+      if (routeText) routeText.textContent = nodePath.join("-");
       heroRoute.textContent = nodePath.join(" -> ");
       costText.textContent = Math.round(totalCost);
       etaText.textContent = `${Math.max(1.2, totalCost / 80).toFixed(1)}m`;
