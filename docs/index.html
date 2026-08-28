@@ -1471,6 +1471,383 @@
       }
     }
 
+
+    /* v29 — cleaner brand lockup spacing */
+    .hero-title-mark {
+      gap: 14px;
+      margin-top: -78px;
+    }
+
+    .hero-title-cn {
+      top: -30px;
+      left: 14px;
+      gap: .25em;
+      font-size: clamp(88px, 11.3vw, 156px);
+      line-height: .76;
+    }
+
+    .hero-title-en {
+      margin-top: 12px;
+      line-height: .88;
+    }
+
+    @media (max-width: 760px) {
+      .hero-title-mark {
+        gap: 9px;
+        margin-top: -18px;
+      }
+
+      .hero-title-cn {
+        top: -8px;
+        left: 0;
+        gap: .20em;
+      }
+
+      .hero-title-en {
+        margin-top: 8px;
+      }
+    }
+
+
+    /* ============================================================
+       Ambient site background
+       Vignette-grid + dark teal/green spotlight treatment.
+       ============================================================ */
+
+    body {
+      position: relative;
+      isolation: isolate;
+      background: #07100d;
+    }
+
+    .ambient-bg {
+      --ambient-x: 50%;
+      --ambient-y: 24%;
+      position: fixed;
+      inset: 0;
+      z-index: -10;
+      pointer-events: none;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 16% 8%, rgba(49, 113, 104, .20), transparent 34%),
+        radial-gradient(circle at 84% 22%, rgba(118, 185, 0, .12), transparent 31%),
+        radial-gradient(circle at 52% 82%, rgba(31, 74, 63, .16), transparent 38%),
+        linear-gradient(145deg, #07100d 0%, #091410 42%, #07100d 100%);
+    }
+
+    .ambient-bg::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(191,220,207,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(191,220,207,.045) 1px, transparent 1px);
+      background-size: 42px 42px;
+      -webkit-mask-image:
+        radial-gradient(ellipse 86% 64% at 50% 32%, #000 24%, rgba(0,0,0,.82) 58%, transparent 100%);
+      mask-image:
+        radial-gradient(ellipse 86% 64% at 50% 32%, #000 24%, rgba(0,0,0,.82) 58%, transparent 100%);
+      opacity: .72;
+    }
+
+    .ambient-bg::after {
+      content: "";
+      position: absolute;
+      inset: -20%;
+      background:
+        radial-gradient(
+          520px circle at var(--ambient-x) var(--ambient-y),
+          rgba(145, 214, 43, .095),
+          rgba(49, 118, 104, .055) 36%,
+          transparent 68%
+        );
+      filter: blur(8px);
+      transition: opacity .3s ease;
+    }
+
+    .ambient-noise {
+      position: absolute;
+      inset: 0;
+      opacity: .10;
+      background-image:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.88' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.30'/%3E%3C/svg%3E");
+      mix-blend-mode: soft-light;
+    }
+
+    main > section:not(.demo-video-section) {
+      position: relative;
+    }
+
+
+    /* ============================================================
+       Glass + Spotlight + Reflective surfaces
+       Inspired by ReactBits Spotlight Card / Reflective Card /
+       Glass Surface patterns, adapted to this vanilla HTML site.
+       ============================================================ */
+
+    .panel,
+    .voice-chain,
+    .arch-node,
+    details,
+    .metric,
+    .screen,
+    .journey-step {
+      border-color: rgba(215, 235, 223, .115);
+      background:
+        linear-gradient(145deg, rgba(19, 31, 26, .79), rgba(8, 15, 12, .70));
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.035),
+        0 20px 52px rgba(0,0,0,.16);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .panel,
+    .voice-chain,
+    .arch-node,
+    details {
+      border-radius: 18px;
+    }
+
+    .panel,
+    .arch-node,
+    details {
+      overflow: hidden;
+    }
+
+    .panel {
+      position: relative;
+    }
+
+    .panel::before,
+    .arch-node::before,
+    details::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      background:
+        linear-gradient(
+          115deg,
+          rgba(255,255,255,.045),
+          transparent 22%,
+          transparent 68%,
+          rgba(118,185,0,.035)
+        );
+      opacity: .78;
+    }
+
+    .panel > *,
+    .arch-node > *,
+    details > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Journey becomes a set of independent high-end cards. */
+    .journey {
+      border: 0;
+      background: transparent;
+      overflow-x: auto;
+      overflow-y: visible;
+    }
+
+    .journey-track {
+      gap: 14px;
+      padding: 2px;
+    }
+
+    .journey-step {
+      border: 1px solid rgba(215,235,223,.11);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .journey-step:last-child {
+      border-right: 1px solid rgba(215,235,223,.11);
+    }
+
+    .journey-step::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(
+          380px circle at var(--fx-x, 30%) var(--fx-y, 20%),
+          rgba(118,185,0,.075),
+          transparent 58%
+        );
+      opacity: .7;
+    }
+
+    .screen {
+      position: relative;
+      min-height: 116px;
+      border-radius: 13px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(118,185,0,.085), rgba(8,15,12,.74));
+    }
+
+    .screen::before {
+      content: "LIVE OUTPUT";
+      display: block;
+      margin-bottom: 10px;
+      color: rgba(184,218,185,.42);
+      font-family:
+        "Prism",
+        "Arial Narrow",
+        sans-serif;
+      font-size: 9px;
+      letter-spacing: .12em;
+    }
+
+    .screen::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 1px;
+      background:
+        linear-gradient(90deg, transparent, rgba(177,238,75,.72), transparent);
+      transform: translateX(-110%);
+      animation: reflectiveScan 4.4s ease-in-out infinite;
+    }
+
+    @keyframes reflectiveScan {
+      0%,55% { transform: translateX(-110%); opacity: 0; }
+      70% { opacity: .9; }
+      100% { transform: translateX(110%); opacity: 0; }
+    }
+
+    .metric {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      min-height: 78px;
+    }
+
+    .metric::after {
+      content: "";
+      position: absolute;
+      inset: auto -20% -80% 20%;
+      height: 110%;
+      background:
+        radial-gradient(circle, rgba(118,185,0,.12), transparent 67%);
+      pointer-events: none;
+    }
+
+    .voice-node {
+      border-radius: 14px;
+      background:
+        linear-gradient(135deg, rgba(18,30,25,.68), rgba(10,17,14,.60));
+    }
+
+    .protocol-flow span {
+      border-radius: 999px;
+      border-color: rgba(215,235,223,.12);
+      background: rgba(17,27,23,.62);
+      backdrop-filter: blur(10px);
+    }
+
+    /* Inline code chips */
+    code {
+      display: inline-block;
+      padding: .08em .42em;
+      border: 1px solid rgba(150,210,64,.16);
+      border-radius: 6px;
+      background: rgba(118,185,0,.07);
+      color: #d9f5c1;
+      font-size: .92em;
+    }
+
+    /* Protocol code window */
+    .code-window {
+      margin-top: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(215,235,223,.12);
+      border-radius: 15px;
+      background:
+        linear-gradient(145deg, rgba(10,18,14,.92), rgba(5,10,8,.90));
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.035),
+        0 22px 58px rgba(0,0,0,.20);
+    }
+
+    .code-toolbar {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      border-bottom: 1px solid rgba(215,235,223,.09);
+      background: rgba(255,255,255,.022);
+    }
+
+    .code-dots {
+      display: inline-flex;
+      gap: 6px;
+      margin-right: 3px;
+    }
+
+    .code-dots i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(225,235,228,.25);
+    }
+
+    .code-dots i:first-child { background: rgba(216,91,70,.75); }
+    .code-dots i:nth-child(2) { background: rgba(227,166,47,.72); }
+    .code-dots i:nth-child(3) { background: rgba(118,185,0,.78); }
+
+    .code-filename {
+      color: rgba(224,233,226,.56);
+      font-size: 11px;
+      letter-spacing: .04em;
+    }
+
+    .code-copy {
+      margin-left: auto;
+      min-height: 28px;
+      padding: 0 10px;
+      border: 1px solid rgba(215,235,223,.12);
+      border-radius: 8px;
+      background: rgba(255,255,255,.035);
+      color: rgba(236,241,237,.72);
+      font-size: 10px;
+      letter-spacing: .04em;
+      transition:
+        border-color .2s ease,
+        background .2s ease,
+        color .2s ease;
+    }
+
+    .code-copy:hover {
+      border-color: rgba(118,185,0,.38);
+      background: rgba(118,185,0,.08);
+      color: #e7ffd2;
+    }
+
+    .code-window pre {
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+      padding: 18px 20px 20px;
+      background: transparent;
+      color: #d6e0d8;
+      font-size: 12.5px;
+      line-height: 1.68;
+      tab-size: 2;
+    }
+
+    .code-window pre::selection {
+      background: rgba(118,185,0,.24);
+    }
+
     section { padding: 86px 0; }
 
     .section-head {
@@ -2163,6 +2540,9 @@
   </style>
 </head>
 <body>
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="ambient-noise"></div>
+  </div>
   <div class="scroll-progress" aria-hidden="true"><span></span></div>
   <div class="fx-cursor" aria-hidden="true"><span class="fx-cursor-label"></span></div>
   <div class="fx-cursor-dot" aria-hidden="true"></div>
@@ -3331,7 +3711,7 @@
       /* Add spotlight / depth behavior to selected content cards */
       const depthCards = [
         ...document.querySelectorAll(
-          ".journey-step, .arch-node, .voice-node, .demo-video-frame"
+          ".journey-step, .arch-node, .voice-node, .demo-video-frame, .panel, details"
         )
       ];
 
@@ -3469,6 +3849,87 @@
         title.style.setProperty("--brand-y", "0px");
         title.style.setProperty("--brand-rx", "0deg");
       });
+    })();
+
+
+    (() => {
+      /* Pointer-reactive ambient spotlight */
+      const ambient = document.querySelector(".ambient-bg");
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      if (ambient && !reduced) {
+        let tx = window.innerWidth * .5;
+        let ty = window.innerHeight * .25;
+        let cx = tx;
+        let cy = ty;
+        let frameId = 0;
+
+        window.addEventListener("pointermove", event => {
+          tx = event.clientX;
+          ty = event.clientY;
+        }, { passive: true });
+
+        const animateAmbient = () => {
+          cx += (tx - cx) * .055;
+          cy += (ty - cy) * .055;
+          ambient.style.setProperty("--ambient-x", `${cx.toFixed(1)}px`);
+          ambient.style.setProperty("--ambient-y", `${cy.toFixed(1)}px`);
+          frameId = requestAnimationFrame(animateAmbient);
+        };
+        frameId = requestAnimationFrame(animateAmbient);
+      }
+
+      /* Upgrade protocol <pre> into an interactive code window. */
+      const protocolPre = document.querySelector("#system details pre");
+      if (protocolPre && !protocolPre.closest(".code-window")) {
+        const windowEl = document.createElement("div");
+        windowEl.className = "code-window";
+
+        const toolbar = document.createElement("div");
+        toolbar.className = "code-toolbar";
+
+        const dots = document.createElement("span");
+        dots.className = "code-dots";
+        dots.setAttribute("aria-hidden", "true");
+        dots.innerHTML = "<i></i><i></i><i></i>";
+
+        const filename = document.createElement("span");
+        filename.className = "code-filename";
+        filename.textContent = "protocol.json";
+
+        const copy = document.createElement("button");
+        copy.type = "button";
+        copy.className = "code-copy";
+        copy.textContent = "Copy";
+
+        const parent = protocolPre.parentNode;
+        parent.insertBefore(windowEl, protocolPre);
+        toolbar.append(dots, filename, copy);
+        windowEl.append(toolbar, protocolPre);
+
+        copy.addEventListener("click", async () => {
+          const original = copy.textContent;
+          try {
+            if (navigator.clipboard && window.isSecureContext) {
+              await navigator.clipboard.writeText(protocolPre.textContent);
+              copy.textContent = "Copied";
+            } else {
+              copy.textContent = "Select code";
+              const selection = window.getSelection();
+              const range = document.createRange();
+              range.selectNodeContents(protocolPre);
+              selection.removeAllRanges();
+              selection.addRange(range);
+            }
+          } catch (_) {
+            copy.textContent = "Select code";
+          }
+
+          window.setTimeout(() => {
+            copy.textContent = original;
+          }, 1300);
+        });
+      }
     })();
 
 </script>
