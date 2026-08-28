@@ -80,6 +80,7 @@
 ./../main/build/CMakeFiles/3.22.1/CompilerIdCXX/CMakeCXXCompilerId.cpp
 ./../main/main.cpp
 ./../tests/mock_server.cpp
+./../tests/screen_probe.cpp
 ./../tests/test_delivery.cpp
 ./../tests/test_gateway.cpp
 ./../tools/LQ_Dep_libs/apriltag_install/include/common/g2d.c

@@ -38,4 +38,31 @@ void Screen_Send_Heartbeat(void);                            // 发送心跳包�
 // 接收屏幕指令
 void Screen_Rx_Process(const uint8_t* data, ssize_t len);    // 处理屏幕接收数据
 
+/*============================================================================
+ *                       配送模式：屏幕事件队列（阶段6）
+ *============================================================================*/
+// 串口屏线程产生（点击DConfirm页按钮），主线程消费（配送协调器转为user_action）
+// 线程规则：串口屏线程只入队，不直接操作导航和订单
+enum ScreenEvent {
+    SCREEN_EV_NONE = 0,
+    SCREEN_EV_LOAD_CONFIRMED,      // "物品已装好"：订单 2→3 确认
+    SCREEN_EV_UNLOAD_CONFIRMED,    // "物品已取走"：订单 4→5 确认
+    SCREEN_EV_STOP,                // 急停（inhibit已在串口线程置位，此事件供协调器记录）
+};
+
+// 主线程：非阻塞取一条屏幕事件（无事件返回false）
+bool Screen_Poll_Event(ScreenEvent* out);
+// 串口屏线程：入队一条屏幕事件（队列满丢弃）
+void Screen_Push_Event(ScreenEvent ev);
+
+/*============================================================================
+ *                       配送模式：快照渲染（阶段6）
+ *============================================================================*/
+// 主线程调用：把服务器订单快照写到DConfirm页（active_slot/active_phase/订单号/文案/按钮使能）
+// 内部按snapshot_version变化触发+兜底周期刷新，串口发送已节流
+void Screen_Render_Delivery(void);
+
+// 配送模式启动时调用一次：切到DConfirm页
+void Screen_Enter_Delivery_Page(void);
+
 #endif /* __SCREEN_HPP */

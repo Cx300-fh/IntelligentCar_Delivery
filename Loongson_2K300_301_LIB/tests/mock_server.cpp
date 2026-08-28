@@ -81,13 +81,37 @@ static std::string Hello_Ack_Json(uint64_t& seq) {
         "\"error\":null}";
 }
 
-static std::string Sync_Json(uint64_t& seq) {
+static std::string Sync_Json(uint64_t& seq, int phase = 0) {
+    // 按phase生成带订单的快照（联调：模拟订单状态推进）
+    std::string orders = "[]";
+    std::string current = "null";
+    if (phase >= 2 && phase <= 5) {
+        char buf[768];
+        snprintf(buf, sizeof(buf),
+            "[{\"order_id\":\"ORD-MOCK-1\",\"display_no\":\"42\","
+            "\"nickname\":\"MockUser\",\"status\":%d,"
+            "\"status_code\":\"MOCK\",\"status_text\":\"mock\","
+            "\"dispatch_state\":\"MOCK\",\"order_version\":%d,"
+            "\"pickup_location_id\":\"1:5\",\"pickup_name\":\"Pickup\","
+            "\"dropoff_location_id\":\"1:13\",\"dropoff_name\":\"Dropoff\","
+            "\"item_summary\":\"TestItem\",\"button_label\":null,"
+            "\"button_action\":null,\"button_enabled\":false}]",
+            phase, phase);
+        orders = buf;
+        current = "\"ORD-MOCK-1\"";
+    }
+    std::string trip = (phase >= 2 && phase <= 4)
+        ? "{\"trip_id\":\"mock-trip-1\",\"current_stop_id\":\"mock-stop-1\",\"loaded_count\":1}"
+        : "null";
     return std::string("{\"protocol_version\":1,\"type\":\"state_sync\",") +
         "\"message_id\":\"" + Make_Id("srv-sync", seq) + "\",\"vehicle_id\":0," +
-        "\"server_epoch\":\"mock-epoch-1\",\"snapshot_version\":1,"
-        "\"latest_command_version\":0,\"screen_phase\":0,"
-        "\"current_order_id\":null,\"orders\":[],"
-        "\"active_trip\":null,\"authoritative_target\":null}";
+        "\"server_epoch\":\"mock-epoch-1\",\"snapshot_version\":" + std::to_string(phase + 10) + "," +
+        "\"latest_command_version\":0,\"screen_phase\":" + std::to_string(phase) + "," +
+        "\"current_order_id\":" + current + "," +
+        "\"orders_total\":1,\"orders_included\":1,\"orders_truncated\":false," +
+        "\"orders\":" + orders + "," +
+        "\"active_trip\":" + trip + "," +
+        "\"authoritative_target\":null}";
 }
 
 static std::string Goto_Json(uint64_t& seq, uint64_t ver, int node) {
@@ -233,6 +257,27 @@ int main(int argc, char** argv)
                     t_event_ack = Now_Ms();
                     printf(">> event_ack（arrived已确认：%s）\n", arrived_reply_to.c_str());
                     if (smoke) smoke_done = true;
+                } else if (t == "user_action") {
+                    // 阶段6联调：自动回event_ack并推进订单快照（2→3装载 / 4→5取件）
+                    std::string reply = J_Field(L, "message_id");
+                    std::string action = J_Field(L, "action");
+                    int new_status = (action.find("PICKUP") != std::string::npos) ? 3 : 5;
+                    char eaj[320];
+                    snprintf(eaj, sizeof(eaj),
+                        "{\"protocol_version\":1,\"type\":\"event_ack\","
+                        "\"message_id\":\"%s\",\"vehicle_id\":0,"
+                        "\"accepted\":true,\"reply_to\":\"%s\","
+                        "\"event_type\":\"user_action\",\"order_id\":\"ORD-MOCK-1\","
+                        "\"new_status\":%d,\"new_order_version\":%d,"
+                        "\"snapshot_version\":%d,\"error\":null}",
+                        Make_Id("srv-ea", seq).c_str(), reply.c_str(),
+                        new_status, new_status, new_status + 10);
+                    Send_Line(cfd, eaj);
+                    printf(">> event_ack（user_action已确认：%s 新状态%d）\n",
+                           reply.c_str(), new_status);
+                    // 下发新快照：装载后phase=3配送中；取件后phase=5完成
+                    Send_Line(cfd, Sync_Json(seq, new_status));
+                    printf(">> state_sync phase=%d\n", new_status);
                 }
             }
         }
@@ -270,6 +315,11 @@ int main(int argc, char** argv)
             std::string c = cl;
             while (!c.empty() && (c.back() == '\n' || c.back() == '\r')) c.pop_back();
             if (c == "sync") { Send_Line(cfd, Sync_Json(seq)); printf(">> state_sync\n"); }
+            else if (c.rfind("phase", 0) == 0) {
+                int ph = c.size() > 6 ? atoi(c.substr(6).c_str()) : 2;
+                Send_Line(cfd, Sync_Json(seq, ph));
+                printf(">> state_sync phase=%d（带订单）\n", ph);
+            }
             else if (c.rfind("goto", 0) == 0) {
                 int node = c.size() > 5 ? atoi(c.substr(5).c_str()) : 13;
                 Send_Line(cfd, Goto_Json(seq, ++cmd_ver, node));

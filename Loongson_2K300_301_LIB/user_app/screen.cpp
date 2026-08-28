@@ -465,6 +465,7 @@ void Screen_Rx_Process(const uint8_t* data, ssize_t len)
         printf("[Screen] RX: %s\n", cmd);  // 打印接收到的正确指令
         // 串口屏线程安全例外：只允许置位安全禁止（受控快停），清除由主线程负责
         Safety_Inhibit_Set(INHIBIT_REASON_MANUAL);
+        Screen_Push_Event(SCREEN_EV_STOP);   // 主线程协调器可感知（记录/上报）
         if (delivery.Enabled()) {
             // 配送模式：只置安全禁止，不取消任务（保留定位与目标，等服务器命令/人工确认）
             printf("[Screen] 配送模式急停（安全禁止已置位）\n");
@@ -572,5 +573,196 @@ void Screen_Rx_Process(const uint8_t* data, ssize_t len)
         return;
     }
 
+    // 4.5 配送模式确认按钮（DConfirm页d_s_4发出，阶段6）
+    // 串口屏线程只入队；订单映射与user_action生成由主线程配送协调器完成
+    if (strcmp(cmd, "LOAD_CONFIRMED") == 0)
+    {
+        printf("[Screen] RX: %s（装载确认，入队）\n", cmd);
+        Screen_Push_Event(SCREEN_EV_LOAD_CONFIRMED);
+        return;
+    }
+    if (strcmp(cmd, "UNLOAD_CONFIRMED") == 0)
+    {
+        printf("[Screen] RX: %s（取件确认，入队）\n", cmd);
+        Screen_Push_Event(SCREEN_EV_UNLOAD_CONFIRMED);
+        return;
+    }
+    // 模拟类消息（新固件保留按钮但车端忽略）：到站判定以AprilTag停稳为准
+    if (strcmp(cmd, "ARRIVED_DROPOFF") == 0 || strcmp(cmd, "NEXT_ORDER") == 0 ||
+        strcmp(cmd, "ALL_ORDERS_COMPLETE") == 0)
+    {
+        printf("[Screen] RX: %s（模拟消息，忽略）\n", cmd);
+        return;
+    }
+
     // 5. 未知指令 - 静默忽略，不打印（避免干扰数据刷屏）
+}
+
+/*============================================================================
+ *                    配送模式：屏幕事件队列（阶段6）
+ *============================================================================*/
+#define SCREEN_EV_QUEUE_SIZE 8
+
+static ScreenEvent g_screen_ev_queue[SCREEN_EV_QUEUE_SIZE];
+static volatile int g_screen_ev_head = 0;   // 串口屏线程写
+static volatile int g_screen_ev_tail = 0;   // 主线程读
+
+void Screen_Push_Event(ScreenEvent ev)
+{
+    int next = (g_screen_ev_head + 1) % SCREEN_EV_QUEUE_SIZE;
+    if (next == g_screen_ev_tail) return;   // 队满丢弃（确认按钮防抖兜底）
+    g_screen_ev_queue[g_screen_ev_head] = ev;
+    g_screen_ev_head = next;
+}
+
+bool Screen_Poll_Event(ScreenEvent* out)
+{
+    if (g_screen_ev_tail == g_screen_ev_head) return false;
+    *out = g_screen_ev_queue[g_screen_ev_tail];
+    g_screen_ev_tail = (g_screen_ev_tail + 1) % SCREEN_EV_QUEUE_SIZE;
+    return true;
+}
+
+/*============================================================================
+ *                    配送模式：快照渲染（阶段6）
+ *============================================================================*/
+// 文本安全：过滤引号/反斜杠/换行/控制字符（任务书十四.3，防服务器文本拼坏HMI指令）
+static void screen_safe_text(char* dst, size_t dst_size, const std::string& src)
+{
+    size_t o = 0;
+    for (size_t i = 0; i < src.size() && o + 1 < dst_size; i++) {
+        unsigned char c = (unsigned char)src[i];
+        if (c < 0x20 || c == '"' || c == '\\') continue;   // 控制字符/引号/反斜杠丢弃
+        dst[o++] = (char)c;                                 // UTF-8多字节原样保留
+    }
+    dst[o] = '\0';
+}
+
+// 订单槽位映射：当前订单（current_order_id优先，否则首个status2/3/4订单）在缓存中的槽(1~5)
+// 无活跃订单返回0
+static int delivery_active_slot(const StateSync& snap)
+{
+    for (size_t i = 0; i < snap.orders.size() && i < 5; i++) {
+        if (snap.has_current_order && snap.orders[i].order_id == snap.current_order_id)
+            return (int)(i + 1);
+    }
+    for (size_t i = 0; i < snap.orders.size() && i < 5; i++) {
+        int st = snap.orders[i].status;
+        if (st == ORDER_WAIT_PICKUP_CONFIRM || st == ORDER_DELIVERING ||
+            st == ORDER_WAIT_DROPOFF_CONFIRM)
+            return (int)(i + 1);
+    }
+    return 0;
+}
+
+static void render_delivery_texts(const StateSync& snap, int slot)
+{
+    char s1[48], s4[32];
+    const OrderInfo* cur = (slot > 0 && (size_t)(slot - 1) < snap.orders.size())
+                           ? &snap.orders[slot - 1] : nullptr;
+
+    switch (snap.screen_phase) {
+        case SCREEN_PHASE_NONE: {
+            Screen_Send_Text("d_s_1", "暂无订单");
+            Screen_Send_Text("d_s_2", "等待服务器分配订单");
+            Screen_Send_Text("d_s_3", " ");
+            Screen_Send_Text("d_s_4", "待命");
+            break;
+        }
+        case SCREEN_PHASE_TO_PICKUP:
+            screen_safe_text(s1, sizeof(s1), cur ? cur->nickname + " - 前往取件点"
+                                                 : std::string("前往取件点"));
+            Screen_Send_Text("d_s_1", s1);
+            Screen_Send_Text("d_s_2", "车辆正在前往取件点");
+            Screen_Send_Text("d_s_3", "到点后等待装载确认");
+            Screen_Send_Text("d_s_4", "配送中");
+            break;
+        case SCREEN_PHASE_WAIT_PICKUP:
+            screen_safe_text(s1, sizeof(s1), cur ? "已到取件点 - " + cur->nickname : std::string("已到取件点"));
+            Screen_Send_Text("d_s_1", s1);
+            screen_safe_text(s1, sizeof(s1), cur ? "物品：" + cur->item_summary : std::string(" "));
+            Screen_Send_Text("d_s_2", s1);
+            Screen_Send_Text("d_s_3", "装好后点击下方按钮");
+            Screen_Send_Text("d_s_4", cur && !cur->button_label.empty() ? cur->button_label.c_str() : "物品已装好");
+            break;
+        case SCREEN_PHASE_DELIVERING:
+            screen_safe_text(s1, sizeof(s1), cur ? cur->nickname + " - 配送中" : std::string("配送中"));
+            Screen_Send_Text("d_s_1", s1);
+            screen_safe_text(s1, sizeof(s1), cur ? "送往：" + cur->dropoff_name : std::string(" "));
+            Screen_Send_Text("d_s_2", s1);
+            Screen_Send_Text("d_s_3", "到点后等待取件确认");
+            Screen_Send_Text("d_s_4", "配送中");
+            break;
+        case SCREEN_PHASE_WAIT_DROPOFF:
+            screen_safe_text(s1, sizeof(s1), cur ? "已到目的地 - " + cur->nickname : std::string("已到目的地"));
+            Screen_Send_Text("d_s_1", s1);
+            Screen_Send_Text("d_s_2", "物品已送达，等待取件");
+            Screen_Send_Text("d_s_3", "取走后点击下方按钮");
+            Screen_Send_Text("d_s_4", cur && !cur->button_label.empty() ? cur->button_label.c_str() : "物品已取走");
+            break;
+        case SCREEN_PHASE_ALL_DONE:
+            Screen_Send_Text("d_s_1", "全部订单完成");
+            Screen_Send_Text("d_s_2", "等待服务器新任务");
+            Screen_Send_Text("d_s_3", " ");
+            Screen_Send_Text("d_s_4", "已完成");
+            break;
+        default:
+            break;
+    }
+    (void)s4;
+}
+
+void Screen_Render_Delivery(void)
+{
+    // 快照版本变化立即刷新；未变化每1秒兜底刷新（覆盖屏幕按钮点击扰动的文案）
+    static uint64_t last_ver = (uint64_t)-1;
+    static uint32_t last_ms = 0;
+    const StateSync& snap = delivery.Snapshot();
+    uint32_t now = lq_get_tick_ms();
+    if (snap.snapshot_version == last_ver && now - last_ms < 1000) return;
+    last_ver = snap.snapshot_version;
+    last_ms = now;
+
+    int slot = delivery_active_slot(snap);
+
+    // 订单号：b1~b5显示display_no（无订单的槽清空）
+    char txt[16];
+    for (int i = 0; i < 5; i++) {
+        char name[8];
+        snprintf(name, sizeof(name), "b%d", i + 1);
+        if ((size_t)i < snap.orders.size() && !snap.orders[i].display_no.empty()) {
+            screen_safe_text(txt, sizeof(txt), snap.orders[i].display_no);
+        } else {
+            snprintf(txt, sizeof(txt), "--");
+        }
+        Screen_Send_Text(name, txt);
+        usleep(5 * 1000);
+    }
+
+    // 状态机变量：屏幕据此切换按钮文案（b1~b5内部逻辑）与确认按钮使能
+    Screen_Send_Var("active_phase", snap.screen_phase);
+    Screen_Send_Var("active_slot", slot);
+    Screen_Send_Var("viewing_slot", slot > 0 ? slot : 1);
+
+    // 文案与确认按钮（车端权威写入，覆盖屏幕本地文案）
+    render_delivery_texts(snap, slot);
+    usleep(5 * 1000);
+
+    // 确认按钮使能：仅在等待确认(phase 2/4)且该订单未在待确认队列时允许点击
+    bool enable_btn = (snap.screen_phase == SCREEN_PHASE_WAIT_PICKUP ||
+                       snap.screen_phase == SCREEN_PHASE_WAIT_DROPOFF);
+    char cmd[32];
+    int len = snprintf(cmd, sizeof(cmd), "tsw d_s_4,%d", enable_btn ? 1 : 0);
+    screen_uart.uart_write((uint8_t*)cmd, len);
+    screen_send_tail();
+}
+
+void Screen_Enter_Delivery_Page(void)
+{
+    // DConfirm页为配送模式常驻页（按页面名跳转，页面ID无关）
+    char cmd[24];
+    int len = snprintf(cmd, sizeof(cmd), "page DConfirm");
+    screen_uart.uart_write((uint8_t*)cmd, len);
+    screen_send_tail();
+    printf("[Screen] 配送模式：切换到DConfirm页\n");
 }

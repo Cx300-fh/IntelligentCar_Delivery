@@ -42,9 +42,13 @@ ls_gpio gpio2(PIN_22, GPIO_MODE_OUT);
 ls_gtim_pwm servo_pwm(GTIM_PWM1_PIN88, 100, SERVO_MID);
 
 // 转向舵机输出配置
-#define TURN_LEFT_ELEOUT    55     // 左转时舵机输出值
+#define TURN_LEFT_ELEOUT     55      // 左转时舵机输出值
 #define TURN_RIGHT_ELEOUT   -55      // 右转时舵机输出值
-#define TURN_UTURN_ELEOUT    -80     // 掉头时舵机输出值
+#define TURN_UTURN_ELEOUT   -70      // 掉头时舵机输出值
+
+// 掉头专用速度上限：先保守，稳定后再逐步提高
+#define UTURN_ROTATE_SPEED    8.0    // stage 1：旋转
+#define UTURN_EXIT_SPEED     10.0    // stage 2：直行脱离转弯区
 
 int follow_left = 0;  // 循迹左边界标志位（5ms线程按快照刷新，调试显示用）
 
@@ -62,6 +66,7 @@ static uint32_t g_mile_clear_done = 0;   // 已执行的清零序号（5ms）
 // 5ms线程私有状态
 static ControlCommandSnapshot g_last_cmd;   // 本周期命令快照缓存
 static int32_t  g_uturn_stage = 0;          // 掉头阶段：0=无 1=旋转 2=直行
+static bool     g_uturn_done_latched = false; // 完成后锁存，等导航真正退出UTURN再允许下一次掉头
 static uint32_t g_stop_ticks = 0;           // 连续低速计数（停稳判定）
 static bool     g_watchdog_stale = false;   // 主线程看门狗状态
 
@@ -176,116 +181,237 @@ double bias_calculate()  // 偏差计算（主线程调用）
  */
 void dir_control()
 {
-    double diff_ratio = 0;  // 差速比例
+    double diff_ratio = 0;
     const ControlCommandSnapshot& cmd = g_last_cmd;
 
-    /* 转向PD：error = target(0) - current(快照中的循迹偏差) */
-    ele_out = place_pid_control(&turn_pid, cmd.ele_current, ele_target, turn_ele);
+    follow_left = cmd.follow_left;
 
-    follow_left = cmd.follow_left;  // 刷新调试显示用全局
+    const ActionType requested_action = (ActionType)cmd.action;
+    ActionType action = requested_action;
 
-    ActionType action = (ActionType)cmd.action;
+    //========================================================================
+    // 掉头状态机
+    //
+    // 设计原则：
+    // 1. ACTION_UTURN只负责“触发”一次掉头；
+    // 2. 一旦进入stage1，5ms控制线程自持整个掉头过程，
+    //    不依赖主线程后续每一帧都继续发布ACTION_UTURN；
+    // 3. stage1 = 低速旋转；
+    // 4. stage2 = 舵机回中、低速直行；
+    // 5. 完成后锁存，直到主线程真正离开ACTION_UTURN，
+    //    防止下一周期再次进入stage1造成“连续掉两次头”。
+    //========================================================================
 
-    /* 掉头阶段状态机（5ms自持，替代原is_uturning跨线程标志） */
-    if (action == ACTION_UTURN) {
-        if (g_uturn_stage == 0) { g_uturn_stage = 1; mile = 0; }   // 进入掉头并清里程
-    } else if (g_uturn_stage != 0) {
-        g_uturn_stage = 0;   // 导航动作已离开掉头
+    // 主线程已经退出UTURN后，重新允许下一次掉头。
+    if (requested_action != ACTION_UTURN && g_uturn_stage == 0)
+    {
+        g_uturn_done_latched = false;
     }
 
-    // 转向状态维持里程计数
-    if (mile >= TURN_MILE_LIMIT && g_uturn_stage == 0)
+    // 只允许在空闲且未锁存时触发一次新的掉头。
+    if (requested_action == ACTION_UTURN &&
+        g_uturn_stage == 0 &&
+        !g_uturn_done_latched)
     {
-        action = ACTION_FOLLOW;  // 里程达到后停止转向，恢复循迹
+        g_uturn_stage = 1;
+        mile = 0;
+
+        // 清方向PD历史，避免进入掉头前的循迹误差残留。
+        PID zero = {0};
+        turn_pid = zero;
+
+        printf("[CTRL] UTURN stage1: rotate, speed<=%.1f\n",
+               UTURN_ROTATE_SPEED);
+    }
+
+    // stage1：达到旋转里程后进入stage2。
+    if (g_uturn_stage == 1 && mile >= UTURN_MILE_LIMIT_1)
+    {
+        g_uturn_stage = 2;
+
+        // stage2不使用视觉PD，先清掉旧历史。
+        PID zero = {0};
+        turn_pid = zero;
+
+        printf("[CTRL] UTURN stage2: straight exit, speed<=%.1f, mile=%u\n",
+               UTURN_EXIT_SPEED, (unsigned)mile);
+    }
+
+    // stage2：达到总里程后结束掉头。
+    if (g_uturn_stage == 2 && mile >= UTURN_MILE_LIMIT_2)
+    {
+        g_uturn_stage = 0;
+        g_uturn_done_latched = true;
+        follow_left = 0;
+
+        PID zero = {0};
+        turn_pid = zero;
+
+        printf("[CTRL] UTURN done: wait navigation release, mile=%u\n",
+               (unsigned)mile);
+    }
+
+    // 内部掉头状态优先于导航瞬时action。
+    if (g_uturn_stage == 1)
+    {
+        action = ACTION_UTURN;
+    }
+    else if (g_uturn_stage == 2)
+    {
+        action = ACTION_STRAIGHT;
+    }
+    else if (g_uturn_done_latched && requested_action == ACTION_UTURN)
+    {
+        // 主线程可能还会多发若干帧UTURN。
+        // 此时绝不重新触发第二次掉头，直接恢复循迹。
+        action = ACTION_FOLLOW;
+    }
+
+    // 普通左右转的里程结束逻辑。
+    // 掉头由上面的状态机独立管理，避免互相干扰。
+    if (g_uturn_stage == 0 &&
+        requested_action != ACTION_UTURN &&
+        mile >= TURN_MILE_LIMIT)
+    {
+        action = ACTION_FOLLOW;
         follow_left = 0;
     }
-    // 掉头第一段（旋转）结束
-    if (mile >= UTURN_MILE_LIMIT_1 && g_uturn_stage == 1)
-    {
-        g_uturn_stage = 2;  // 进入掉头第二阶段，向前直行一段距离
-        action = ACTION_FOLLOW;
-    }
-    // 掉头第二段（直行）结束
-    if (mile >= UTURN_MILE_LIMIT_2 && g_uturn_stage == 2)
-    {
-        g_uturn_stage = 0;  // 清零掉头阶段
-        action = ACTION_FOLLOW;
-    }
 
-    // 特殊情况手动赋值舵机转角
-    switch (action) {
+    //========================================================================
+    // 舵机控制
+    //
+    // 只有真正FOLLOW时才更新视觉PD。
+    // 掉头/直行阶段不再把丢线后的ele_current写入PD历史。
+    //========================================================================
+    switch (action)
+    {
         case ACTION_TURN_LEFT:
-            // 左转
             ele_out = TURN_LEFT_ELEOUT;
             break;
 
         case ACTION_TURN_RIGHT:
-            // 右转
             ele_out = TURN_RIGHT_ELEOUT;
             break;
 
         case ACTION_STRAIGHT:
-            // 直行
             ele_out = 0;
             break;
 
         case ACTION_UTURN:
-            // 掉头
-            ele_out = TURN_UTURN_ELEOUT;  // 掉头时舵机打角
+            ele_out = TURN_UTURN_ELEOUT;
             break;
 
+        case ACTION_FOLLOW:
         default:
-            // 正常循迹，无偏移
+            ele_out = place_pid_control(&turn_pid,
+                                        cmd.ele_current,
+                                        ele_target,
+                                        turn_ele);
             break;
     }
 
-    ele_out = RANGE_LIMIT(ele_out, -ELE_OUT_MAX, ELE_OUT_MAX);  // 舵机输出范围限制
+    ele_out = RANGE_LIMIT(ele_out, -ELE_OUT_MAX, ELE_OUT_MAX);
 
     unsigned int servo_duty = SERVO_MID - ele_out * 2.5;
-
     servo_pwm.gtim_pwm_set_duty(servo_duty);
 
-    /* 速度状态：运动许可=快照许可 且 无安全禁止 且 主线程存活 */
-    bool drive = cmd.motion_permitted && !Safety_Inhibit_Active() && !g_watchdog_stale;
+    //========================================================================
+    // 基础速度控制
+    //
+    // stage1/stage2分别使用独立低速上限。
+    // 同时支持目标速度向上、向下都通过speed_ramp缓变，
+    // 避免正常速度20直接瞬间跳到掉头速度8。
+    //========================================================================
+    bool drive = cmd.motion_permitted &&
+                 !Safety_Inhibit_Active() &&
+                 !g_watchdog_stale;
+
     if (drive)
     {
-        current_speed = (current_speed < cmd.target_speed) ? current_speed + speed_ramp : cmd.target_speed;  // 速度缓加至目标速度
+        double effective_target_speed = cmd.target_speed;
+
+        if (g_uturn_stage == 1 &&
+            effective_target_speed > UTURN_ROTATE_SPEED)
+        {
+            effective_target_speed = UTURN_ROTATE_SPEED;
+        }
+        else if (g_uturn_stage == 2 &&
+                 effective_target_speed > UTURN_EXIT_SPEED)
+        {
+            effective_target_speed = UTURN_EXIT_SPEED;
+        }
+
+        if (current_speed < effective_target_speed)
+        {
+            current_speed += speed_ramp;
+            if (current_speed > effective_target_speed)
+                current_speed = effective_target_speed;
+        }
+        else if (current_speed > effective_target_speed)
+        {
+            current_speed -= speed_ramp;
+            if (current_speed < effective_target_speed)
+                current_speed = effective_target_speed;
+        }
     }
     else
     {
         uint32_t inhibit = Safety_Inhibit_Reason();
-        if (cmd.stop_mode == STOP_MODE_EMERGENCY || (inhibit & INHIBIT_REASON_EMERGENCY))
+
+        if (cmd.stop_mode == STOP_MODE_EMERGENCY ||
+            (inhibit & INHIBIT_REASON_EMERGENCY))
         {
-            current_speed = 0;  // 急停：立即归零
+            current_speed = 0;
         }
-        else if (Safety_Inhibit_Active() || cmd.stop_mode == STOP_MODE_CONTROLLED || g_watchdog_stale)
+        else if (Safety_Inhibit_Active() ||
+                 cmd.stop_mode == STOP_MODE_CONTROLLED ||
+                 g_watchdog_stale)
         {
-            current_speed = (current_speed > 0) ? current_speed - speed_ramp * CONTROL_FAST_BRAKE_GAIN : 0;  // 受控快停
+            current_speed =
+                (current_speed > 0)
+                ? current_speed - speed_ramp * CONTROL_FAST_BRAKE_GAIN
+                : 0;
+
+            if (current_speed < 0)
+                current_speed = 0;
         }
         else
         {
-            current_speed = (current_speed > 0) ? current_speed - speed_ramp : 0;  // 正常缓停（业务到站）
+            current_speed =
+                (current_speed > 0)
+                ? current_speed - speed_ramp
+                : 0;
+
+            if (current_speed < 0)
+                current_speed = 0;
         }
     }
 
-    /* 差速控制 */
-    if(ele_out >= 0)  // 左转：左轮减速多，右轮减速少
+    //========================================================================
+    // 普通差速
+    //========================================================================
+    if (ele_out >= 0)
     {
         diff_ratio = ele_out * 0.01;
-        left_speed = current_speed * (1 - diff_ratio);
+        left_speed  = current_speed * (1 - diff_ratio);
         right_speed = current_speed * (1 + diff_ratio * 0.2);
     }
-    else  // 右转：右轮减速多，左轮减速少
+    else
     {
         diff_ratio = (-ele_out) * 0.01;
-        left_speed = current_speed * (1 + diff_ratio * 0.2);
+        left_speed  = current_speed * (1 + diff_ratio * 0.2);
         right_speed = current_speed * (1 - diff_ratio);
     }
+
+    // stage1：保持当前机械掉头方式，但速度已经被限制到UTURN_ROTATE_SPEED。
     if (g_uturn_stage == 1)
     {
-        left_speed = -current_speed;
+        left_speed  = -current_speed;
         right_speed = 0;
     }
+
+    // stage2时action被强制为ACTION_STRAIGHT：
+    // ele_out=0，所以左右轮均为current_speed，真正低速直行。
 }
 
 

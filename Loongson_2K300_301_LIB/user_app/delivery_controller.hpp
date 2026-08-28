@@ -82,6 +82,8 @@ private:
     void Handle_Link_Change(void);
     void Observe_Arrival(void);
     void Resend_Pending_Events(void);
+    void Process_Screen_Events(void);            // 消费屏幕确认事件→user_action（阶段6）
+    bool Send_User_Action(const OrderInfo& order, UserActionType action);
 
     void Send_Hello(void);
     void Send_Heartbeat(void);

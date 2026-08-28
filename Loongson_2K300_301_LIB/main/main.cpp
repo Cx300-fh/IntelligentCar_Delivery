@@ -65,6 +65,9 @@ int main()
     // 配送协调器初始化（读配置文件决定配送/本地模式）并启动网关线程
     delivery.Init();
     delivery.Start();
+    if (delivery.Enabled()) {
+        Screen_Enter_Delivery_Page();   // 配送模式：屏幕常驻DConfirm页（阶段6）
+    }
 
     // 定时器初始化（Ctrl+C退出时：先停定时器，再归零PWM安全停车）
     lq_signal_set_exit_cb([](){ timer_0.stop(); Control_Safe_Shutdown(); });
@@ -164,9 +167,11 @@ int main()
         // │ STOP/PAUSE  │ 急停/取消当前任务                       │
         // └─────────────┴─────────────────────────────────────────┘
 
-        // 每6帧发送一次屏幕数据（避免串口过载）
+        // 屏幕数据：本地模式发旧调试页数据；配送模式渲染服务器订单快照（阶段6）
         static int screen_send_cnt = 0;
-        if (++screen_send_cnt >= 10) {
+        if (delivery.Enabled()) {
+            Screen_Render_Delivery();
+        } else if (++screen_send_cnt >= 10) {
             Screen_Send_All();
             screen_send_cnt = 0;
         }

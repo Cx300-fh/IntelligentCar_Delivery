@@ -154,6 +154,9 @@ void DeliveryController::Process(void)
         Handle_Message(m);
     }
 
+    // 1.5 消费屏幕事件（DConfirm页确认按钮；串口屏线程已入队）
+    Process_Screen_Events();
+
     // 2. 链路状态变化（建立/断开）
     Handle_Link_Change();
 
@@ -620,6 +623,108 @@ void DeliveryController::Resend_Pending_Events(void)
     // 全部按原message_id重发（服务器去重）
     for (size_t i = 0; i < store_.pending_events.size(); i++) {
         gw_->Send_Line(store_.pending_events[i].payload_json);
+    }
+}
+
+/*============================================================================
+ *                   屏幕确认事件 → user_action（阶段6）
+ *============================================================================*/
+
+// 生成并发送单个订单的确认事件（可靠：持久化+固定message_id重发）
+bool DeliveryController::Send_User_Action(const OrderInfo& order, UserActionType action)
+{
+    UserActionEvent ev;
+    ev.trip_id = cur_trip_;
+    ev.stop_id = cur_stop_;
+    ev.order_id = order.order_id;
+    ev.action = action;
+    ev.expected_status = (action == USER_ACTION_CONFIRM_PICKUP_LOADED) ? 2 : 4;
+    ev.order_version = order.order_version;
+    ev.display_revision = snap_.snapshot_version;
+
+    CommonHeader h; h.type = "user_action";
+    h.message_id = Next_Message_Id("evt-confirm");
+    h.sent_at = Delivery_Format_Utc_Now();
+    std::string json = Delivery_Serialize_UserAction(ev, h);
+
+    // 防重复：同一订单已有未确认的user_action时忽略重复点击
+    for (size_t i = 0; i < store_.pending_events.size(); i++) {
+        if (store_.pending_events[i].event_type == "user_action" &&
+            store_.pending_events[i].payload_json.find(order.order_id) != std::string::npos) {
+            printf("[DLV] 订单%s确认已在等待ACK，忽略重复点击\n", order.order_id.c_str());
+            return false;
+        }
+    }
+
+    PendingEvent pe;
+    pe.message_id = h.message_id;
+    pe.event_type = "user_action";
+    pe.payload_json = json;
+    pe.created_at = h.sent_at;
+    store_.pending_events.push_back(pe);
+    Store_Save();
+    if (gw_->Send_Line(json)) {
+        printf("[DLV] user_action已发送：%s 订单%s 动作%s（可靠重发直到event_ack）\n",
+               h.message_id.c_str(), order.order_id.c_str(),
+               action == USER_ACTION_CONFIRM_PICKUP_LOADED ? "装载确认" : "取件确认");
+    }
+    return true;
+}
+
+void DeliveryController::Process_Screen_Events(void)
+{
+    ScreenEvent ev;
+    while (Screen_Poll_Event(&ev)) {
+        switch (ev) {
+            case SCREEN_EV_STOP:
+                // inhibit已在串口线程置位；此处仅记录（V1不上报fault，等服务器看心跳）
+                printf("[DLV] 屏幕急停（安全禁止已由串口线程置位）\n");
+                break;
+
+            case SCREEN_EV_LOAD_CONFIRMED:
+            case SCREEN_EV_UNLOAD_CONFIRMED: {
+                if (!synced_) {
+                    printf("[DLV] 未同步，忽略屏幕确认\n");
+                    break;
+                }
+                // 槽位防错单：按当前active槽位对应的真实order_id确认（Kevin 222.md二.2）
+                UserActionType action = (ev == SCREEN_EV_LOAD_CONFIRMED)
+                                        ? USER_ACTION_CONFIRM_PICKUP_LOADED
+                                        : USER_ACTION_CONFIRM_DROPOFF_TAKEN;
+                int want_status = (ev == SCREEN_EV_LOAD_CONFIRMED) ? 2 : 4;
+
+                // 当前订单：current_order_id优先，否则首个匹配状态的订单
+                const OrderInfo* target = nullptr;
+                for (size_t i = 0; i < snap_.orders.size(); i++) {
+                    if (snap_.has_current_order &&
+                        snap_.orders[i].order_id == snap_.current_order_id) {
+                        target = &snap_.orders[i];
+                        break;
+                    }
+                }
+                if (target == nullptr) {
+                    for (size_t i = 0; i < snap_.orders.size(); i++) {
+                        if (snap_.orders[i].status == want_status) {
+                            target = &snap_.orders[i];
+                            break;
+                        }
+                    }
+                }
+                if (target == nullptr) {
+                    printf("[DLV] 屏幕确认但无匹配订单（状态%d），忽略\n", want_status);
+                    break;
+                }
+                if (target->status != want_status) {
+                    printf("[DLV] 订单%s状态%d与确认动作不匹配（需%d），忽略（防错单）\n",
+                           target->order_id.c_str(), target->status, want_status);
+                    break;
+                }
+                Send_User_Action(*target, action);
+                break;
+            }
+            default:
+                break;
+        }
     }
 }
 
