@@ -589,6 +589,215 @@
       }
     }
 
+
+    .hero-motion-cue {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 22px;
+      color: rgba(241,243,240,.48);
+      font-family:
+        "Prism",
+        "Arial Narrow",
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+      font-size: 10px;
+      letter-spacing: .10em;
+    }
+
+    .hero-motion-cue span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(118,185,0,.9);
+      animation: liveBlink 1.4s ease-in-out infinite;
+    }
+
+    @keyframes liveBlink {
+      50% { opacity: .32; transform: scale(.72); }
+    }
+
+
+    /* Premium motion system */
+    .hero {
+      --hero-x: 0px;
+      --hero-y: 0px;
+      --hero-scale: 1.02;
+    }
+
+    .hero::before {
+      transform:
+        translate3d(var(--hero-x), var(--hero-y), 0)
+        scale(var(--hero-scale));
+      transition: transform .45s cubic-bezier(.2,.7,.2,1);
+      will-change: transform;
+      animation: heroDrift 12s ease-in-out infinite alternate;
+    }
+
+    @keyframes heroDrift {
+      0% { filter: brightness(.96) saturate(.96); }
+      100% { filter: brightness(1.03) saturate(1.04); }
+    }
+
+    .hero-title-cn,
+    .hero-title-en,
+    .hero-lead,
+    .hero .zh,
+    .hero-actions,
+    .hero-motion-cue {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: heroReveal .82s cubic-bezier(.18,.8,.25,1) forwards;
+    }
+
+    .hero-title-cn { animation-delay: .08s; }
+    .hero-title-en { animation-delay: .18s; }
+    .hero-lead     { animation-delay: .30s; }
+    .hero .zh      { animation-delay: .40s; }
+    .hero-actions  { animation-delay: .50s; }
+    .hero-motion-cue { animation-delay: .58s; }
+
+    @keyframes heroReveal {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .mission-card {
+      animation: missionFloat 6s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    @keyframes missionFloat {
+      0%, 100% { translate: 0 0; }
+      50% { translate: 0 -8px; }
+    }
+
+    .mission-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(
+          115deg,
+          transparent 0%,
+          transparent 38%,
+          rgba(255,255,255,.045) 48%,
+          transparent 58%,
+          transparent 100%
+        );
+      transform: translateX(-120%);
+      animation: cardSweep 7s ease-in-out infinite;
+    }
+
+    @keyframes cardSweep {
+      0%, 58% { transform: translateX(-120%); }
+      78%, 100% { transform: translateX(120%); }
+    }
+
+    .route-progress {
+      position: relative;
+      overflow: visible;
+    }
+
+    .route-progress::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #b6ff31;
+      box-shadow:
+        0 0 10px rgba(182,255,49,.95),
+        0 0 24px rgba(118,185,0,.70);
+      transform: translate(-50%, -50%);
+      animation: routePulse 2.8s ease-in-out infinite;
+    }
+
+    @keyframes routePulse {
+      0%   { left: 0%; opacity: .20; }
+      12%  { opacity: 1; }
+      88%  { opacity: 1; }
+      100% { left: 100%; opacity: .20; }
+    }
+
+    .brand-logo {
+      transition:
+        transform .35s cubic-bezier(.2,.8,.2,1),
+        filter .35s ease;
+    }
+
+    .brand:hover .brand-logo {
+      transform: rotate(-7deg) scale(1.08);
+      filter: drop-shadow(0 0 10px rgba(118,185,0,.38));
+    }
+
+    .btn {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(110deg, transparent 20%, rgba(255,255,255,.13) 50%, transparent 80%);
+      transform: translateX(-130%);
+      transition: transform .6s ease;
+      pointer-events: none;
+    }
+
+    .btn:hover::after {
+      transform: translateX(130%);
+    }
+
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(34px);
+      transition:
+        opacity .8s cubic-bezier(.2,.7,.2,1),
+        transform .8s cubic-bezier(.2,.7,.2,1);
+    }
+
+    .reveal-on-scroll.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .hero.is-driving::before {
+      --hero-scale: 1.035;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero::before,
+      .hero-title-cn,
+      .hero-title-en,
+      .hero-lead,
+      .hero .zh,
+      .hero-actions,
+      .hero-motion-cue,
+      .mission-card,
+      .mission-card::after,
+      .route-progress::after {
+        animation: none !important;
+        transition: none !important;
+      }
+
+      .hero-title-cn,
+      .hero-title-en,
+      .hero-lead,
+      .hero .zh,
+      .hero-actions,
+      .hero-motion-cue,
+      .reveal-on-scroll {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
     section { padding: 86px 0; }
 
     .section-head {
@@ -1305,6 +1514,10 @@
           <a class="btn" href="#system">Explore System</a>
           <a class="btn" href="https://github.com/Cx300-fh/IntelligentCar_Delivery">GitHub</a>
         </div>
+        <div class="hero-motion-cue" aria-hidden="true">
+          <span></span>
+          LIVE CAMPUS ROUTING
+        </div>
       </div>
       <aside class="mission-card" aria-label="Live mission preview">
         <div class="mission-top">
@@ -1329,6 +1542,7 @@
           <p class="demo-video-kicker">End-to-End Demo</p>
           <h2>See the delivery loop in motion.</h2>
         </div>
+        <div class="demo-video-meta">THU campus · 37 s · 16:9</div>
       </div>
 
       <div class="demo-video-frame">
@@ -2252,6 +2466,64 @@
 
     populateSelectors();
     renderMap();
-  </script>
+  
+    (() => {
+      const hero = document.querySelector(".hero");
+      if (!hero) return;
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduceMotion) return;
+
+      hero.addEventListener("pointermove", (event) => {
+        const rect = hero.getBoundingClientRect();
+        const nx = (event.clientX - rect.left) / rect.width - 0.5;
+        const ny = (event.clientY - rect.top) / rect.height - 0.5;
+
+        hero.style.setProperty("--hero-x", `${(-nx * 10).toFixed(2)}px`);
+        hero.style.setProperty("--hero-y", `${(-ny * 6).toFixed(2)}px`);
+        hero.classList.add("is-driving");
+      });
+
+      hero.addEventListener("pointerleave", () => {
+        hero.style.setProperty("--hero-x", "0px");
+        hero.style.setProperty("--hero-y", "0px");
+        hero.classList.remove("is-driving");
+      });
+
+      let ticking = false;
+      const updateHeroScroll = () => {
+        const rect = hero.getBoundingClientRect();
+        const progress = Math.max(-1, Math.min(1, -rect.top / Math.max(rect.height, 1)));
+        hero.style.setProperty("--hero-y", `${(progress * -10).toFixed(2)}px`);
+        ticking = false;
+      };
+
+      window.addEventListener("scroll", () => {
+        if (!ticking) {
+          requestAnimationFrame(updateHeroScroll);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      const sections = [...document.querySelectorAll("main > section")];
+      sections.forEach(section => section.classList.add("reveal-on-scroll"));
+
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.12 });
+
+        sections.forEach(section => observer.observe(section));
+      } else {
+        sections.forEach(section => section.classList.add("is-visible"));
+      }
+    })();
+
+</script>
 </body>
 </html>
