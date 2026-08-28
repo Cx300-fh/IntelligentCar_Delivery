@@ -1,0 +1,2601 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>THU Delivery</title>
+  <meta name="description" content="Autonomous campus delivery system with dynamic routing, voice interaction, UDP gateway, and persistent mission tracing.">
+  <style>
+
+    @font-face {
+      font-family: "Yishanbei";
+      src: url("./assets/fonts/Yishanbei.ttf?v=20260827-1") format("truetype");
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+    }
+
+
+    @font-face {
+      font-family: "Prism";
+      src: url("./assets/fonts/Prism.otf?v=20260827-2") format("opentype");
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+    }
+
+
+
+    /* Brand display font for English headings */
+    h1,
+    h2,
+    h3,
+    .brand,
+    .eyebrow,
+    .loop-kicker,
+    .tag,
+    .status-pill,
+    .metric span,
+    .mission-top,
+    .route-summary,
+    .section-head h2,
+    .journey-step h3,
+    .voice-node .tag,
+    .panel h3 {
+      font-family:
+        "Prism",
+        "Arial Narrow",
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+      font-weight: 400;
+    }
+
+    /* Chinese text keeps the system Chinese font stack */
+    .zh,
+    .hero-title-cn,
+    [lang="zh-CN"] .zh {
+      font-family:
+        "PingFang SC",
+        "Microsoft YaHei",
+        "Noto Sans CJK SC",
+        sans-serif;
+    }
+
+    :root {
+      color-scheme: dark;
+      --bg: #0c0e0d;
+      --surface: #151816;
+      --text: #f1f3f0;
+      --muted: #8e948f;
+      --muted-2: #b9beb9;
+      --line: rgba(241, 243, 240, .14);
+      --line-soft: rgba(241, 243, 240, .08);
+      --green: #76b900;
+      --green-soft: rgba(118, 185, 0, .18);
+      --orange: #e3a62f;
+      --red: #d85b46;
+      --blue: #70a4ff;
+      --shadow: 0 30px 90px rgba(0, 0, 0, .45);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(118, 185, 0, .06), transparent 420px),
+        var(--bg);
+      color: var(--text);
+      letter-spacing: 0;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; }
+    button { cursor: pointer; font: inherit; }
+    code { color: #d7f6b9; }
+
+    .shell {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 20;
+      border-bottom: 1px solid rgba(241, 243, 240, .08);
+      background: rgba(12, 14, 13, .72);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+
+    .brand-logo {
+      width: 35px;
+      height: 35px;
+      display: block;
+      flex: 0 0 auto;
+    }
+
+    .brand-mark {
+      width: 26px;
+      height: 26px;
+      border: 1px solid rgba(118, 185, 0, .6);
+      background:
+        linear-gradient(135deg, rgba(118,185,0,.9), transparent 44%),
+        #171b18;
+      display: grid;
+      place-items: center;
+    }
+
+    .brand-mark::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      box-shadow: 0 0 18px rgba(118,185,0,.8);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted-2);
+      font-size: 14px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      transition: color .2s ease;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+
+    .hero {
+      min-height: 100svh;
+      position: relative;
+      display: grid;
+      align-items: center;
+      padding: 96px 0 34px;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -3;
+      background:
+        linear-gradient(90deg, rgba(12,14,13,.94) 0%, rgba(12,14,13,.82) 32%, rgba(12,14,13,.25) 72%),
+        linear-gradient(0deg, var(--bg) 0%, transparent 34%),
+        url("assets/delivery-robot-hero.png") center right / cover no-repeat;
+      transform: scale(1.015);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 34%;
+      z-index: -2;
+      background: linear-gradient(180deg, transparent, var(--bg));
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .92fr) minmax(290px, .42fr);
+      gap: 48px;
+      align-items: end;
+      transform: translateY(64px);
+    }
+
+    .hero-grid > *,
+    .section-head > *,
+    .map-lab > *,
+    .voice-demo > *,
+    .data-flow > *,
+    .footer-grid > * { min-width: 0; }
+
+    .eyebrow {
+      margin: 0 0 18px;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 780;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      margin-bottom: 22px;
+      max-width: 980px;
+      font-size: clamp(54px, 9vw, 116px);
+      line-height: .88;
+      letter-spacing: 0;
+      font-weight: 820;
+      overflow-wrap: anywhere;
+    }
+
+
+    .hero-title-mark {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      margin-bottom: 20px;
+      max-width: none;
+      line-height: 1;
+      text-transform: none;
+    }
+
+    .hero-title-cn {
+      display: block;
+      position: relative;
+      top: -58px;
+      left: 18px;
+      font-family:
+        "Yishanbei",
+        "STKaiti",
+        "KaiTi",
+        "Songti SC",
+        serif;
+      font-size: clamp(64px, 8.8vw, 116px);
+      font-weight: 400;
+      line-height: .84;
+      letter-spacing: .12em;
+      color: var(--text);
+      text-shadow:
+        0 1px 0 rgba(255,255,255,.08),
+        0 8px 28px rgba(0,0,0,.28);
+    }
+
+    .hero-title-en {
+      display: block;
+      margin-top: -22px;
+      font-family:
+        "Prism",
+        "Arial Narrow",
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+      font-size: clamp(34px, 4.8vw, 66px);
+      font-weight: 400;
+      line-height: .92;
+      letter-spacing: .035em;
+      color: var(--green);
+      text-transform: none;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 560px) {
+      .hero-title-cn {
+        top: -10px;
+        left: 0;
+        font-size: 54px;
+      }
+
+      .hero-title-en {
+        margin-top: 7px;
+        font-size: 30px;
+        letter-spacing: .025em;
+      }
+    }
+
+
+    .hero-lead {
+      max-width: 760px;
+      color: #d9ddd8;
+      font-size: clamp(19px, 2vw, 24px);
+      line-height: 1.45;
+    }
+
+    .zh {
+      color: var(--muted-2);
+      line-height: 1.8;
+      font-size: 16px;
+      max-width: 100%;
+      word-break: break-all;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border: 1px solid rgba(241, 243, 240, .18);
+      background: rgba(241, 243, 240, .06);
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 720;
+      transition: transform .2s ease, border-color .2s ease, background .2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(118,185,0,.65);
+      background: rgba(118,185,0,.13);
+    }
+
+    .btn.primary {
+      border-color: rgba(118,185,0,.75);
+      background: var(--green);
+      color: #0c0e0d;
+    }
+
+    .mission-card {
+      width: min(100%, 360px);
+      justify-self: end;
+      align-self: center;
+      transform: translate(-10px, 54px);
+      border: 1px solid rgba(241,243,240,.14);
+      border-radius: 18px;
+      background:
+        linear-gradient(145deg, rgba(24,28,25,.86), rgba(13,16,14,.72));
+      backdrop-filter: blur(22px);
+      box-shadow:
+        0 24px 80px rgba(0,0,0,.34),
+        inset 0 1px 0 rgba(255,255,255,.035);
+      padding: 20px 20px 18px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .mission-card::before {
+      content: "";
+      position: absolute;
+      width: 150px;
+      height: 150px;
+      right: -70px;
+      top: -80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(118,185,0,.13), transparent 70%);
+      pointer-events: none;
+    }
+
+    .mission-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: rgba(241,243,240,.82);
+      font-size: 14px;
+      letter-spacing: .035em;
+      text-transform: uppercase;
+      border-bottom: 0;
+      padding-bottom: 2px;
+    }
+
+    .mission-top .status-pill {
+      min-height: 24px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      letter-spacing: .04em;
+    }
+
+    .route-strip {
+      position: relative;
+      height: 92px;
+      margin: 16px 0 0;
+    }
+
+    .route-strip::before {
+      content: "";
+      position: absolute;
+      left: 15px;
+      right: 15px;
+      top: 38px;
+      height: 2px;
+      background: rgba(241,243,240,.18);
+    }
+
+    .route-progress {
+      position: absolute;
+      left: 15px;
+      top: 38px;
+      height: 2px;
+      width: 72%;
+      background: var(--green);
+      box-shadow: 0 0 22px rgba(118,185,0,.55);
+      animation: pulseLine 2.4s ease-in-out infinite;
+    }
+
+    @keyframes pulseLine { 50% { opacity: .55; } }
+
+    .stop {
+      position: absolute;
+      top: 22px;
+      transform: translateX(-50%);
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+      color: var(--muted-2);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .stop::before {
+      content: "";
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(241,243,240,.3);
+      background: var(--surface);
+    }
+
+    .stop.active::before {
+      background: var(--green);
+      box-shadow: 0 0 24px rgba(118,185,0,.58);
+    }
+
+    .stop:nth-child(2) { left: 8%; }
+    .stop:nth-child(3) { left: 43%; }
+    .stop:nth-child(4) { left: 78%; }
+
+
+
+    .demo-video-section {
+      padding: 84px 0 96px;
+    }
+
+    .demo-video-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .demo-video-head h2 {
+      margin: 0;
+      max-width: 760px;
+      font-size: clamp(38px, 5vw, 68px);
+      line-height: .96;
+      letter-spacing: -.025em;
+    }
+
+    .demo-video-kicker {
+      margin: 0 0 12px;
+      color: var(--green);
+      font-size: 12px;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+    }
+
+    .demo-video-meta {
+      flex: 0 0 auto;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-align: right;
+    }
+
+    .demo-video-frame {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(241,243,240,.14);
+      border-radius: 18px;
+      background: #080a09;
+      box-shadow:
+        0 28px 90px rgba(0,0,0,.30),
+        inset 0 1px 0 rgba(255,255,255,.025);
+    }
+
+    .demo-video-frame video {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      background: #080a09;
+    }
+
+    .demo-video-frame::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 24%;
+      pointer-events: none;
+      background: linear-gradient(180deg, transparent, rgba(5,7,6,.55));
+    }
+
+    .demo-video-caption {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 18px;
+      z-index: 2;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      pointer-events: none;
+    }
+
+    .demo-video-caption strong {
+      display: block;
+      color: rgba(245,248,244,.96);
+      font-size: 14px;
+      letter-spacing: .02em;
+    }
+
+    .demo-video-caption span {
+      color: rgba(230,235,229,.66);
+      font-size: 11px;
+    }
+
+    .demo-video-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border: 1px solid rgba(118,185,0,.36);
+      border-radius: 999px;
+      background: rgba(118,185,0,.11);
+      color: #d9ffb9 !important;
+      font-size: 10px !important;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 760px) {
+      .demo-video-section {
+        padding: 58px 0 68px;
+      }
+
+      .demo-video-head {
+        display: block;
+      }
+
+      .demo-video-meta {
+        margin-top: 12px;
+        text-align: left;
+      }
+
+      .demo-video-caption {
+        left: 14px;
+        right: 14px;
+        bottom: 12px;
+      }
+
+      .demo-video-caption > div:last-child {
+        display: none;
+      }
+    }
+
+
+    .hero-motion-cue {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 22px;
+      color: rgba(241,243,240,.48);
+      font-family:
+        "Prism",
+        "Arial Narrow",
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+      font-size: 10px;
+      letter-spacing: .10em;
+    }
+
+    .hero-motion-cue span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(118,185,0,.9);
+      animation: liveBlink 1.4s ease-in-out infinite;
+    }
+
+    @keyframes liveBlink {
+      50% { opacity: .32; transform: scale(.72); }
+    }
+
+
+    /* Premium motion system */
+    .hero {
+      --hero-x: 0px;
+      --hero-y: 0px;
+      --hero-scale: 1.02;
+    }
+
+    .hero::before {
+      transform:
+        translate3d(var(--hero-x), var(--hero-y), 0)
+        scale(var(--hero-scale));
+      transition: transform .45s cubic-bezier(.2,.7,.2,1);
+      will-change: transform;
+      animation: heroDrift 12s ease-in-out infinite alternate;
+    }
+
+    @keyframes heroDrift {
+      0% { filter: brightness(.96) saturate(.96); }
+      100% { filter: brightness(1.03) saturate(1.04); }
+    }
+
+    .hero-title-cn,
+    .hero-title-en,
+    .hero-lead,
+    .hero .zh,
+    .hero-actions,
+    .hero-motion-cue {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: heroReveal .82s cubic-bezier(.18,.8,.25,1) forwards;
+    }
+
+    .hero-title-cn { animation-delay: .08s; }
+    .hero-title-en { animation-delay: .18s; }
+    .hero-lead     { animation-delay: .30s; }
+    .hero .zh      { animation-delay: .40s; }
+    .hero-actions  { animation-delay: .50s; }
+    .hero-motion-cue { animation-delay: .58s; }
+
+    @keyframes heroReveal {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .mission-card {
+      animation: missionFloat 6s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    @keyframes missionFloat {
+      0%, 100% { translate: 0 0; }
+      50% { translate: 0 -8px; }
+    }
+
+    .mission-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(
+          115deg,
+          transparent 0%,
+          transparent 38%,
+          rgba(255,255,255,.045) 48%,
+          transparent 58%,
+          transparent 100%
+        );
+      transform: translateX(-120%);
+      animation: cardSweep 7s ease-in-out infinite;
+    }
+
+    @keyframes cardSweep {
+      0%, 58% { transform: translateX(-120%); }
+      78%, 100% { transform: translateX(120%); }
+    }
+
+    .route-progress {
+      position: relative;
+      overflow: visible;
+    }
+
+    .route-progress::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #b6ff31;
+      box-shadow:
+        0 0 10px rgba(182,255,49,.95),
+        0 0 24px rgba(118,185,0,.70);
+      transform: translate(-50%, -50%);
+      animation: routePulse 2.8s ease-in-out infinite;
+    }
+
+    @keyframes routePulse {
+      0%   { left: 0%; opacity: .20; }
+      12%  { opacity: 1; }
+      88%  { opacity: 1; }
+      100% { left: 100%; opacity: .20; }
+    }
+
+    .brand-logo {
+      transition:
+        transform .35s cubic-bezier(.2,.8,.2,1),
+        filter .35s ease;
+    }
+
+    .brand:hover .brand-logo {
+      transform: rotate(-7deg) scale(1.08);
+      filter: drop-shadow(0 0 10px rgba(118,185,0,.38));
+    }
+
+    .btn {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(110deg, transparent 20%, rgba(255,255,255,.13) 50%, transparent 80%);
+      transform: translateX(-130%);
+      transition: transform .6s ease;
+      pointer-events: none;
+    }
+
+    .btn:hover::after {
+      transform: translateX(130%);
+    }
+
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(34px);
+      transition:
+        opacity .8s cubic-bezier(.2,.7,.2,1),
+        transform .8s cubic-bezier(.2,.7,.2,1);
+    }
+
+    .reveal-on-scroll.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .hero.is-driving::before {
+      --hero-scale: 1.035;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero::before,
+      .hero-title-cn,
+      .hero-title-en,
+      .hero-lead,
+      .hero .zh,
+      .hero-actions,
+      .hero-motion-cue,
+      .mission-card,
+      .mission-card::after,
+      .route-progress::after {
+        animation: none !important;
+        transition: none !important;
+      }
+
+      .hero-title-cn,
+      .hero-title-en,
+      .hero-lead,
+      .hero .zh,
+      .hero-actions,
+      .hero-motion-cue,
+      .reveal-on-scroll {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    section { padding: 86px 0; }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .88fr) minmax(260px, .42fr);
+      gap: 34px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    h2 {
+      margin-bottom: 0;
+      font-size: clamp(34px, 5vw, 68px);
+      line-height: .98;
+      letter-spacing: 0;
+      font-weight: 800;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+      font-size: 22px;
+      line-height: 1.18;
+      font-weight: 760;
+    }
+
+    p {
+      color: var(--muted-2);
+      line-height: 1.7;
+      font-size: 16px;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .statement {
+      margin: 0;
+      max-width: 920px;
+      color: var(--text);
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1.05;
+      font-weight: 780;
+    }
+
+    .loop {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .loop-step {
+      min-height: 230px;
+      padding: 24px;
+      border-right: 1px solid var(--line-soft);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .loop-step:last-child { border-right: 0; }
+
+    .loop-step::before {
+      content: attr(data-index);
+      position: absolute;
+      right: 18px;
+      bottom: 10px;
+      color: rgba(241,243,240,.05);
+      font-size: 92px;
+      font-weight: 820;
+      line-height: 1;
+    }
+
+    .loop-step.active {
+      background: linear-gradient(180deg, rgba(118,185,0,.16), transparent);
+    }
+
+    .loop-kicker {
+      margin-bottom: 60px;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 760;
+      text-transform: uppercase;
+    }
+
+    .map-lab {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(300px, .45fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    /* ===== MAP ONLY: modified section starts ===== */
+    .map-stage {
+      position: relative;
+      min-height: 560px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(rgba(241,243,240,.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(241,243,240,.028) 1px, transparent 1px),
+        #0f1210;
+      background-size: 44px 44px;
+      overflow: hidden;
+    }
+
+    .map-stage svg {
+      width: 100%;
+      height: 100%;
+      min-height: 560px;
+      display: block;
+    }
+
+    .base-road-bed {
+      fill: none;
+      stroke: rgba(241,243,240,.12);
+      stroke-width: 14;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .base-road {
+      fill: none;
+      stroke: rgba(241,243,240,.42);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .route-road {
+      fill: none;
+      stroke: var(--green);
+      stroke-width: 5.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 8px rgba(118,185,0,.42));
+    }
+
+    .old-road {
+      fill: none;
+      stroke: rgba(227,166,47,.72);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 12 9;
+      opacity: 0;
+      transition: opacity .35s ease;
+    }
+
+    .anomaly-road {
+      fill: none;
+      stroke: #ffb52e;
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 7 7;
+      filter: drop-shadow(0 0 7px rgba(255,181,46,.42));
+      opacity: 0;
+      transition: opacity .35s ease;
+    }
+
+    .map-stage.congested .anomaly-road,
+    .map-stage.congested .old-road { opacity: 1; }
+
+    .map-node {
+      fill: rgba(245,247,244,.94);
+      stroke: #0f1210;
+      stroke-width: 1.4;
+    }
+
+    .map-node.key {
+      fill: var(--green);
+      stroke: #0c0e0d;
+      stroke-width: 2.4;
+    }
+
+    .map-node.end {
+      fill: var(--red);
+      stroke: #0c0e0d;
+      stroke-width: 2.4;
+    }
+
+    .map-node.route {
+      fill: rgba(245,247,244,.94);
+      stroke: #0f1210;
+      stroke-width: 1.4;
+    }
+
+    .map-label {
+      fill: rgba(241,243,240,.76);
+      font-size: 12px;
+      font-weight: 680;
+      paint-order: stroke;
+      stroke: #0f1210;
+      stroke-width: 4px;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+
+    .map-label.major {
+      fill: rgba(241,243,240,.96);
+      font-size: 14px;
+      font-weight: 780;
+    }
+
+    .map-label.minor {
+      fill: rgba(241,243,240,.60);
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .vehicle-dot {
+      fill: var(--green);
+      stroke: #f4f7f2;
+      stroke-width: 2.2;
+      filter:
+        drop-shadow(0 0 8px rgba(118,185,0,.92))
+        drop-shadow(0 0 18px rgba(118,185,0,.48));
+      pointer-events: none;
+    }
+    /* ===== MAP ONLY: modified section ends ===== */
+
+    .route-picker {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 0 0 10px;
+    }
+
+    .route-picker label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 720;
+      letter-spacing: .02em;
+    }
+
+    .route-picker select {
+      width: 100%;
+      min-height: 42px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      background: #0f1210;
+      color: var(--text);
+      outline: none;
+    }
+
+    .route-picker select:focus {
+      border-color: rgba(118,185,0,.8);
+    }
+
+    .map-node.selectable {
+      cursor: pointer;
+      transition: r .15s ease, stroke .15s ease, fill .15s ease;
+    }
+
+    .map-node.selectable:hover {
+      r: 5;
+      stroke: var(--green);
+      stroke-width: 2;
+    }
+
+    .map-node.selected-start {
+      fill: var(--blue);
+      stroke: #0c0e0d;
+      stroke-width: 2.6;
+    }
+
+    .map-node.selected-end {
+      fill: var(--red);
+      stroke: #0c0e0d;
+      stroke-width: 2.6;
+    }
+
+    .map-hint {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .map-hint strong { color: var(--text); }
+
+    .route-summary {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line-soft);
+      color: var(--muted-2);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .map-side {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 18px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      border: 1px solid var(--line);
+      background: rgba(241,243,240,.04);
+      color: var(--muted-2);
+      min-height: 38px;
+      padding: 0 14px;
+    }
+
+    .tab.active {
+      border-color: rgba(118,185,0,.8);
+      background: var(--green);
+      color: var(--bg);
+      font-weight: 760;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .metric {
+      border: 1px solid var(--line-soft);
+      padding: 12px;
+      min-height: 86px;
+      background: rgba(241,243,240,.03);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+
+    .metric strong {
+      font-size: 24px;
+      line-height: 1;
+    }
+
+
+    .metric strong {
+      font-size: clamp(22px, 2.2vw, 30px);
+      line-height: 1;
+      letter-spacing: -.02em;
+    }
+
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .control-row button {
+      min-height: 42px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      background: rgba(241,243,240,.05);
+      color: var(--text);
+      font-weight: 720;
+    }
+
+    .control-row button.hot {
+      border-color: rgba(227,166,47,.6);
+      background: rgba(227,166,47,.13);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      background: var(--green-soft);
+      color: #d8ffb5;
+      border: 1px solid rgba(118,185,0,.4);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .journey {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .journey-track {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(240px, 1fr));
+      min-width: 860px;
+    }
+
+    .journey-step {
+      min-height: 330px;
+      padding: 24px;
+      border-right: 1px solid var(--line-soft);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .journey-step:last-child { border-right: 0; }
+
+    .screen {
+      min-height: 130px;
+      border: 1px solid rgba(118,185,0,.34);
+      background:
+        linear-gradient(180deg, rgba(118,185,0,.12), rgba(118,185,0,.03)),
+        #080a09;
+      padding: 16px;
+      display: grid;
+      align-content: center;
+      gap: 8px;
+    }
+
+    .screen strong {
+      color: var(--green);
+      font-size: 22px;
+    }
+
+    .voice-demo {
+      display: grid;
+      grid-template-columns: minmax(0, .65fr) minmax(0, .35fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .voice-chain {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 26px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .voice-node {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 18px;
+      align-items: center;
+      padding: 16px;
+      border: 1px solid var(--line-soft);
+      background: rgba(241,243,240,.035);
+    }
+
+    .voice-node .tag {
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 780;
+      text-transform: uppercase;
+    }
+
+    .voice-meter {
+      height: 130px;
+      display: flex;
+      align-items: end;
+      gap: 8px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: #0f1210;
+    }
+
+    .bar {
+      flex: 1;
+      min-width: 8px;
+      background: var(--green);
+      opacity: .72;
+      animation: voice 1.4s ease-in-out infinite;
+    }
+
+    .bar:nth-child(2n) { animation-delay: .18s; }
+    .bar:nth-child(3n) { animation-delay: .31s; }
+    .bar:nth-child(4n) { animation-delay: .44s; }
+
+    @keyframes voice {
+      0%, 100% { height: 22%; }
+      50% { height: 86%; }
+    }
+
+    .architecture {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .arch-node {
+      min-height: 178px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .arch-node::after {
+      content: "";
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+      transform: translateX(-100%);
+      animation: signal 2.8s ease-in-out infinite;
+    }
+
+    .arch-node:nth-child(2)::after { animation-delay: .35s; }
+    .arch-node:nth-child(3)::after { animation-delay: .7s; }
+    .arch-node:nth-child(4)::after { animation-delay: 1.05s; }
+
+    @keyframes signal {
+      60%, 100% { transform: translateX(100%); }
+    }
+
+    .protocol-flow {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted-2);
+    }
+
+    .protocol-flow span {
+      border: 1px solid var(--line-soft);
+      padding: 9px 11px;
+      background: rgba(241,243,240,.035);
+      font-size: 13px;
+    }
+
+    details {
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 16px 18px;
+    }
+
+    summary {
+      cursor: pointer;
+      color: var(--text);
+      font-weight: 760;
+    }
+
+    pre {
+      margin: 16px 0 0;
+      overflow: auto;
+      padding: 16px;
+      background: #080a09;
+      border: 1px solid var(--line-soft);
+      color: #d6ddd3;
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .campus {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .campus-card {
+      min-height: 330px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(145deg, rgba(118,185,0,.13), transparent 34%),
+        var(--surface);
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .node-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .node-cloud span {
+      min-width: 34px;
+      min-height: 30px;
+      padding: 6px 10px;
+      border: 1px solid var(--line-soft);
+      color: var(--muted-2);
+      text-align: center;
+    }
+
+    .data-flow {
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .database {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 24px;
+    }
+
+    .table-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .table-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 0;
+      border-top: 1px solid var(--line-soft);
+      color: var(--muted-2);
+    }
+
+    .table-row strong { color: var(--text); }
+
+    .open-source {
+      border-top: 1px solid var(--line);
+      padding-bottom: 36px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: end;
+    }
+
+    .progress-note {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 940px) {
+      .nav-links { display: none; }
+      .hero-grid,
+      .section-head,
+      .map-lab,
+      .voice-demo,
+      .data-flow,
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero { min-height: auto; padding-top: 120px; }
+      .hero-grid { display: block; }
+      .hero-grid > div:first-child {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+      }
+      .hero::before {
+        background:
+          linear-gradient(180deg, rgba(12,14,13,.55), var(--bg) 82%),
+          url("assets/delivery-robot-hero.png") center top / cover no-repeat;
+        opacity: .85;
+      }
+      .mission-card { margin-top: 160px; }
+      .loop { grid-template-columns: 1fr; }
+      .loop-step { min-height: 180px; border-right: 0; border-bottom: 1px solid var(--line-soft); }
+      .architecture,
+      .campus { grid-template-columns: 1fr; }
+      .journey { overflow-x: auto; }
+    }
+
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 28px, 1180px); }
+      h1 { font-size: 44px; line-height: .94; }
+      h2, .statement { font-size: 34px; }
+      .zh { overflow-wrap: anywhere; }
+      .mission-top { display: grid; justify-content: start; }
+      .mission-card { width: 100%; max-width: 100%; padding: 16px; overflow: hidden; }
+      .hero-actions .btn { width: 100%; }
+      .metric-grid { grid-template-columns: 1fr; }
+      .route-picker { grid-template-columns: 1fr; }
+      .voice-node { grid-template-columns: 1fr; }
+      .map-stage, .map-stage svg { min-height: 430px; }
+      section { padding: 58px 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="shell nav">
+      <a class="brand" href="#top" aria-label="THU Delivery home">
+        <img class="brand-logo" src="./assets/brand/logo.svg?v=20260827-1" alt="" aria-hidden="true">
+        THU Delivery
+      </a>
+      <div class="nav-links" aria-label="Page navigation">
+        <a href="#video-demo">Demo</a>
+        <a href="#loop">Loop</a>
+        <a href="#map">Dynamic Map</a>
+        <a href="#voice">Voice</a>
+        <a href="#system">System</a>
+        <a href="#source">Open Source</a>
+      </div>
+    </div>
+  </div>
+
+  <header id="top" class="hero">
+    <div class="shell hero-grid">
+      <div>
+        <h1 class="hero-title-mark">
+          <span class="hero-title-cn">清送</span>
+          <span class="hero-title-en">THU Delivery</span>
+        </h1>
+        <p class="hero-lead">Autonomous campus delivery, from order to destination.</p>
+        <p class="zh">电脑端下单，小车按拓扑地图导航<br>路况变化时动态重规划<br>屏幕、语音、图传和数据库记录轨迹</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#map">Watch Demo</a>
+          <a class="btn" href="#system">Explore System</a>
+          <a class="btn" href="https://github.com/Cx300-fh/IntelligentCar_Delivery">GitHub</a>
+        </div>
+        <div class="hero-motion-cue" aria-hidden="true">
+          <span></span>
+          LIVE CAMPUS ROUTING
+        </div>
+      </div>
+      <aside class="mission-card" aria-label="Live mission preview">
+        <div class="mission-top">
+          <span>Live mission</span>
+          <span class="status-pill">Route adaptive</span>
+        </div>
+        <div class="route-strip" aria-hidden="true">
+          <div class="route-progress"></div>
+          <div class="stop active">Order</div>
+          <div class="stop active">Pickup</div>
+          <div class="stop">Dropoff</div>
+        </div>
+      </aside>
+    </div>
+  </header>
+
+  <main>
+
+    <section id="video-demo" class="shell demo-video-section">
+      <div class="demo-video-head">
+        <div>
+          <p class="demo-video-kicker">End-to-End Demo</p>
+          <h2>See the delivery loop in motion.</h2>
+        </div>
+        <div class="demo-video-meta">THU campus · 37 s · 16:9</div>
+      </div>
+
+      <div class="demo-video-frame">
+        <video
+          src="assets/media/campus-demo.mp4"
+          poster="assets/media/campus-demo-poster.jpg"
+          autoplay
+          muted
+          loop
+          playsinline
+          controls
+          preload="metadata"
+          aria-label="THU Delivery end-to-end demonstration video">
+          Your browser does not support HTML5 video.
+        </video>
+
+        <div class="demo-video-caption" aria-hidden="true">
+          <div>
+            <strong>Order → Pickup → Navigation → Dropoff</strong>
+            <span>Real system demonstration</span>
+          </div>
+          <div class="demo-video-chip">THU Delivery</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="loop" class="shell">
+      <div class="section-head">
+        <h2>One complete loop, not a pile of modules.</h2>
+        
+      </div>
+      <div class="loop" aria-label="Order to delivery loop">
+        <article class="loop-step active" data-index="01">
+          <div class="loop-kicker">Order</div>
+          <h3>Create mission</h3>
+          <p>浏览器提交地图、起点、终点和订单编号，电脑端后端把任务转成小车可执行 UDP JSON。</p>
+        </article>
+        <article class="loop-step" data-index="02">
+          <div class="loop-kicker">Plan</div>
+          <h3>Weighted Dijkstra</h3>
+          <p>边权由基础距离、动态路况、人工难走配置和封路状态共同决定。</p>
+        </article>
+        <article class="loop-step" data-index="03">
+          <div class="loop-kicker">Drive</div>
+          <h3>Navigate by tags</h3>
+          <p>AprilTag 节点作为定位锚点，导航状态机输出跟线、直行、转向、停止动作。</p>
+        </article>
+        <article class="loop-step" data-index="04">
+          <div class="loop-kicker">Adapt</div>
+          <h3>Reroute in motion</h3>
+          <p>电脑端可下发拥堵、事故、天气或人工封路权重，小车按最新成本重规划。</p>
+        </article>
+        <article class="loop-step" data-index="05">
+          <div class="loop-kicker">Deliver</div>
+          <h3>Prompt and confirm</h3>
+          <p>到起点播报“请放入物品”，到终点播报“请取走物品”，确认后推进订单状态。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="map" class="shell">
+      <div class="section-head">
+        <h2>The campus is not static.</h2>
+        
+      </div>
+
+      <div class="map-lab">
+        <div class="map-stage" id="mapStage" aria-label="Interactive route map">
+          <svg id="routeSvg" viewBox="0 0 900 560" role="img" aria-label="Interactive THU and SUTD route map">
+            <g id="baseRoads"></g>
+            <g id="oldRoute"></g>
+            <g id="anomalyRoad"></g>
+            <g id="currentRoute"></g>
+            <g id="nodes"></g>
+            <circle class="vehicle-dot" id="vehicleDot" r="8" cx="0" cy="0" visibility="hidden"></circle>
+          </svg>
+        </div>
+
+        <aside class="map-side">
+          <div class="panel">
+            <div class="tabs" role="tablist" aria-label="Campus maps">
+              <button class="tab active" data-map="thu" type="button">THU</button>
+              <button class="tab" data-map="sutd" type="button">SUTD</button>
+            </div>
+            <div class="route-picker">
+              <label>
+                Pickup
+                <select id="pickupSelect" aria-label="Pickup node"></select>
+              </label>
+              <label>
+                Dropoff
+                <select id="dropoffSelect" aria-label="Dropoff node"></select>
+              </label>
+            </div>
+            <div class="route-summary" id="routeSummary">当前路线将根据选择自动更新。</div>
+
+            <div class="metric-grid">
+                            <div class="metric"><span>Cost</span><strong id="costText">18</strong></div>
+              <div class="metric"><span>ETA</span><strong id="etaText">4.2m</strong></div>
+            </div>
+            <div class="control-row">
+              <button class="hot" id="congestionBtn" type="button">Simulate congestion</button>
+              <button id="resetBtn" type="button">Reset route</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <span class="status-pill" id="edgeStatus">Normal traffic</span>
+            <h3 style="margin-top:16px;">Weight model</h3>
+            <p><strong>final_cost = base_distance + dynamic_penalty + manual_penalty</strong></p>
+            <p>人工难走路线、拥堵、事故、天气和封路都可以通过电脑端后端写入 SQLite，并同步下发到小车。</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="shell">
+      <div class="section-head">
+        <h2>From order to arrival.</h2>
+        
+      </div>
+      <div class="journey">
+        <div class="journey-track">
+          <article class="journey-step">
+            <div>
+              <span class="status-pill">Browser</span>
+              <h3 style="margin-top:18px;">Create an order</h3>
+              <p>选择地图、取件节点和送达节点，发送到电脑端后端。</p>
+            </div>
+            <div class="screen">
+              <span>POST /api/orders</span>
+              <strong>3 -> 9</strong>
+            </div>
+          </article>
+          <article class="journey-step">
+            <div>
+              <span class="status-pill">Pickup</span>
+              <h3 style="margin-top:18px;">Please place the item</h3>
+              <p>小车到达起点后等待确认，屏幕和语音同时提示。</p>
+            </div>
+            <div class="screen">
+              <span>起点 / Pickup</span>
+              <strong>请放入物品</strong>
+            </div>
+          </article>
+          <article class="journey-step">
+            <div>
+              <span class="status-pill">Adaptive</span>
+              <h3 style="margin-top:18px;">Reroute while driving</h3>
+              <p>边权变化后从当前 AprilTag 节点重新计算后续路径。</p>
+            </div>
+            <div class="screen">
+              <span>ROUTE_UPDATED</span>
+              <strong>3 -> 7 -> 9</strong>
+            </div>
+          </article>
+          <article class="journey-step">
+            <div>
+              <span class="status-pill">Dropoff</span>
+              <h3 style="margin-top:18px;">Please take the item</h3>
+              <p>终点确认后订单完成，状态快照写入电脑端数据库。</p>
+            </div>
+            <div class="screen">
+              <span>终点 / Dropoff</span>
+              <strong>请取走物品</strong>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="voice" class="shell">
+      <div class="section-head">
+        <h2>Talk to the car.</h2>
+        
+      </div>
+      <div class="voice-demo">
+        <div class="voice-chain">
+          <div class="voice-node">
+            <div class="tag">User voice</div>
+            <p>“确认已放入” / “Stop mission” / “查询当前状态”</p>
+          </div>
+          <div class="voice-node">
+            <div class="tag">ASRPRO</div>
+            <p>串口识别文本进入小车语音模块，转发给电脑端模型网关。</p>
+          </div>
+          <div class="voice-node">
+            <div class="tag">UDP 8899</div>
+            <p>电脑端返回 <code>confirm</code>、<code>stop</code>、<code>submit_order</code>、<code>speak</code> 等结构化动作。</p>
+          </div>
+          <div class="voice-node">
+            <div class="tag">Vehicle</div>
+            <p>调度器推进订单状态，或触发 ASRPRO 本地播报 ID。</p>
+          </div>
+        </div>
+        <aside class="panel">
+          <div class="voice-meter" aria-hidden="true">
+            <span class="bar" style="height:35%"></span>
+            <span class="bar" style="height:58%"></span>
+            <span class="bar" style="height:42%"></span>
+            <span class="bar" style="height:78%"></span>
+            <span class="bar" style="height:28%"></span>
+            <span class="bar" style="height:64%"></span>
+            <span class="bar" style="height:48%"></span>
+          </div>
+          <h3 style="margin-top:20px;">Local voice first</h3>
+          <p>起点、终点、任务开始、取消、完成、异常状态都映射到本地播报 ID；外部模型只理解命令，不负责生成音频。</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="system" class="shell">
+      <div class="section-head">
+        <h2>Under the hood.</h2>
+        
+      </div>
+      <div class="architecture">
+        <article class="arch-node">
+          <span class="status-pill">Browser</span>
+          <h3 style="margin-top:18px;">Order console</h3>
+          <p>HTTP 3000 托管前端；REST 创建订单和边权；WebSocket 接收状态、图像、语音事件。</p>
+        </article>
+        <article class="arch-node">
+          <span class="status-pill">Backend</span>
+          <h3 style="margin-top:18px;">UDP gateway</h3>
+          <p>8898 下发订单和控制，8888 接收 JPEG 图传，8899 处理语音模型命令。</p>
+        </article>
+        <article class="arch-node">
+          <span class="status-pill">Vehicle</span>
+          <h3 style="margin-top:18px;">Navigation core</h3>
+          <p>订单调度、动态 Dijkstra、AprilTag 定位、屏幕提示、语音播报和运动控制。</p>
+        </article>
+        <article class="arch-node">
+          <span class="status-pill">SQLite</span>
+          <h3 style="margin-top:18px;">Trace store</h3>
+          <p>订单、边权、语音命令、小车状态快照全部持久化。</p>
+        </article>
+      </div>
+      <div class="protocol-flow" aria-label="Communication flow">
+        <span>Browser</span><span>HTTP :3000</span><span>Backend</span><span>UDP :8898</span><span>Vehicle</span><span>WebSocket back</span>
+      </div>
+      <details>
+        <summary>View protocol details</summary>
+        <pre>{
+  "submit_order": {"order_id": 1, "map_id": 1, "pickup_node": 3, "dropoff_node": 9},
+  "edge_update": {"from": 4, "to": 9, "manual_penalty": 0, "dynamic_penalty": 15, "blocked": false},
+  "status_response": {
+    "state": "EXECUTING",
+    "nav_action": "FOLLOW",
+    "current_node": 3,
+    "path": [3, 7, 9],
+    "scheduler_event": "ROUTE_UPDATED"
+  }
+}</pre>
+      </details>
+    </section>
+
+
+    <section class="shell">
+      <div class="section-head">
+        <h2>Built for two campuses.</h2>
+        
+      </div>
+      <div class="campus">
+        <article class="campus-card">
+          <div>
+            <span class="status-pill">MAP_THU = 1</span>
+            <h3 style="margin-top:18px;">THU map</h3>
+            <p>14 个节点，路口节点为 3、4、5、9、10、12，适合展示校园配送与复杂路口重规划。</p>
+          </div>
+          <div class="node-cloud" aria-label="THU nodes">
+            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span>
+          </div>
+        </article>
+        <article class="campus-card">
+          <div>
+            <span class="status-pill">MAP_SUTD = 2</span>
+            <h3 style="margin-top:18px;">SUTD map</h3>
+            <p>12 个节点，路口节点为 1、2、3、4、5、6、10，保留和 THU 一致的调度与路径接口。</p>
+          </div>
+          <div class="node-cloud" aria-label="SUTD nodes">
+            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="source" class="shell open-source">
+      <div class="footer-grid">
+        <div>
+          <p class="eyebrow">Open Source Demo</p>
+          <h2>Ready for defense, demo, and continued engineering.</h2>
+          <p class="zh">项目基于 Loongson 2K300/301 小车硬件平台开发。真实控制台位于电脑端后端，GitHub Pages 页面用于让访问者快速理解系统价值、算法路径和演示流程。</p>
+          <p class="progress-note">Completed: order scheduling, dynamic weighted routing, route UDP, image gateway, voice gateway, SQLite persistence. Next: real-car calibration, frontend polish, external map/model API keys.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn primary" href="https://github.com/Cx300-fh/IntelligentCar_Delivery">Source code</a>
+          <a class="btn" href="https://github.com/Cx300-fh/IntelligentCar_Delivery#readme">README</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const maps = {
+      thu: {
+        name: "THU campus route",
+        copy: "",
+        viewBox: "0 0 900 560",
+
+        /* Geometry traced from the supplied THU reference map. */
+        roads: [
+          /* West main loop */
+          "M120 190 H500 V390 H120 Q75 390 75 345 V235 Q75 190 120 190 Z",
+
+          /* East main loop */
+          "M500 190 H775 Q820 190 820 235 V390 H500 Z",
+
+          /* North raised loop: Library -> Zijing Track -> East Track */
+          "M350 190 V110 Q350 62 398 62 H602 Q650 62 650 110 V190",
+
+          /* South lowered loop: Auditorium -> Zhaolan / Science Building -> A */
+          "M350 390 V462 Q350 510 398 510 H772 Q820 510 820 462 V390"
+        ],
+
+        nodes: [
+          {id:1,  x:500, y:62,  label:"紫荆操场", dx:-28, dy:-14, cls:"major", selectable:true},
+
+          {id:2,  x:210, y:190, label:"理科楼", dx:-27, dy:-14, cls:"major", selectable:true},
+          {id:3,  x:350, y:190, label:"图书馆", dx:-27, dy:-14, cls:"major", selectable:true},
+          {id:4,  x:500, y:190, label:"苏世民书院", dx:12, dy:-14, cls:"major", selectable:true},
+          {id:10, x:650, y:190, label:"东大操场", dx:12, dy:-14, cls:"major", selectable:true},
+
+          {id:6,  x:75,  y:290, label:"校医院", dx:-8, dy:-16, cls:"major", selectable:true},
+          {id:7,  x:500, y:290, label:"学生宿舍", dx:12, dy:-6, cls:"major", selectable:true},
+          {id:8,  x:820, y:290, label:"东门", dx:12, dy:5, cls:"major", selectable:true},
+
+          {id:9,  x:350, y:390, label:"大礼堂", dx:-26, dy:-14, cls:"major", selectable:true},
+          {id:11, x:500, y:390, label:"新清华学堂", dx:12, dy:24, cls:"major", selectable:true},
+          {id:12, x:650, y:390, label:"中央主楼", dx:-58, dy:24, cls:"major", selectable:true},
+          {id:15, x:820, y:390, label:"A", dx:14, dy:4, cls:"major", selectable:true},
+
+          {id:13, x:500, y:510, label:"照澜院", dx:-26, dy:-14, cls:"major", selectable:true},
+          {id:14, x:650, y:510, label:"科技大楼", dx:-34, dy:-14, cls:"major", selectable:true}
+        ],
+
+        /*
+         * Each graph edge owns the exact SVG geometry of the road segment.
+         * Dijkstra chooses edges; the active route concatenates those paths.
+         */
+        edges: [
+          /* Main top road */
+          {a:2, b:3,  d:"M210 190 H350"},
+          {a:3, b:4,  d:"M350 190 H500"},
+          {a:4, b:10, d:"M500 190 H650"},
+
+          /* West rounded side */
+          {a:2, b:6, d:"M210 190 H120 Q75 190 75 235 V290"},
+          {a:6, b:9, d:"M75 290 V345 Q75 390 120 390 H350"},
+
+          /* Central vertical */
+          {a:4, b:7,  d:"M500 190 V290"},
+          {a:7, b:11, d:"M500 290 V390"},
+
+          /* East rounded side */
+          {a:10, b:8,  d:"M650 190 H775 Q820 190 820 235 V290"},
+          {a:8,  b:15, d:"M820 290 V390"},
+
+          /* Main bottom road */
+          {a:9,  b:11, d:"M350 390 H500"},
+          {a:11, b:12, d:"M500 390 H650"},
+          {a:12, b:15, d:"M650 390 H820"},
+
+          /* North loop */
+          {a:3, b:1, d:"M350 190 V110 Q350 62 398 62 H500"},
+          {a:1, b:10,d:"M500 62 H602 Q650 62 650 110 V190"},
+
+          /* South loop */
+          {a:9, b:13, d:"M350 390 V462 Q350 510 398 510 H500"},
+          {a:13,b:14, d:"M500 510 H650"},
+          {a:14,b:15, d:"M650 510 H772 Q820 510 820 462 V390"}
+        ],
+
+        defaultStart: 3,
+        defaultEnd: 9
+      },
+
+      sutd: {
+        name: "SUTD campus route",
+        copy: "SUTD 同样按真实道路几何拼接路线。Library、Campus Centre、E、Sports Centre 等节点之间不会再出现跨道路直连。",
+        viewBox: "0 0 900 560",
+        roads: [
+          "M235 210 L330 92 Q348 64 392 64 H500 Q545 64 570 100 L635 155 L785 385 Q810 425 785 455 Q755 495 690 495 H300 L205 495 Q145 495 112 458 Q83 425 105 375 L170 300 L235 210 Z",
+          "M235 210 L455 300 L785 385",
+          "M170 300 L350 365 L785 385",
+          "M300 495 L350 365 L455 300 L635 155"
+        ],
+        nodes: [
+          {id:1,  x:300, y:495, label:"A", dx:-8, dy:24, cls:"major", selectable:true},
+          {id:2,  x:785, y:385, label:"B", dx:14, dy:5, cls:"major", selectable:true},
+          {id:3,  x:170, y:300, label:"C", dx:-20, dy:4, cls:"major", selectable:true},
+          {id:4,  x:235, y:210, label:"D", dx:-10, dy:-16, cls:"major", selectable:true},
+          {id:5,  x:455, y:300, label:"E", dx:-8, dy:-16, cls:"major", selectable:true},
+          {id:6,  x:635, y:155, label:"F", dx:12, dy:-8, cls:"major", selectable:true},
+          {id:10, x:350, y:365, label:"Campus Centre", dx:12, dy:24, cls:"major", selectable:true},
+          {id:7,  x:260, y:336, label:"Library", dx:-40, dy:24, cls:"major", selectable:true},
+          {id:8,  x:337, y:252, label:"Auditorium", dx:-46, dy:-16, cls:"major", selectable:true},
+          {id:9,  x:545, y:228, label:"Staff & Student Housing", dx:-18, dy:-18, cls:"minor", selectable:true},
+          {id:12, x:705, y:265, label:"POOL", dx:12, dy:-12, cls:"major", selectable:true},
+          {id:13, x:620, y:343, label:"Sports & Recreation Centre", dx:-28, dy:-16, cls:"minor", selectable:true}
+        ],
+        edges: [
+          /* D -> E -> B corridor */
+          {a:4,b:8,d:"M235 210 L337 252"},
+          {a:8,b:5,d:"M337 252 L455 300"},
+          {a:5,b:13,d:"M455 300 L620 343"},
+          {a:13,b:2,d:"M620 343 L785 385"},
+
+          /* C -> Library -> Campus Centre -> B road */
+          {a:3,b:7,d:"M170 300 L260 336"},
+          {a:7,b:10,d:"M260 336 L350 365"},
+          {a:10,b:2,d:"M350 365 L785 385"},
+
+          /* A -> Campus Centre -> E -> F road */
+          {a:1,b:10,d:"M300 495 L350 365"},
+          {a:10,b:5,d:"M350 365 L455 300"},
+          {a:5,b:9,d:"M455 300 L545 228"},
+          {a:9,b:6,d:"M545 228 L635 155"},
+
+          /* F -> Pool -> B perimeter */
+          {a:6,b:12,d:"M635 155 L705 265"},
+          {a:12,b:2,d:"M705 265 L785 385"},
+
+          /* Outer left/bottom perimeter */
+          {a:4,b:3,d:"M235 210 L170 300"},
+          {a:3,b:1,d:"M170 300 L105 375 Q83 425 112 458 Q145 495 205 495 H300"},
+          {a:1,b:2,d:"M300 495 H690 Q755 495 785 455 Q810 425 785 385"}
+        ],
+        defaultStart: 7,
+        defaultEnd: 13,
+        congestionEdge: [5,13]
+      }
+    };
+
+    const state = {
+      map: "thu",
+      congested: false,
+      pickup: 3,
+      dropoff: 9,
+      clickMode: "pickup",
+      congestionEdge: null,
+      preCongestionPath: []
+    };
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const routeSvg = document.getElementById("routeSvg");
+    const baseRoads = document.getElementById("baseRoads");
+    const currentRoute = document.getElementById("currentRoute");
+    const oldRoute = document.getElementById("oldRoute");
+    const anomalyRoad = document.getElementById("anomalyRoad");
+    const nodesGroup = document.getElementById("nodes");
+    const vehicleDot = document.getElementById("vehicleDot");
+    const mapStage = document.getElementById("mapStage");
+    const routeText = document.getElementById("routeText"); // optional: Route metric removed
+    const costText = document.getElementById("costText");
+    const etaText = document.getElementById("etaText");
+    const edgeStatus = document.getElementById("edgeStatus");
+    const heroRoute = document.getElementById("heroRoute");
+    const pickupSelect = document.getElementById("pickupSelect");
+    const dropoffSelect = document.getElementById("dropoffSelect");
+    const routeSummary = document.getElementById("routeSummary");
+
+    let routeAnimationFrame = 0;
+    let routeAnimationToken = 0;
+
+    function clear(el) {
+      while (el.firstChild) el.removeChild(el.firstChild);
+    }
+
+    function svgEl(name, attrs = {}) {
+      const el = document.createElementNS(svgNS, name);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      return el;
+    }
+
+    function appendPath(group, d, cls) {
+      const path = svgEl("path", { d, class: cls });
+      group.appendChild(path);
+      return path;
+    }
+
+    function appendText(group, x, y, text, cls = "map-label") {
+      if (!text) return null;
+      const label = svgEl("text", { x, y, class: cls });
+      label.textContent = text;
+      group.appendChild(label);
+      return label;
+    }
+
+    function nodeById(map, id) {
+      return map.nodes.find((node) => node.id === id);
+    }
+
+    function edgeByNodes(map, a, b) {
+      return map.edges.find(edge =>
+        (edge.a === a && edge.b === b) ||
+        (edge.a === b && edge.b === a)
+      );
+    }
+
+    function edgeLength(map, edge) {
+      const tmp = svgEl("path", { d: edge.d });
+      routeSvg.appendChild(tmp);
+      const len = tmp.getTotalLength();
+      tmp.remove();
+      return len;
+    }
+
+    function edgeMatches(pair, edge) {
+      if (!pair) return false;
+      return (edge.a === pair[0] && edge.b === pair[1]) ||
+             (edge.a === pair[1] && edge.b === pair[0]);
+    }
+
+    function getEdgeWeight(map, edge, blockedEdge = null) {
+      if (blockedEdge && edgeMatches(blockedEdge, edge)) {
+        return Infinity;
+      }
+      return edgeLength(map, edge);
+    }
+
+    function dijkstra(map, startId, endId, blockedEdge = null) {
+      const ids = map.nodes.map(n => n.id);
+      const dist = new Map(ids.map(id => [id, Infinity]));
+      const prev = new Map();
+      const visited = new Set();
+      dist.set(startId, 0);
+
+      while (visited.size < ids.length) {
+        let current = null;
+        let best = Infinity;
+
+        ids.forEach(id => {
+          if (!visited.has(id) && dist.get(id) < best) {
+            best = dist.get(id);
+            current = id;
+          }
+        });
+
+        if (current === null || current === endId) break;
+        visited.add(current);
+
+        map.edges.forEach(edge => {
+          let neighbor = null;
+          if (edge.a === current) neighbor = edge.b;
+          else if (edge.b === current) neighbor = edge.a;
+          if (neighbor === null || visited.has(neighbor)) return;
+
+          const weight = getEdgeWeight(map, edge, blockedEdge);
+          if (!Number.isFinite(weight)) return;
+
+          const alt = dist.get(current) + weight;
+          if (alt < dist.get(neighbor)) {
+            dist.set(neighbor, alt);
+            prev.set(neighbor, current);
+          }
+        });
+      }
+
+      if (!Number.isFinite(dist.get(endId))) return [];
+
+      const path = [];
+      let cur = endId;
+      while (cur !== undefined) {
+        path.unshift(cur);
+        if (cur === startId) break;
+        cur = prev.get(cur);
+      }
+      return path[0] === startId ? path : [];
+    }
+
+    function samePath(a, b) {
+      if (a.length !== b.length) return false;
+      return a.every((id, i) => id === b[i]);
+    }
+
+    function chooseCongestionEdge(map, startId, endId) {
+      const normalPath = dijkstra(map, startId, endId, null);
+      if (normalPath.length < 2) return null;
+
+      const edgeCount = normalPath.length - 1;
+      const candidateIndices = [];
+
+      // Try the center of the active route first, then expand outward.
+      const center = (edgeCount - 1) / 2;
+      const ordered = [...Array(edgeCount).keys()]
+        .sort((a, b) => Math.abs(a - center) - Math.abs(b - center));
+
+      ordered.forEach(i => candidateIndices.push(i));
+
+      for (const i of candidateIndices) {
+        const pair = [normalPath[i], normalPath[i + 1]];
+        const reroute = dijkstra(map, startId, endId, pair);
+
+        // Only accept congestion that produces a valid, visibly different route.
+        if (reroute.length >= 2 && !samePath(normalPath, reroute)) {
+          return pair;
+        }
+      }
+
+      return null;
+    }
+
+    function refreshCongestionScenario() {
+      if (!state.congested) {
+        state.congestionEdge = null;
+        state.preCongestionPath = [];
+        return;
+      }
+
+      const map = maps[state.map];
+      const normalPath = dijkstra(map, state.pickup, state.dropoff, null);
+      const edge = chooseCongestionEdge(map, state.pickup, state.dropoff);
+
+      if (!edge) {
+        // No valid alternative route for this OD pair.
+        state.congested = false;
+        state.congestionEdge = null;
+        state.preCongestionPath = [];
+        document.getElementById("congestionBtn").textContent = "Simulate congestion";
+        edgeStatus.textContent = "No alternate route for this pickup / dropoff";
+        return;
+      }
+
+      state.congestionEdge = edge;
+      state.preCongestionPath = normalPath;
+      document.getElementById("congestionBtn").textContent = "Clear congestion";
+    }
+
+    function reversePathD(d) {
+      const temp = svgEl("path", { d });
+      routeSvg.appendChild(temp);
+
+      const length = temp.getTotalLength();
+      const sampleCount = Math.max(8, Math.ceil(length / 18));
+      const pts = [];
+
+      for (let i = sampleCount; i >= 0; i--) {
+        const p = temp.getPointAtLength(length * i / sampleCount);
+        pts.push([p.x, p.y]);
+      }
+
+      temp.remove();
+
+      return pts.map((p, i) =>
+        `${i === 0 ? "M" : "L"} ${p[0].toFixed(2)} ${p[1].toFixed(2)}`
+      ).join(" ");
+    }
+
+    function orientedEdgeD(map, edge, fromId, toId) {
+      if (edge.a === fromId && edge.b === toId) return edge.d;
+      return reversePathD(edge.d);
+    }
+
+    function combineRouteGeometry(map, nodeIds) {
+      if (nodeIds.length < 2) return "";
+
+      const parts = [];
+      for (let i = 0; i < nodeIds.length - 1; i++) {
+        const from = nodeIds[i];
+        const to = nodeIds[i + 1];
+        const edge = edgeByNodes(map, from, to);
+        if (!edge) return "";
+
+        let d = orientedEdgeD(map, edge, from, to);
+        if (i > 0) {
+          d = d.replace(/^\s*M\s*[-\d.]+\s+[-\d.]+/i, "");
+        }
+        parts.push(d.trim());
+      }
+      return parts.join(" ");
+    }
+
+    function populateSelectors() {
+      const map = maps[state.map];
+      const selectable = map.nodes.filter(n => n.selectable);
+
+      pickupSelect.innerHTML = "";
+      dropoffSelect.innerHTML = "";
+
+      selectable.forEach(node => {
+        const a = document.createElement("option");
+        a.value = node.id;
+        a.textContent = node.label;
+        pickupSelect.appendChild(a);
+
+        const b = document.createElement("option");
+        b.value = node.id;
+        b.textContent = node.label;
+        dropoffSelect.appendChild(b);
+      });
+
+      pickupSelect.value = String(state.pickup);
+      dropoffSelect.value = String(state.dropoff);
+    }
+
+    function setEndpoints(startId, endId) {
+      if (startId === endId) {
+        const map = maps[state.map];
+        const fallback = map.nodes.find(n => n.selectable && n.id !== startId);
+        if (fallback) endId = fallback.id;
+      }
+
+      state.pickup = startId;
+      state.dropoff = endId;
+
+      if (state.congested) {
+        refreshCongestionScenario();
+      }
+
+      pickupSelect.value = String(startId);
+      dropoffSelect.value = String(endId);
+      renderMap();
+    }
+
+    function drawRoadNetwork(map) {
+      map.roads.forEach((d) => appendPath(baseRoads, d, "base-road-bed"));
+      map.roads.forEach((d) => appendPath(baseRoads, d, "base-road"));
+    }
+
+    function drawNodes(map, activeIds) {
+      const activeSet = new Set(activeIds);
+
+      map.nodes.forEach((node) => {
+        let cls = "map-node";
+        if (node.selectable) cls += " selectable";
+        if (node.id === state.pickup) cls += " selected-start";
+        else if (node.id === state.dropoff) cls += " selected-end";
+        else if (activeSet.has(node.id)) cls += " route";
+
+        const circle = svgEl("circle", {
+          cx: node.x,
+          cy: node.y,
+          r: node.id === state.pickup || node.id === state.dropoff ? 6.5 : 2.5,
+          class: cls,
+          tabindex: node.selectable ? 0 : -1,
+          role: node.selectable ? "button" : "img",
+          "aria-label": node.selectable ? `${node.label}，点击设置${state.clickMode === "pickup" ? "起点" : "终点"}` : node.label
+        });
+
+        if (node.selectable) {
+          circle.addEventListener("click", () => handleNodePick(node.id));
+          circle.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleNodePick(node.id);
+            }
+          });
+        }
+
+        nodesGroup.appendChild(circle);
+
+        appendText(
+          nodesGroup,
+          node.x + node.dx,
+          node.y + node.dy,
+          node.label,
+          `map-label ${node.cls || ""}`.trim()
+        );
+      });
+    }
+
+    function handleNodePick(nodeId) {
+      if (state.clickMode === "pickup") {
+        state.pickup = nodeId;
+        if (state.dropoff === nodeId) {
+          const map = maps[state.map];
+          const alt = map.nodes.find(n => n.selectable && n.id !== nodeId);
+          if (alt) state.dropoff = alt.id;
+        }
+        state.clickMode = "dropoff";
+      } else {
+        if (nodeId !== state.pickup) state.dropoff = nodeId;
+        state.clickMode = "pickup";
+      }
+
+      if (state.congested) {
+        refreshCongestionScenario();
+      }
+
+      pickupSelect.value = String(state.pickup);
+      dropoffSelect.value = String(state.dropoff);
+      renderMap();
+    }
+
+    function animateVehicle(path, token) {
+      cancelAnimationFrame(routeAnimationFrame);
+
+      const length = path.getTotalLength();
+      if (!Number.isFinite(length) || length <= 1) return;
+
+      // Make the vehicle movement easy to notice instead of racing through short routes.
+      const duration = Math.max(6500, Math.min(15000, length * 18));
+      const startTime = performance.now();
+
+      function frame(now) {
+        if (token !== routeAnimationToken) return;
+
+        const progress = ((now - startTime) % duration) / duration;
+        const point = path.getPointAtLength(progress * length);
+
+        vehicleDot.setAttribute("cx", point.x.toFixed(2));
+        vehicleDot.setAttribute("cy", point.y.toFixed(2));
+
+        routeAnimationFrame = requestAnimationFrame(frame);
+      }
+
+      routeAnimationFrame = requestAnimationFrame(frame);
+    }
+
+    function animateRouteDraw(path) {
+      const length = path.getTotalLength();
+      path.style.strokeDasharray = `${length}`;
+      path.style.strokeDashoffset = `${length}`;
+      path.getBoundingClientRect();
+      path.style.transition = "stroke-dashoffset 1.0s cubic-bezier(.2,.7,.2,1)";
+      requestAnimationFrame(() => {
+        path.style.strokeDashoffset = "0";
+      });
+    }
+
+    function renderMap() {
+      const map = maps[state.map];
+      const blockedEdge = state.congested ? state.congestionEdge : null;
+      const nodePath = dijkstra(map, state.pickup, state.dropoff, blockedEdge);
+
+      routeAnimationToken += 1;
+      const token = routeAnimationToken;
+
+      routeSvg.setAttribute("viewBox", map.viewBox);
+      clear(baseRoads);
+      clear(currentRoute);
+      clear(oldRoute);
+      clear(anomalyRoad);
+      clear(nodesGroup);
+
+      drawRoadNetwork(map);
+
+      if (nodePath.length < 2) {
+        if (routeText) routeText.textContent = "—";
+        costText.textContent = "—";
+        etaText.textContent = "—";
+        routeSummary.textContent = "当前两点之间没有可用路径。";
+        vehicleDot.setAttribute("visibility", "hidden");
+        drawNodes(map, []);
+        return;
+      }
+
+      const d = combineRouteGeometry(map, nodePath);
+      const routePath = appendPath(currentRoute, d, "route-road");
+
+      if (state.congested && state.congestionEdge) {
+        // Yellow dashed = the COMPLETE route before congestion.
+        if (state.preCongestionPath && state.preCongestionPath.length >= 2) {
+          const oldD = combineRouteGeometry(map, state.preCongestionPath);
+          if (oldD) appendPath(oldRoute, oldD, "old-road");
+        }
+
+        // Bright orange = the exact road segment considered congested/blocked.
+        const [a,b] = state.congestionEdge;
+        const edge = edgeByNodes(map, a, b);
+        if (edge) {
+          appendPath(
+            anomalyRoad,
+            orientedEdgeD(map, edge, a, b),
+            "anomaly-road"
+          );
+        }
+      }
+
+      drawNodes(map, nodePath);
+      mapStage.classList.toggle("congested", state.congested);
+
+      const startNode = nodeById(map, state.pickup);
+      const endNode = nodeById(map, state.dropoff);
+
+      const totalCost = nodePath.slice(1).reduce((sum, id, i) => {
+        const edge = edgeByNodes(map, nodePath[i], id);
+        return sum + getEdgeWeight(map, edge, null);
+      }, 0);
+
+      if (routeText) routeText.textContent = nodePath.join("-");
+      if (heroRoute) heroRoute.textContent = nodePath.join(" -> ");
+      costText.textContent = Math.round(totalCost);
+      etaText.textContent = `${Math.max(1.2, totalCost / 80).toFixed(1)}m`;
+      if (state.congested && state.congestionEdge) {
+        edgeStatus.textContent =
+          `Rerouted · blocked ${state.congestionEdge[0]} → ${state.congestionEdge[1]}`;
+      } else {
+        edgeStatus.textContent = "Normal traffic";
+      }
+      routeSummary.textContent = `${startNode.label} → ${endNode.label} · ${nodePath.length} nodes`;
+
+      vehicleDot.setAttribute("cx", startNode.x);
+      vehicleDot.setAttribute("cy", startNode.y);
+      vehicleDot.setAttribute("visibility", "visible");
+
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        animateRouteDraw(routePath);
+        animateVehicle(routePath, token);
+      } else {
+        // Reduced-motion users still see the vehicle at the pickup node.
+        vehicleDot.setAttribute("cx", startNode.x);
+        vehicleDot.setAttribute("cy", startNode.y);
+      }
+    }
+
+    pickupSelect.addEventListener("change", () => {
+      setEndpoints(Number(pickupSelect.value), state.dropoff);
+    });
+
+    dropoffSelect.addEventListener("change", () => {
+      setEndpoints(state.pickup, Number(dropoffSelect.value));
+    });
+
+    document.querySelectorAll(".tab").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+
+        button.classList.add("active");
+        state.map = button.dataset.map;
+        state.congested = false;
+        state.congestionEdge = null;
+        state.preCongestionPath = [];
+        state.pickup = maps[state.map].defaultStart;
+        state.dropoff = maps[state.map].defaultEnd;
+        state.clickMode = "pickup";
+        document.getElementById("congestionBtn").textContent = "Simulate congestion";
+        populateSelectors();
+        renderMap();
+      });
+    });
+
+    document.getElementById("congestionBtn").addEventListener("click", () => {
+      const button = document.getElementById("congestionBtn");
+
+      if (state.congested) {
+        state.congested = false;
+        state.congestionEdge = null;
+        state.preCongestionPath = [];
+        button.textContent = "Simulate congestion";
+        renderMap();
+        return;
+      }
+
+      state.congested = true;
+      refreshCongestionScenario();
+
+      // refreshCongestionScenario may turn congestion back off if this OD
+      // pair has no valid alternate route.
+      renderMap();
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      state.congested = false;
+      state.congestionEdge = null;
+      state.preCongestionPath = [];
+      state.pickup = maps[state.map].defaultStart;
+      state.dropoff = maps[state.map].defaultEnd;
+      state.clickMode = "pickup";
+      document.getElementById("congestionBtn").textContent = "Simulate congestion";
+      populateSelectors();
+      renderMap();
+    });
+
+    const loopSteps = [...document.querySelectorAll(".loop-step")];
+    let activeStep = 0;
+
+    setInterval(() => {
+      loopSteps.forEach((step) => step.classList.remove("active"));
+      activeStep = (activeStep + 1) % loopSteps.length;
+      loopSteps[activeStep].classList.add("active");
+    }, 2200);
+
+    populateSelectors();
+    renderMap();
+  
+    (() => {
+      const hero = document.querySelector(".hero");
+      if (!hero) return;
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduceMotion) return;
+
+      hero.addEventListener("pointermove", (event) => {
+        const rect = hero.getBoundingClientRect();
+        const nx = (event.clientX - rect.left) / rect.width - 0.5;
+        const ny = (event.clientY - rect.top) / rect.height - 0.5;
+
+        hero.style.setProperty("--hero-x", `${(-nx * 10).toFixed(2)}px`);
+        hero.style.setProperty("--hero-y", `${(-ny * 6).toFixed(2)}px`);
+        hero.classList.add("is-driving");
+      });
+
+      hero.addEventListener("pointerleave", () => {
+        hero.style.setProperty("--hero-x", "0px");
+        hero.style.setProperty("--hero-y", "0px");
+        hero.classList.remove("is-driving");
+      });
+
+      let ticking = false;
+      const updateHeroScroll = () => {
+        const rect = hero.getBoundingClientRect();
+        const progress = Math.max(-1, Math.min(1, -rect.top / Math.max(rect.height, 1)));
+        hero.style.setProperty("--hero-y", `${(progress * -10).toFixed(2)}px`);
+        ticking = false;
+      };
+
+      window.addEventListener("scroll", () => {
+        if (!ticking) {
+          requestAnimationFrame(updateHeroScroll);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      const sections = [...document.querySelectorAll("main > section")];
+      sections.forEach(section => section.classList.add("reveal-on-scroll"));
+
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.12 });
+
+        sections.forEach(section => observer.observe(section));
+      } else {
+        sections.forEach(section => section.classList.add("is-visible"));
+      }
+    })();
+
+</script>
+</body>
+</html>
