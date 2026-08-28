@@ -13,7 +13,8 @@
 #define SERVO_MID    1370   // 舵机中值（PWM占空比）
 
 // 主线程活性看门狗：命令快照generation超过该时间未刷新，5ms线程强制停车
-#define CONTROL_WATCHDOG_MS     500
+// 注：主循环含AprilTag图像处理（单帧数百ms），阈值须大于最慢正常帧+渲染耗时
+#define CONTROL_WATCHDOG_MS     1500
 // 受控较快减速（断线/安全禁止）相对正常减速的倍率
 #define CONTROL_FAST_BRAKE_GAIN 4
 // 停稳判定：编码器平均值连续低于该阈值视为静止

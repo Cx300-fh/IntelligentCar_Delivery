@@ -229,6 +229,9 @@ void dir_control()
     {
         g_uturn_stage = 2;
 
+        //先停车看看位置在哪
+
+
         // stage2不使用视觉PD，先清掉旧历史。
         PID zero = {0};
         turn_pid = zero;
@@ -409,6 +412,8 @@ void dir_control()
         left_speed  = -current_speed;
         right_speed = 0;
     }
+
+    // 这里让stage2先不动，我们看看位置在哪
 
     // stage2时action被强制为ACTION_STRAIGHT：
     // ele_out=0，所以左右轮均为current_speed，真正低速直行。

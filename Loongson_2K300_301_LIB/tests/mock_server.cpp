@@ -29,6 +29,7 @@
 static bool g_observe = false;
 static int  g_goto_node = 13;
 static int  g_silent_after_s = -1;   // >0: 连接N秒后停止回话(连接保持,模拟WiFi断)
+static bool g_auto_ack = true;       // false: 不回event_ack(验证可靠重发)
 
 static uint64_t Now_Ms() {
     struct timespec ts;
@@ -130,8 +131,26 @@ static std::string Goto_Json(uint64_t& seq, uint64_t ver, int node) {
 static std::string Event_Ack_Json(uint64_t& seq, const std::string& reply_to) {
     return std::string("{\"protocol_version\":1,\"type\":\"event_ack\",") +
         "\"message_id\":\"" + Make_Id("srv-ea", seq) + "\",\"vehicle_id\":0," +
-        "\"accepted\":true,\"reply_to\":\"" + reply_to + "\","
+        "\"accepted\":true,\"reply_to\":\"" + reply_to + "\"," +
         "\"event_type\":\"arrived\",\"error\":null}";
+}
+
+// hold/emergency_stop通用命令JSON
+static std::string Simple_Cmd_Json(uint64_t& seq, const char* type, uint64_t ver) {
+    return std::string("{\"protocol_version\":1,\"type\":\"") + type + "\"," +
+        "\"message_id\":\"" + Make_Id("srv-cmd", seq) + "\",\"vehicle_id\":0," +
+        "\"command_version\":" + std::to_string(ver) + "," +
+        "\"trip_id\":\"mock-trip-1\",\"stop_id\":\"mock-stop-1\"," +
+        "\"reason\":\"mock-test\"}";
+}
+
+static std::string Resume_Json(uint64_t& seq, uint64_t ver) {
+    return std::string("{\"protocol_version\":1,\"type\":\"resume\",") +
+        "\"message_id\":\"" + Make_Id("srv-cmd", seq) + "\",\"vehicle_id\":0," +
+        "\"command_version\":" + std::to_string(ver) + "," +
+        "\"trip_id\":\"mock-trip-1\",\"stop_id\":\"mock-stop-1\"," +
+        "\"resume_target_command_version\":" + std::to_string(ver - 1) + "," +
+        "\"reason\":\"mock-test\"}";
 }
 
 static std::string Hb_Ack_Json(uint64_t& seq) {
@@ -252,32 +271,42 @@ int main(int argc, char** argv)
                 } else if (t == "arrived") {
                     got_arrived = true;
                     arrived_reply_to = J_Field(L, "message_id");
-                    // 自动回event_ack
-                    Send_Line(cfd, Event_Ack_Json(seq, arrived_reply_to));
-                    t_event_ack = Now_Ms();
-                    printf(">> event_ack（arrived已确认：%s）\n", arrived_reply_to.c_str());
+                    if (g_auto_ack) {
+                        // 自动回event_ack
+                        Send_Line(cfd, Event_Ack_Json(seq, arrived_reply_to));
+                        t_event_ack = Now_Ms();
+                        printf(">> event_ack（arrived已确认：%s）\n", arrived_reply_to.c_str());
+                    } else {
+                        printf("   [noack模式] arrived收到但不回应：%s（车应每秒重发）\n",
+                               arrived_reply_to.c_str());
+                    }
                     if (smoke) smoke_done = true;
                 } else if (t == "user_action") {
                     // 阶段6联调：自动回event_ack并推进订单快照（2→3装载 / 4→5取件）
                     std::string reply = J_Field(L, "message_id");
                     std::string action = J_Field(L, "action");
                     int new_status = (action.find("PICKUP") != std::string::npos) ? 3 : 5;
-                    char eaj[320];
-                    snprintf(eaj, sizeof(eaj),
-                        "{\"protocol_version\":1,\"type\":\"event_ack\","
-                        "\"message_id\":\"%s\",\"vehicle_id\":0,"
-                        "\"accepted\":true,\"reply_to\":\"%s\","
-                        "\"event_type\":\"user_action\",\"order_id\":\"ORD-MOCK-1\","
-                        "\"new_status\":%d,\"new_order_version\":%d,"
-                        "\"snapshot_version\":%d,\"error\":null}",
-                        Make_Id("srv-ea", seq).c_str(), reply.c_str(),
-                        new_status, new_status, new_status + 10);
-                    Send_Line(cfd, eaj);
-                    printf(">> event_ack（user_action已确认：%s 新状态%d）\n",
-                           reply.c_str(), new_status);
-                    // 下发新快照：装载后phase=3配送中；取件后phase=5完成
-                    Send_Line(cfd, Sync_Json(seq, new_status));
-                    printf(">> state_sync phase=%d\n", new_status);
+                    if (g_auto_ack) {
+                        char eaj[320];
+                        snprintf(eaj, sizeof(eaj),
+                            "{\"protocol_version\":1,\"type\":\"event_ack\","
+                            "\"message_id\":\"%s\",\"vehicle_id\":0,"
+                            "\"accepted\":true,\"reply_to\":\"%s\","
+                            "\"event_type\":\"user_action\",\"order_id\":\"ORD-MOCK-1\","
+                            "\"new_status\":%d,\"new_order_version\":%d,"
+                            "\"snapshot_version\":%d,\"error\":null}",
+                            Make_Id("srv-ea", seq).c_str(), reply.c_str(),
+                            new_status, new_status, new_status + 10);
+                        Send_Line(cfd, eaj);
+                        printf(">> event_ack（user_action已确认：%s 新状态%d）\n",
+                               reply.c_str(), new_status);
+                        // 下发新快照：装载后phase=3配送中；取件后phase=5完成
+                        Send_Line(cfd, Sync_Json(seq, new_status));
+                        printf(">> state_sync phase=%d\n", new_status);
+                    } else {
+                        printf("   [noack模式] user_action收到但不回应：%s（车应重发）\n",
+                               reply.c_str());
+                    }
                 }
             }
         }
@@ -325,8 +354,59 @@ int main(int argc, char** argv)
                 Send_Line(cfd, Goto_Json(seq, ++cmd_ver, node));
                 printf(">> goto_stop v%llu -> node%d\n", (unsigned long long)cmd_ver, node);
             }
+            // ===== 阶段7验收测试命令 =====
+            else if (c.rfind("goto2", 0) == 0) {
+                // 幂等测试：同一version同一内容连发两次（第二次应返回缓存ACK不重启导航）
+                int node = c.size() > 6 ? atoi(c.substr(6).c_str()) : 13;
+                uint64_t v = ++cmd_ver;
+                Send_Line(cfd, Goto_Json(seq, v, node));
+                usleep(1500 * 1000);
+                Send_Line(cfd, Goto_Json(seq, v, node));
+                printf(">> goto_stop v%llu -> node%d 发送两次（幂等测试）\n",
+                       (unsigned long long)v, node);
+            }
+            else if (c == "stale") {
+                // 旧版本测试：发比当前低的version（应STALE_COMMAND拒绝）
+                if (cmd_ver > 1) {
+                    Send_Line(cfd, Goto_Json(seq, cmd_ver - 1, 13));
+                    printf(">> goto_stop v%llu（旧版本，应STALE拒绝）\n",
+                           (unsigned long long)(cmd_ver - 1));
+                } else printf("（先goto一次产生版本号）\n");
+            }
+            else if (c.rfind("conflict", 0) == 0) {
+                // 版本冲突测试：同version不同内容（第一次接受/第二次应VERSION_CONFLICT停车）
+                uint64_t v = ++cmd_ver;
+                Send_Line(cfd, Goto_Json(seq, v, 5));
+                usleep(1500 * 1000);
+                Send_Line(cfd, Goto_Json(seq, v, 9));   // 同版本不同目标
+                printf(">> goto_stop v%llu node5 + v%llu node9（冲突测试）\n",
+                       (unsigned long long)v, (unsigned long long)v);
+            }
+            else if (c == "hold") {
+                Send_Line(cfd, Simple_Cmd_Json(seq, "hold", ++cmd_ver));
+                printf(">> hold v%llu\n", (unsigned long long)cmd_ver);
+            }
+            else if (c == "estop") {
+                Send_Line(cfd, Simple_Cmd_Json(seq, "emergency_stop", ++cmd_ver));
+                printf(">> emergency_stop v%llu\n", (unsigned long long)cmd_ver);
+            }
+            else if (c == "resume") {
+                Send_Line(cfd, Resume_Json(seq, ++cmd_ver));
+                printf(">> resume v%llu\n", (unsigned long long)cmd_ver);
+            }
+            else if (c == "noack") {
+                g_auto_ack = false;
+                printf("（停止回应arrived/user_action——验证可靠重发）\n");
+            }
+            else if (c == "ack") {
+                g_auto_ack = true;
+                printf("（恢复自动回应）\n");
+            }
             else if (c == "quit") break;
-            else if (!c.empty()) printf("（未知命令: %s | sync/goto [n]/quit）\n", c.c_str());
+            else if (!c.empty()) {
+                printf("命令: sync | phase N | goto N | goto2 N | stale | conflict\n");
+                printf("      hold | estop | resume | noack | ack | quit\n");
+            }
         }
     }
 

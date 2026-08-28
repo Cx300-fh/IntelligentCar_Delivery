@@ -175,15 +175,15 @@ void DeliveryController::Process(void)
         Resend_Pending_Events();
     }
 
-    // 6. 断线安全禁止位的受控清除：
-    //    仅当重新同步成功(READY)、已停稳时清除LINK_LOSS位（不碰MANUAL/EMERGENCY位）
-    if (state_ == DELIVERY_READY &&
-        (Safety_Inhibit_Reason() & INHIBIT_REASON_LINK_LOSS) &&
-        !(Safety_Inhibit_Reason() & (INHIBIT_REASON_MANUAL | INHIBIT_REASON_EMERGENCY)) &&
-        Control_Is_Stopped())
-    {
-        Safety_Inhibit_Clear_Bits(INHIBIT_REASON_LINK_LOSS);
-        printf("[DLV] 重连同步完成，清除LINK_LOSS安全禁止\n");
+    // 6. 断线/手动安全禁止位的受控清除：
+    //    READY+已停稳时清除LINK_LOSS和MANUAL位（清除许可≠允许运动——运动由
+    //    协调器状态门控，清除后车不会自行恢复行驶）；EMERGENCY位仅resume可清
+    if (state_ == DELIVERY_READY && Control_Is_Stopped()) {
+        uint32_t reasons = Safety_Inhibit_Reason();
+        if (reasons & (INHIBIT_REASON_LINK_LOSS | INHIBIT_REASON_MANUAL)) {
+            Safety_Inhibit_Clear_Bits(INHIBIT_REASON_LINK_LOSS | INHIBIT_REASON_MANUAL);
+            printf("[DLV] READY+停稳，清除LINK_LOSS/MANUAL安全禁止\n");
+        }
     }
 }
 

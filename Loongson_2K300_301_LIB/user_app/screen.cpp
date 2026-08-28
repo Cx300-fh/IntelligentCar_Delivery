@@ -46,7 +46,7 @@ static uint8_t screen_rx_cmd_len = 0;     // 串口屏指令长度
 static void screen_send_tail(void)
 {
     uint8_t tail[] = {0xFF, 0xFF, 0xFF};
-    screen_uart.uart_write(tail, 3);
+    screen_uart.uart_write(tail, 3, 10);
 }
 
 /**
@@ -59,7 +59,7 @@ void Screen_Send_Var(const char* name, int value)
 {
     char cmd[64];
     int len = snprintf(cmd, sizeof(cmd), "%s.val=%d", name, value);
-    screen_uart.uart_write((uint8_t*)cmd, len);
+    screen_uart.uart_write((uint8_t*)cmd, len, 10);
     screen_send_tail();
 }
 
@@ -73,7 +73,7 @@ void Screen_Send_Text(const char* name, const char* text)
 {
     char cmd[128];
     int len = snprintf(cmd, sizeof(cmd), "%s.txt=\"%s\"", name, text);
-    screen_uart.uart_write((uint8_t*)cmd, len);
+    screen_uart.uart_write((uint8_t*)cmd, len, 10);
     screen_send_tail();
 }
 
@@ -85,7 +85,7 @@ void Screen_Send_Page(uint8_t page_id)
 {
     char cmd[32];
     int len = snprintf(cmd, sizeof(cmd), "page %d", page_id);
-    screen_uart.uart_write((uint8_t*)cmd, len);
+    screen_uart.uart_write((uint8_t*)cmd, len, 10);
     screen_send_tail();
 }
 
@@ -103,13 +103,13 @@ void Screen_Send_Heartbeat(void)
     // 发送在线状态
     char cmd1[32];
     int len1 = snprintf(cmd1, sizeof(cmd1), "n_online.val=1");
-    screen_uart.uart_write((uint8_t*)cmd1, len1);
+    screen_uart.uart_write((uint8_t*)cmd1, len1, 10);
     screen_send_tail();
 
     // 发送超时清零
     char cmd2[48];
     int len2 = snprintf(cmd2, sizeof(cmd2), "page_sys.v_hb_timeout.val=0");
-    screen_uart.uart_write((uint8_t*)cmd2, len2);
+    screen_uart.uart_write((uint8_t*)cmd2, len2, 10);
     screen_send_tail();
 }
 
@@ -736,7 +736,6 @@ void Screen_Render_Delivery(void)
             snprintf(txt, sizeof(txt), "--");
         }
         Screen_Send_Text(name, txt);
-        usleep(5 * 1000);
     }
 
     // 状态机变量：屏幕据此切换按钮文案（b1~b5内部逻辑）与确认按钮使能
@@ -746,14 +745,13 @@ void Screen_Render_Delivery(void)
 
     // 文案与确认按钮（车端权威写入，覆盖屏幕本地文案）
     render_delivery_texts(snap, slot);
-    usleep(5 * 1000);
 
     // 确认按钮使能：仅在等待确认(phase 2/4)且该订单未在待确认队列时允许点击
     bool enable_btn = (snap.screen_phase == SCREEN_PHASE_WAIT_PICKUP ||
                        snap.screen_phase == SCREEN_PHASE_WAIT_DROPOFF);
     char cmd[32];
     int len = snprintf(cmd, sizeof(cmd), "tsw d_s_4,%d", enable_btn ? 1 : 0);
-    screen_uart.uart_write((uint8_t*)cmd, len);
+    screen_uart.uart_write((uint8_t*)cmd, len, 10);
     screen_send_tail();
 }
 
@@ -762,7 +760,7 @@ void Screen_Enter_Delivery_Page(void)
     // DConfirm页为配送模式常驻页（按页面名跳转，页面ID无关）
     char cmd[24];
     int len = snprintf(cmd, sizeof(cmd), "page DConfirm");
-    screen_uart.uart_write((uint8_t*)cmd, len);
+    screen_uart.uart_write((uint8_t*)cmd, len, 10);
     screen_send_tail();
     printf("[Screen] 配送模式：切换到DConfirm页\n");
 }
