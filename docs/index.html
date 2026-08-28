@@ -934,21 +934,23 @@
 
     .old-road {
       fill: none;
-      stroke: rgba(241,243,240,.25);
+      stroke: rgba(227,166,47,.72);
       stroke-width: 4;
       stroke-linecap: round;
       stroke-linejoin: round;
+      stroke-dasharray: 12 9;
       opacity: 0;
       transition: opacity .35s ease;
     }
 
     .anomaly-road {
       fill: none;
-      stroke: var(--orange);
-      stroke-width: 5;
+      stroke: #ffb52e;
+      stroke-width: 7;
       stroke-linecap: round;
       stroke-linejoin: round;
-      stroke-dasharray: 10 9;
+      stroke-dasharray: 7 7;
+      filter: drop-shadow(0 0 7px rgba(255,181,46,.42));
       opacity: 0;
       transition: opacity .35s ease;
     }
@@ -1003,10 +1005,13 @@
     }
 
     .vehicle-dot {
-      fill: var(--text);
-      stroke: var(--green);
-      stroke-width: 3;
-      filter: drop-shadow(0 0 10px rgba(118,185,0,.85));
+      fill: var(--green);
+      stroke: #f4f7f2;
+      stroke-width: 2.4;
+      filter:
+        drop-shadow(0 0 8px rgba(118,185,0,.90))
+        drop-shadow(0 0 18px rgba(118,185,0,.46));
+      pointer-events: none;
     }
     /* ===== MAP ONLY: modified section ends ===== */
 
@@ -1051,7 +1056,7 @@
     }
 
     .map-node.selected-start {
-      fill: var(--green);
+      fill: var(--blue);
       stroke: #0c0e0d;
       stroke-width: 2.6;
     }
@@ -1973,7 +1978,8 @@
       pickup: 3,
       dropoff: 9,
       clickMode: "pickup",
-      congestionEdge: null
+      congestionEdge: null,
+      preCongestionPath: []
     };
 
     const svgNS = "http://www.w3.org/2000/svg";
@@ -2135,6 +2141,32 @@
       return null;
     }
 
+    function refreshCongestionScenario() {
+      if (!state.congested) {
+        state.congestionEdge = null;
+        state.preCongestionPath = [];
+        return;
+      }
+
+      const map = maps[state.map];
+      const normalPath = dijkstra(map, state.pickup, state.dropoff, null);
+      const edge = chooseCongestionEdge(map, state.pickup, state.dropoff);
+
+      if (!edge) {
+        // No valid alternative route for this OD pair.
+        state.congested = false;
+        state.congestionEdge = null;
+        state.preCongestionPath = [];
+        document.getElementById("congestionBtn").textContent = "Simulate congestion";
+        edgeStatus.textContent = "No alternate route for this pickup / dropoff";
+        return;
+      }
+
+      state.congestionEdge = edge;
+      state.preCongestionPath = normalPath;
+      document.getElementById("congestionBtn").textContent = "Clear congestion";
+    }
+
     function reversePathD(d) {
       const temp = svgEl("path", { d });
       routeSvg.appendChild(temp);
@@ -2211,9 +2243,11 @@
 
       state.pickup = startId;
       state.dropoff = endId;
-      state.congested = false;
-      state.congestionEdge = null;
-      document.getElementById("congestionBtn").textContent = "Simulate congestion";
+
+      if (state.congested) {
+        refreshCongestionScenario();
+      }
+
       pickupSelect.value = String(startId);
       dropoffSelect.value = String(endId);
       renderMap();
@@ -2280,9 +2314,10 @@
         state.clickMode = "pickup";
       }
 
-      state.congested = false;
-      state.congestionEdge = null;
-      document.getElementById("congestionBtn").textContent = "Simulate congestion";
+      if (state.congested) {
+        refreshCongestionScenario();
+      }
+
       pickupSelect.value = String(state.pickup);
       dropoffSelect.value = String(state.dropoff);
       renderMap();
@@ -2290,17 +2325,23 @@
 
     function animateVehicle(path, token) {
       cancelAnimationFrame(routeAnimationFrame);
+
       const length = path.getTotalLength();
-      const duration = Math.max(4200, Math.min(9000, length * 10));
+      if (!Number.isFinite(length) || length <= 1) return;
+
+      // Make the vehicle movement easy to notice instead of racing through short routes.
+      const duration = Math.max(6500, Math.min(15000, length * 18));
       const startTime = performance.now();
 
       function frame(now) {
         if (token !== routeAnimationToken) return;
-        const elapsed = (now - startTime) % duration;
-        const progress = elapsed / duration;
+
+        const progress = ((now - startTime) % duration) / duration;
         const point = path.getPointAtLength(progress * length);
-        vehicleDot.setAttribute("cx", point.x);
-        vehicleDot.setAttribute("cy", point.y);
+
+        vehicleDot.setAttribute("cx", point.x.toFixed(2));
+        vehicleDot.setAttribute("cy", point.y.toFixed(2));
+
         routeAnimationFrame = requestAnimationFrame(frame);
       }
 
@@ -2348,9 +2389,22 @@
       const routePath = appendPath(currentRoute, d, "route-road");
 
       if (state.congested && state.congestionEdge) {
+        // Yellow dashed = the COMPLETE route before congestion.
+        if (state.preCongestionPath && state.preCongestionPath.length >= 2) {
+          const oldD = combineRouteGeometry(map, state.preCongestionPath);
+          if (oldD) appendPath(oldRoute, oldD, "old-road");
+        }
+
+        // Bright orange = the exact road segment considered congested/blocked.
         const [a,b] = state.congestionEdge;
         const edge = edgeByNodes(map, a, b);
-        if (edge) appendPath(anomalyRoad, orientedEdgeD(map, edge, a, b), "anomaly-road");
+        if (edge) {
+          appendPath(
+            anomalyRoad,
+            orientedEdgeD(map, edge, a, b),
+            "anomaly-road"
+          );
+        }
       }
 
       drawNodes(map, nodePath);
@@ -2369,7 +2423,8 @@
       costText.textContent = Math.round(totalCost);
       etaText.textContent = `${Math.max(1.2, totalCost / 80).toFixed(1)}m`;
       if (state.congested && state.congestionEdge) {
-        edgeStatus.textContent = `Congestion: ${state.congestionEdge[0]} → ${state.congestionEdge[1]} blocked`;
+        edgeStatus.textContent =
+          `Rerouted · blocked ${state.congestionEdge[0]} → ${state.congestionEdge[1]}`;
       } else {
         edgeStatus.textContent = "Normal traffic";
       }
@@ -2380,9 +2435,11 @@
 
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         animateRouteDraw(routePath);
-        setTimeout(() => {
-          if (token === routeAnimationToken) animateVehicle(routePath, token);
-        }, 1000);
+        animateVehicle(routePath, token);
+      } else {
+        // Reduced-motion users still see the vehicle at the pickup node.
+        vehicleDot.setAttribute("cx", startNode.x);
+        vehicleDot.setAttribute("cy", startNode.y);
       }
     }
 
@@ -2404,6 +2461,7 @@
         state.map = button.dataset.map;
         state.congested = false;
         state.congestionEdge = null;
+        state.preCongestionPath = [];
         state.pickup = maps[state.map].defaultStart;
         state.dropoff = maps[state.map].defaultEnd;
         state.clickMode = "pickup";
@@ -2414,39 +2472,29 @@
     });
 
     document.getElementById("congestionBtn").addEventListener("click", () => {
-      const map = maps[state.map];
       const button = document.getElementById("congestionBtn");
 
       if (state.congested) {
         state.congested = false;
         state.congestionEdge = null;
+        state.preCongestionPath = [];
         button.textContent = "Simulate congestion";
         renderMap();
         return;
       }
 
-      const edge = chooseCongestionEdge(
-        map,
-        state.pickup,
-        state.dropoff
-      );
-
-      if (!edge) {
-        state.congested = false;
-        state.congestionEdge = null;
-        edgeStatus.textContent = "No alternate route for this pickup / dropoff";
-        return;
-      }
-
-      state.congestionEdge = edge;
       state.congested = true;
-      button.textContent = "Clear congestion";
+      refreshCongestionScenario();
+
+      // refreshCongestionScenario may turn congestion back off if this OD
+      // pair has no valid alternate route.
       renderMap();
     });
 
     document.getElementById("resetBtn").addEventListener("click", () => {
       state.congested = false;
       state.congestionEdge = null;
+      state.preCongestionPath = [];
       state.pickup = maps[state.map].defaultStart;
       state.dropoff = maps[state.map].defaultEnd;
       state.clickMode = "pickup";
