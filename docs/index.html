@@ -798,6 +798,346 @@
       }
     }
 
+
+    /* ============================================================
+       Interaction layer — restrained creative-web motion
+       ============================================================ */
+
+    .scroll-progress {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 63px;
+      height: 2px;
+      z-index: 90;
+      pointer-events: none;
+      transform-origin: left center;
+    }
+
+    .scroll-progress > span {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #76b900, #c5ff55);
+      transform: scaleX(0);
+      transform-origin: left center;
+      box-shadow: 0 0 14px rgba(118,185,0,.45);
+      will-change: transform;
+    }
+
+    .topbar {
+      transition:
+        background .35s ease,
+        border-color .35s ease,
+        box-shadow .35s ease;
+    }
+
+    .topbar.is-scrolled {
+      background: rgba(9,11,10,.90);
+      border-bottom-color: rgba(241,243,240,.12);
+      box-shadow: 0 12px 40px rgba(0,0,0,.18);
+    }
+
+    .nav-links a {
+      position: relative;
+      padding: 6px 0;
+    }
+
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -3px;
+      height: 1px;
+      background: var(--green);
+      transform: scaleX(0);
+      transform-origin: right center;
+      transition: transform .32s cubic-bezier(.2,.75,.2,1);
+    }
+
+    .nav-links a:hover::after,
+    .nav-links a.is-active::after {
+      transform: scaleX(1);
+      transform-origin: left center;
+    }
+
+    .nav-links a.is-active {
+      color: var(--text);
+    }
+
+    /* Custom cursor: desktop/fine pointer only */
+    .fx-cursor,
+    .fx-cursor-dot {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 200;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -50%);
+    }
+
+    .fx-cursor {
+      width: 46px;
+      height: 46px;
+      border: 1px solid rgba(225,255,187,.65);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(10,13,11,.14);
+      backdrop-filter: blur(2px);
+      transition:
+        width .22s ease,
+        height .22s ease,
+        background .22s ease,
+        border-color .22s ease,
+        opacity .18s ease;
+      will-change: left, top;
+    }
+
+    .fx-cursor-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(118,185,0,.80);
+      will-change: left, top;
+    }
+
+    .fx-cursor-label {
+      opacity: 0;
+      font-family:
+        "Prism",
+        "Arial Narrow",
+        sans-serif;
+      font-size: 8px;
+      letter-spacing: .08em;
+      color: #e8ffd4;
+      transition: opacity .18s ease;
+    }
+
+    .fx-cursor.is-action {
+      width: 66px;
+      height: 66px;
+      background: rgba(118,185,0,.13);
+      border-color: rgba(170,232,65,.80);
+    }
+
+    .fx-cursor.is-action .fx-cursor-label {
+      opacity: 1;
+    }
+
+    @media (hover:hover) and (pointer:fine) {
+      body.fx-cursor-on,
+      body.fx-cursor-on a,
+      body.fx-cursor-on button,
+      body.fx-cursor-on video,
+      body.fx-cursor-on .loop-step,
+      body.fx-cursor-on .journey-step,
+      body.fx-cursor-on .arch-node,
+      body.fx-cursor-on .voice-node,
+      body.fx-cursor-on .map-node.selectable {
+        cursor: none !important;
+      }
+
+      body.fx-cursor-on select,
+      body.fx-cursor-on input,
+      body.fx-cursor-on textarea,
+      body.fx-cursor-on summary {
+        cursor: auto !important;
+      }
+    }
+
+    /* Pointer spotlight + subtle card depth */
+    .fx-card {
+      position: relative;
+      isolation: isolate;
+      transform-style: preserve-3d;
+      transition:
+        transform .28s cubic-bezier(.2,.75,.2,1),
+        border-color .28s ease;
+      will-change: transform;
+    }
+
+    .fx-card-light {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      opacity: 0;
+      border-radius: inherit;
+      background:
+        radial-gradient(
+          280px circle at var(--fx-x, 50%) var(--fx-y, 50%),
+          rgba(176,235,79,.11),
+          rgba(255,255,255,.025) 35%,
+          transparent 68%
+        );
+      transition: opacity .25s ease;
+    }
+
+    .fx-card:hover .fx-card-light {
+      opacity: 1;
+    }
+
+    .fx-card:hover {
+      border-color: rgba(164,215,70,.30);
+    }
+
+    .journey-step,
+    .arch-node,
+    .voice-node {
+      transition:
+        transform .28s cubic-bezier(.2,.75,.2,1),
+        background .28s ease,
+        border-color .28s ease;
+    }
+
+    .journey-step:hover,
+    .arch-node:hover,
+    .voice-node:hover {
+      background-color: rgba(118,185,0,.045);
+    }
+
+    /* Loop becomes genuinely interactive rather than only auto-cycling */
+    .loop-step {
+      transition:
+        background .32s ease,
+        color .32s ease,
+        transform .32s cubic-bezier(.2,.75,.2,1);
+    }
+
+    .loop-step:hover {
+      transform: translateY(-4px);
+      background: rgba(118,185,0,.07);
+    }
+
+    .loop-step.active {
+      background:
+        linear-gradient(180deg, rgba(118,185,0,.12), rgba(118,185,0,.035));
+    }
+
+    .loop-step.active::after {
+      content: "";
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 14px;
+      height: 1px;
+      background:
+        linear-gradient(90deg, var(--green), rgba(118,185,0,0));
+      animation: loopScan 2.2s ease-in-out infinite;
+    }
+
+    @keyframes loopScan {
+      0%,100% { transform: scaleX(.28); transform-origin: left; opacity: .5; }
+      50% { transform: scaleX(1); transform-origin: left; opacity: 1; }
+    }
+
+    /* Section headings gain a cinematic reveal line */
+    .section-head h2,
+    .demo-video-head h2 {
+      position: relative;
+      width: fit-content;
+    }
+
+    .section-head h2::after,
+    .demo-video-head h2::after {
+      content: "";
+      display: block;
+      width: 42%;
+      height: 2px;
+      margin-top: 14px;
+      background:
+        linear-gradient(90deg, var(--green), rgba(118,185,0,0));
+      transform: scaleX(.35);
+      transform-origin: left;
+      opacity: .55;
+      transition:
+        transform .75s cubic-bezier(.16,.8,.2,1),
+        opacity .75s ease;
+    }
+
+    .reveal-on-scroll.is-visible .section-head h2::after,
+    .reveal-on-scroll.is-visible .demo-video-head h2::after {
+      transform: scaleX(1);
+      opacity: 1;
+    }
+
+    /* Video feels like an interactive object */
+    .demo-video-frame {
+      transform-style: preserve-3d;
+      transition:
+        transform .35s cubic-bezier(.2,.75,.2,1),
+        border-color .35s ease,
+        box-shadow .35s ease;
+    }
+
+    .demo-video-frame:hover {
+      border-color: rgba(168,220,74,.36);
+      box-shadow:
+        0 38px 110px rgba(0,0,0,.38),
+        0 0 0 1px rgba(118,185,0,.06);
+    }
+
+    .demo-video-frame video {
+      transition: filter .35s ease, transform .55s cubic-bezier(.2,.75,.2,1);
+    }
+
+    .demo-video-frame:hover video {
+      filter: contrast(1.03) saturate(1.05);
+      transform: scale(1.008);
+    }
+
+    /* Map and controls give immediate tactile feedback */
+    .tab,
+    #congestionBtn,
+    #resetBtn {
+      transition:
+        transform .22s ease,
+        border-color .22s ease,
+        background .22s ease;
+    }
+
+    .tab:active,
+    #congestionBtn:active,
+    #resetBtn:active {
+      transform: scale(.97);
+    }
+
+    .route-picker select {
+      transition:
+        border-color .25s ease,
+        background .25s ease,
+        box-shadow .25s ease;
+    }
+
+    .route-picker select:hover {
+      border-color: rgba(118,185,0,.45);
+    }
+
+    .route-picker select:focus {
+      box-shadow: 0 0 0 3px rgba(118,185,0,.10);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fx-cursor,
+      .fx-cursor-dot,
+      .scroll-progress,
+      .loop-step.active::after {
+        display: none !important;
+      }
+
+      .fx-card,
+      .journey-step,
+      .arch-node,
+      .voice-node,
+      .demo-video-frame {
+        transform: none !important;
+      }
+    }
+
     section { padding: 86px 0; }
 
     .section-head {
@@ -1490,6 +1830,9 @@
   </style>
 </head>
 <body>
+  <div class="scroll-progress" aria-hidden="true"><span></span></div>
+  <div class="fx-cursor" aria-hidden="true"><span class="fx-cursor-label"></span></div>
+  <div class="fx-cursor-dot" aria-hidden="true"></div>
   <div class="topbar">
     <div class="shell nav">
       <a class="brand" href="#top" aria-label="THU Delivery home">
@@ -1805,36 +2148,6 @@
   }
 }</pre>
       </details>
-    </section>
-
-
-    <section class="shell">
-      <div class="section-head">
-        <h2>Built for two campuses.</h2>
-        
-      </div>
-      <div class="campus">
-        <article class="campus-card">
-          <div>
-            <span class="status-pill">MAP_THU = 1</span>
-            <h3 style="margin-top:18px;">THU map</h3>
-            <p>14 个节点，路口节点为 3、4、5、9、10、12，适合展示校园配送与复杂路口重规划。</p>
-          </div>
-          <div class="node-cloud" aria-label="THU nodes">
-            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span>
-          </div>
-        </article>
-        <article class="campus-card">
-          <div>
-            <span class="status-pill">MAP_SUTD = 2</span>
-            <h3 style="margin-top:18px;">SUTD map</h3>
-            <p>12 个节点，路口节点为 1、2、3、4、5、6、10，保留和 THU 一致的调度与路径接口。</p>
-          </div>
-          <div class="node-cloud" aria-label="SUTD nodes">
-            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span>
-          </div>
-        </article>
-      </div>
     </section>
 
     <section id="source" class="shell open-source">
@@ -2529,12 +2842,47 @@
 
     const loopSteps = [...document.querySelectorAll(".loop-step")];
     let activeStep = 0;
+    let loopTimer = null;
+    let loopPaused = false;
 
-    setInterval(() => {
-      loopSteps.forEach((step) => step.classList.remove("active"));
-      activeStep = (activeStep + 1) % loopSteps.length;
-      loopSteps[activeStep].classList.add("active");
-    }, 2200);
+    function setLoopStep(index) {
+      activeStep = (index + loopSteps.length) % loopSteps.length;
+      loopSteps.forEach((step, i) => {
+        step.classList.toggle("active", i === activeStep);
+        step.setAttribute("aria-current", i === activeStep ? "step" : "false");
+      });
+    }
+
+    function startLoopAuto() {
+      if (loopTimer) clearInterval(loopTimer);
+      loopTimer = setInterval(() => {
+        if (!loopPaused) setLoopStep(activeStep + 1);
+      }, 2600);
+    }
+
+    loopSteps.forEach((step, index) => {
+      step.setAttribute("tabindex", "0");
+      step.addEventListener("mouseenter", () => {
+        loopPaused = true;
+        setLoopStep(index);
+      });
+      step.addEventListener("mouseleave", () => {
+        loopPaused = false;
+      });
+      step.addEventListener("focus", () => {
+        loopPaused = true;
+        setLoopStep(index);
+      });
+      step.addEventListener("blur", () => {
+        loopPaused = false;
+      });
+      step.addEventListener("click", () => {
+        setLoopStep(index);
+      });
+    });
+
+    setLoopStep(0);
+    startLoopAuto();
 
     populateSelectors();
     renderMap();
@@ -2593,6 +2941,170 @@
         sections.forEach(section => observer.observe(section));
       } else {
         sections.forEach(section => section.classList.add("is-visible"));
+      }
+    })();
+
+
+    (() => {
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const finePointer = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
+
+      /* Scroll progress + condensed topbar */
+      const topbar = document.querySelector(".topbar");
+      const progress = document.querySelector(".scroll-progress > span");
+
+      function updateScrollChrome() {
+        const doc = document.documentElement;
+        const max = Math.max(1, doc.scrollHeight - window.innerHeight);
+        const p = Math.max(0, Math.min(1, window.scrollY / max));
+        if (progress) progress.style.transform = `scaleX(${p})`;
+        if (topbar) topbar.classList.toggle("is-scrolled", window.scrollY > 24);
+      }
+
+      updateScrollChrome();
+      window.addEventListener("scroll", updateScrollChrome, { passive: true });
+
+      /* Active nav state follows sections */
+      const navLinks = [...document.querySelectorAll(".nav-links a[href^='#']")];
+      const sectionPairs = navLinks
+        .map(link => {
+          const target = document.querySelector(link.getAttribute("href"));
+          return target ? { link, target } : null;
+        })
+        .filter(Boolean);
+
+      if ("IntersectionObserver" in window) {
+        const navObserver = new IntersectionObserver((entries) => {
+          const visible = entries
+            .filter(e => e.isIntersecting)
+            .sort((a,b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+          if (!visible) return;
+          sectionPairs.forEach(({link,target}) => {
+            link.classList.toggle("is-active", target === visible.target);
+          });
+        }, {
+          rootMargin: "-25% 0px -58% 0px",
+          threshold: [0.01, .2, .5]
+        });
+
+        sectionPairs.forEach(({target}) => navObserver.observe(target));
+      }
+
+      /* Add spotlight / depth behavior to selected content cards */
+      const depthCards = [
+        ...document.querySelectorAll(
+          ".journey-step, .arch-node, .voice-node, .demo-video-frame"
+        )
+      ];
+
+      depthCards.forEach(card => {
+        card.classList.add("fx-card");
+        const light = document.createElement("span");
+        light.className = "fx-card-light";
+        light.setAttribute("aria-hidden", "true");
+        card.appendChild(light);
+
+        if (reduced || !finePointer) return;
+
+        card.addEventListener("pointermove", (event) => {
+          const rect = card.getBoundingClientRect();
+          const x = (event.clientX - rect.left) / rect.width;
+          const y = (event.clientY - rect.top) / rect.height;
+
+          card.style.setProperty("--fx-x", `${(x * 100).toFixed(1)}%`);
+          card.style.setProperty("--fx-y", `${(y * 100).toFixed(1)}%`);
+
+          const rx = (0.5 - y) * 2.2;
+          const ry = (x - 0.5) * 2.8;
+          card.style.transform =
+            `perspective(900px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) translateY(-2px)`;
+        });
+
+        card.addEventListener("pointerleave", () => {
+          card.style.transform = "";
+        });
+      });
+
+      /* Magnetic hover for compact controls */
+      if (!reduced && finePointer) {
+        const magnetic = document.querySelectorAll(
+          ".hero-actions .btn, .nav-links a, .tab"
+        );
+
+        magnetic.forEach(el => {
+          el.addEventListener("pointermove", event => {
+            const r = el.getBoundingClientRect();
+            const dx = event.clientX - (r.left + r.width / 2);
+            const dy = event.clientY - (r.top + r.height / 2);
+            el.style.transform =
+              `translate(${(dx * .10).toFixed(1)}px, ${(dy * .12).toFixed(1)}px)`;
+          });
+          el.addEventListener("pointerleave", () => {
+            el.style.transform = "";
+          });
+        });
+      }
+
+      /* Custom cursor with contextual labels */
+      if (!reduced && finePointer) {
+        const ring = document.querySelector(".fx-cursor");
+        const dot = document.querySelector(".fx-cursor-dot");
+        const label = ring?.querySelector(".fx-cursor-label");
+
+        if (ring && dot && label) {
+          document.body.classList.add("fx-cursor-on");
+
+          let tx = window.innerWidth / 2;
+          let ty = window.innerHeight / 2;
+          let rx = tx;
+          let ry = ty;
+          let visible = false;
+
+          const getActionLabel = target => {
+            if (!target) return "";
+            if (target.closest(".demo-video-frame")) return "VIEW";
+            if (target.closest(".map-node.selectable")) return "PICK";
+            if (target.closest(".loop-step")) return "STEP";
+            if (target.closest(".journey-step, .arch-node, .voice-node")) return "EXPLORE";
+            if (target.closest("a, button")) return "GO";
+            return "";
+          };
+
+          window.addEventListener("pointermove", event => {
+            tx = event.clientX;
+            ty = event.clientY;
+            dot.style.left = `${tx}px`;
+            dot.style.top = `${ty}px`;
+
+            if (!visible) {
+              visible = true;
+              ring.style.opacity = "1";
+              dot.style.opacity = "1";
+            }
+
+            const text = getActionLabel(event.target);
+            ring.classList.toggle("is-action", Boolean(text));
+            label.textContent = text;
+          }, { passive: true });
+
+          window.addEventListener("mouseout", event => {
+            if (!event.relatedTarget) {
+              visible = false;
+              ring.style.opacity = "0";
+              dot.style.opacity = "0";
+            }
+          });
+
+          const cursorFrame = () => {
+            rx += (tx - rx) * .16;
+            ry += (ty - ry) * .16;
+            ring.style.left = `${rx}px`;
+            ring.style.top = `${ry}px`;
+            requestAnimationFrame(cursorFrame);
+          };
+          requestAnimationFrame(cursorFrame);
+        }
       }
     })();
 
