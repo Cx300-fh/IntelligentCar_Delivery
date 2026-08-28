@@ -237,53 +237,98 @@
 
 
     .hero-title-mark {
-      display: flex;
+      --brand-x: 0px;
+      --brand-y: 0px;
+      --brand-rx: 0deg;
+      position: relative;
+      z-index: 5;
+      display: inline-flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: 4px;
-      margin-bottom: 20px;
+      gap: 0;
+      margin: -74px 0 28px 8px;
       max-width: none;
       line-height: 1;
       text-transform: none;
+      user-select: none;
+      perspective: 900px;
+      isolation: isolate;
+      animation: brandLockupIn .9s cubic-bezier(.16,.85,.2,1) both;
     }
 
     .hero-title-cn {
-      display: block;
+      display: flex;
+      align-items: flex-end;
+      gap: .24em;
       position: relative;
-      top: -58px;
-      left: 18px;
+      top: -22px;
+      left: 14px;
+      margin-left: 18px;
       font-family:
         "Yishanbei",
         "STKaiti",
         "KaiTi",
         "Songti SC",
         serif;
-      font-size: clamp(64px, 8.8vw, 116px);
+      font-size: clamp(86px, 11.2vw, 154px);
       font-weight: 400;
-      line-height: .84;
-      letter-spacing: .12em;
-      color: var(--text);
-      text-shadow:
-        0 1px 0 rgba(255,255,255,.08),
-        0 8px 28px rgba(0,0,0,.28);
+      line-height: .78;
+      letter-spacing: 0;
+      color: var(--green);
+      transform:
+        translate3d(var(--brand-x), var(--brand-y), 0)
+        rotateZ(var(--brand-rx));
+      transition:
+        transform .28s cubic-bezier(.2,.75,.2,1),
+        filter .28s ease;
+      will-change: transform;
     }
 
     .hero-title-en {
-      display: block;
-      margin-top: -22px;
+      position: relative;
+      display: inline-flex;
+      align-items: baseline;
+      gap: .18em;
+      margin-top: -10px;
       font-family:
         "Prism",
         "Arial Narrow",
         "Helvetica Neue",
         Arial,
         sans-serif;
-      font-size: clamp(34px, 4.8vw, 66px);
+      font-size: clamp(42px, 5.5vw, 80px);
       font-weight: 400;
-      line-height: .92;
-      letter-spacing: .035em;
-      color: var(--green);
-      text-transform: none;
+      line-height: .86;
+      letter-spacing: .025em;
       white-space: nowrap;
+
+      color: transparent;
+      background:
+        linear-gradient(
+          100deg,
+          #f4f7f2 0%,
+          #f4f7f2 30%,
+          #ffffff 44%,
+          #cfd5cf 56%,
+          #f4f7f2 72%,
+          #f4f7f2 100%
+        );
+      background-size: 220% 100%;
+      background-position: 100% 50%;
+      -webkit-background-clip: text;
+      background-clip: text;
+
+      transform:
+        translate3d(
+          calc(var(--brand-x) * -.38),
+          calc(var(--brand-y) * -.28),
+          0
+        );
+      transition:
+        transform .32s cubic-bezier(.2,.75,.2,1),
+        letter-spacing .32s ease;
+      animation: prismSweep 5.6s ease-in-out infinite !important;
+      will-change: transform, background-position;
     }
 
     @media (max-width: 560px) {
@@ -1300,9 +1345,9 @@
       inset: 0 auto auto 0;
       z-index: -1;
       color: transparent;
-      -webkit-text-stroke: 1px rgba(147,214,27,.18);
+      -webkit-text-stroke: 1px rgba(244,247,242,.15);
       transform: translate(5px, 6px);
-      opacity: .58;
+      opacity: .48;
       transition:
         transform .36s cubic-bezier(.2,.75,.2,1),
         opacity .3s ease;
@@ -1335,7 +1380,7 @@
     }
 
     .hero-title-mark:hover .hero-title-glyph-a {
-      color: #ffffff;
+      color: #b9ff41;
       transform: translate(-3px,-8px) rotate(-2deg) scale(1.025);
       text-shadow:
         6px 7px 0 rgba(118,185,0,.13),
@@ -1344,7 +1389,7 @@
     }
 
     .hero-title-mark:hover .hero-title-glyph-b {
-      color: #ffffff;
+      color: #b9ff41;
       transform: translate(4px,-5px) rotate(2deg) scale(1.025);
       text-shadow:
         -6px 7px 0 rgba(118,185,0,.13),
@@ -1390,16 +1435,19 @@
 
     @media (max-width: 760px) {
       .hero-title-mark {
-        margin: -10px 0 22px;
+        margin: -18px 0 24px;
       }
 
       .hero-title-cn {
+        top: -8px;
+        left: 0;
         margin-left: 0;
-        font-size: clamp(58px, 19vw, 86px);
+        gap: .20em;
+        font-size: clamp(66px, 22vw, 96px);
       }
 
       .hero-title-en {
-        margin-top: 5px;
+        margin-top: 2px;
         font-size: clamp(31px, 10vw, 48px);
       }
 
@@ -2148,7 +2196,6 @@
             <span class="hero-title-en-delivery">Delivery</span>
           </span>
         </h1>
-        <p class="hero-lead">Autonomous campus delivery, from order to destination.</p>
         <div class="hero-actions">
           <a class="btn primary" href="#map">Watch Demo</a>
           <a class="btn" href="#system">Explore System</a>
