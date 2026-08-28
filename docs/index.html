@@ -1138,6 +1138,291 @@
       }
     }
 
+
+    /* ============================================================
+       Hero brand title — interactive lockup
+       ============================================================ */
+
+    .hero-title-mark {
+      --brand-x: 0px;
+      --brand-y: 0px;
+      --brand-rx: 0deg;
+      position: relative;
+      z-index: 5;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      margin: -38px 0 22px 8px;
+      max-width: none;
+      line-height: 1;
+      text-transform: none;
+      user-select: none;
+      perspective: 900px;
+      isolation: isolate;
+      animation: brandLockupIn .9s cubic-bezier(.16,.85,.2,1) both;
+    }
+
+    @keyframes brandLockupIn {
+      0% {
+        opacity: 0;
+        filter: blur(10px);
+        transform: translateY(30px) scale(.965);
+      }
+      100% {
+        opacity: 1;
+        filter: blur(0);
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Disable the older generic hero reveal on the two title rows.
+       The lockup now owns its entrance animation. */
+    .hero-title-cn,
+    .hero-title-en {
+      opacity: 1 !important;
+      animation: none !important;
+    }
+
+    .hero-title-cn {
+      display: flex;
+      align-items: flex-end;
+      gap: .16em;
+      position: relative;
+      top: auto;
+      left: auto;
+      margin-left: 18px;
+      font-family:
+        "Yishanbei",
+        "STKaiti",
+        "KaiTi",
+        "Songti SC",
+        serif;
+      font-size: clamp(74px, 9.9vw, 136px);
+      font-weight: 400;
+      line-height: .80;
+      letter-spacing: 0;
+      color: #f5f7f3;
+      transform:
+        translate3d(var(--brand-x), var(--brand-y), 0)
+        rotateZ(var(--brand-rx));
+      transition:
+        transform .28s cubic-bezier(.2,.75,.2,1),
+        filter .28s ease;
+      will-change: transform;
+    }
+
+    .hero-title-glyph {
+      position: relative;
+      display: inline-block;
+      transform-origin: 50% 78%;
+      text-shadow:
+        0 0 1px rgba(255,255,255,.18),
+        0 12px 34px rgba(0,0,0,.36);
+      transition:
+        transform .42s cubic-bezier(.16,.8,.2,1),
+        color .32s ease,
+        text-shadow .32s ease;
+    }
+
+    .hero-title-glyph::after {
+      content: attr(aria-label);
+    }
+
+    .hero-title-glyph-a {
+      animation: sealFloatA 5.8s ease-in-out infinite;
+    }
+
+    .hero-title-glyph-b {
+      animation: sealFloatB 5.8s ease-in-out infinite .16s;
+    }
+
+    @keyframes sealFloatA {
+      0%,100% { transform: translateY(0) rotate(-.35deg); }
+      50% { transform: translateY(-3px) rotate(.35deg); }
+    }
+
+    @keyframes sealFloatB {
+      0%,100% { transform: translateY(0) rotate(.35deg); }
+      50% { transform: translateY(-4px) rotate(-.35deg); }
+    }
+
+    .hero-title-en {
+      position: relative;
+      display: inline-flex;
+      align-items: baseline;
+      gap: .18em;
+      margin-top: -2px;
+      font-family:
+        "Prism",
+        "Arial Narrow",
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+      font-size: clamp(42px, 5.5vw, 80px);
+      font-weight: 400;
+      line-height: .86;
+      letter-spacing: .025em;
+      white-space: nowrap;
+
+      color: transparent;
+      background:
+        linear-gradient(
+          100deg,
+          #76b900 0%,
+          #76b900 28%,
+          #caff63 43%,
+          #92d61a 55%,
+          #76b900 72%,
+          #76b900 100%
+        );
+      background-size: 220% 100%;
+      background-position: 100% 50%;
+      -webkit-background-clip: text;
+      background-clip: text;
+
+      transform:
+        translate3d(
+          calc(var(--brand-x) * -.38),
+          calc(var(--brand-y) * -.28),
+          0
+        );
+      transition:
+        transform .32s cubic-bezier(.2,.75,.2,1),
+        letter-spacing .32s ease;
+      animation: prismSweep 5.6s ease-in-out infinite !important;
+      will-change: transform, background-position;
+    }
+
+    .hero-title-en::before {
+      content: attr(data-text);
+      position: absolute;
+      inset: 0 auto auto 0;
+      z-index: -1;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(147,214,27,.18);
+      transform: translate(5px, 6px);
+      opacity: .58;
+      transition:
+        transform .36s cubic-bezier(.2,.75,.2,1),
+        opacity .3s ease;
+      pointer-events: none;
+    }
+
+    .hero-title-en::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -10px;
+      width: 46%;
+      height: 2px;
+      background:
+        linear-gradient(90deg, #b9ff41, rgba(118,185,0,0));
+      box-shadow: 0 0 14px rgba(118,185,0,.38);
+      transform-origin: left;
+      animation: titleSignal 3.6s ease-in-out infinite;
+    }
+
+    @keyframes prismSweep {
+      0%, 18% { background-position: 100% 50%; }
+      52% { background-position: 0% 50%; }
+      100% { background-position: -85% 50%; }
+    }
+
+    @keyframes titleSignal {
+      0%,100% { transform: scaleX(.38); opacity: .42; }
+      50% { transform: scaleX(1); opacity: 1; }
+    }
+
+    .hero-title-mark:hover .hero-title-glyph-a {
+      color: #ffffff;
+      transform: translate(-3px,-8px) rotate(-2deg) scale(1.025);
+      text-shadow:
+        6px 7px 0 rgba(118,185,0,.13),
+        0 16px 38px rgba(0,0,0,.40);
+      animation-play-state: paused;
+    }
+
+    .hero-title-mark:hover .hero-title-glyph-b {
+      color: #ffffff;
+      transform: translate(4px,-5px) rotate(2deg) scale(1.025);
+      text-shadow:
+        -6px 7px 0 rgba(118,185,0,.13),
+        0 16px 38px rgba(0,0,0,.40);
+      animation-play-state: paused;
+    }
+
+    .hero-title-mark:hover .hero-title-en {
+      letter-spacing: .045em;
+    }
+
+    .hero-title-mark:hover .hero-title-en::before {
+      transform: translate(8px, 8px);
+      opacity: .86;
+    }
+
+    .hero-title-mark::after {
+      content: "AUTONOMOUS CAMPUS LOGISTICS";
+      position: absolute;
+      left: calc(100% + 18px);
+      bottom: 7px;
+      width: max-content;
+      color: rgba(241,243,240,.28);
+      font-family:
+        "Prism",
+        "Arial Narrow",
+        sans-serif;
+      font-size: 9px;
+      letter-spacing: .14em;
+      writing-mode: vertical-rl;
+      opacity: 0;
+      transform: translateX(-8px);
+      transition:
+        opacity .32s ease,
+        transform .32s ease;
+      pointer-events: none;
+    }
+
+    .hero-title-mark:hover::after {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    @media (max-width: 760px) {
+      .hero-title-mark {
+        margin: -10px 0 22px;
+      }
+
+      .hero-title-cn {
+        margin-left: 0;
+        font-size: clamp(58px, 19vw, 86px);
+      }
+
+      .hero-title-en {
+        margin-top: 5px;
+        font-size: clamp(31px, 10vw, 48px);
+      }
+
+      .hero-title-mark::after {
+        display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-title-mark,
+      .hero-title-glyph-a,
+      .hero-title-glyph-b,
+      .hero-title-en,
+      .hero-title-en::after {
+        animation: none !important;
+      }
+
+      .hero-title-cn,
+      .hero-title-en {
+        transform: none !important;
+      }
+    }
+
     section { padding: 86px 0; }
 
     .section-head {
@@ -1853,12 +2138,17 @@
   <header id="top" class="hero">
     <div class="shell hero-grid">
       <div>
-        <h1 class="hero-title-mark">
-          <span class="hero-title-cn">清送</span>
-          <span class="hero-title-en">THU Delivery</span>
+        <h1 class="hero-title-mark" id="heroBrandTitle">
+          <span class="hero-title-cn" aria-label="清送">
+            <span class="hero-title-glyph hero-title-glyph-a" aria-hidden="true">清</span>
+            <span class="hero-title-glyph hero-title-glyph-b" aria-hidden="true">送</span>
+          </span>
+          <span class="hero-title-en" data-text="THU Delivery">
+            <span class="hero-title-en-thu">THU</span>
+            <span class="hero-title-en-delivery">Delivery</span>
+          </span>
         </h1>
         <p class="hero-lead">Autonomous campus delivery, from order to destination.</p>
-        <p class="zh">电脑端下单，小车按拓扑地图导航<br>路况变化时动态重规划<br>屏幕、语音、图传和数据库记录轨迹</p>
         <div class="hero-actions">
           <a class="btn primary" href="#map">Watch Demo</a>
           <a class="btn" href="#system">Explore System</a>
@@ -3106,6 +3396,32 @@
           requestAnimationFrame(cursorFrame);
         }
       }
+    })();
+
+
+    (() => {
+      const title = document.getElementById("heroBrandTitle");
+      if (!title) return;
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const finePointer = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
+      if (reduceMotion || !finePointer) return;
+
+      title.addEventListener("pointermove", event => {
+        const rect = title.getBoundingClientRect();
+        const nx = (event.clientX - rect.left) / Math.max(rect.width, 1) - .5;
+        const ny = (event.clientY - rect.top) / Math.max(rect.height, 1) - .5;
+
+        title.style.setProperty("--brand-x", `${(nx * 8).toFixed(2)}px`);
+        title.style.setProperty("--brand-y", `${(ny * 5).toFixed(2)}px`);
+        title.style.setProperty("--brand-rx", `${(nx * .8).toFixed(2)}deg`);
+      });
+
+      title.addEventListener("pointerleave", () => {
+        title.style.setProperty("--brand-x", "0px");
+        title.style.setProperty("--brand-y", "0px");
+        title.style.setProperty("--brand-rx", "0deg");
+      });
     })();
 
 </script>
