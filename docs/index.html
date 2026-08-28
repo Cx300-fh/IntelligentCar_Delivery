@@ -1848,6 +1848,284 @@
       background: rgba(118,185,0,.24);
     }
 
+
+    /* ============================================================
+       v30 — Scroll Morph Hero + Spring Drag Physics
+       Inspired by 21st.dev scroll-morph / draggable interaction
+       patterns, implemented in vanilla CSS + Pointer Events.
+       ============================================================ */
+
+    .hero {
+      --hero-scroll: 0;
+    }
+
+    .hero-grid > div:first-child {
+      position: relative;
+      z-index: 3;
+    }
+
+    /* Scroll-driven scanner / route halo around the robot. */
+    .hero-morph-shape {
+      --morph-x: 0px;
+      --morph-y: 0px;
+      --morph-scale-x: 1;
+      --morph-scale-y: 1;
+      --morph-rotate: 0deg;
+      --morph-radius: 34%;
+      --morph-opacity: .26;
+
+      position: absolute;
+      z-index: -1;
+      right: 9%;
+      top: 18%;
+      width: min(41vw, 610px);
+      aspect-ratio: 1.18 / 1;
+      border: 1px solid rgba(159, 226, 56, .34);
+      border-radius: var(--morph-radius);
+      opacity: var(--morph-opacity);
+      transform:
+        translate3d(var(--morph-x), var(--morph-y), 0)
+        rotate(var(--morph-rotate))
+        scale(var(--morph-scale-x), var(--morph-scale-y));
+      transform-origin: 54% 52%;
+      background:
+        radial-gradient(circle at 54% 48%, rgba(118,185,0,.09), transparent 42%),
+        linear-gradient(135deg, rgba(112,164,255,.025), rgba(118,185,0,.025));
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.015),
+        0 0 70px rgba(118,185,0,.045);
+      pointer-events: none;
+      will-change: transform, border-radius, opacity;
+    }
+
+    .hero-morph-ring {
+      position: absolute;
+      inset: 10%;
+      border: 1px dashed rgba(217,255,181,.16);
+      border-radius: inherit;
+      animation: morphRingRotate 18s linear infinite;
+    }
+
+    .hero-morph-node {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      right: 7%;
+      top: 28%;
+      border-radius: 50%;
+      background: #aaf332;
+      box-shadow:
+        0 0 12px rgba(170,243,50,.9),
+        0 0 28px rgba(118,185,0,.42);
+      animation: morphNodePulse 1.9s ease-in-out infinite;
+    }
+
+    @keyframes morphRingRotate {
+      to { rotate: 360deg; }
+    }
+
+    @keyframes morphNodePulse {
+      50% { scale: .66; opacity: .48; }
+    }
+
+    /* Title now has two motion inputs:
+       pointer parallax (existing) + scroll morph (new). */
+    .hero-title-cn {
+      --scroll-cn-y: 0px;
+      --scroll-cn-scale: 1;
+      transform:
+        translate3d(
+          var(--brand-x),
+          calc(var(--brand-y) + var(--scroll-cn-y)),
+          0
+        )
+        rotateZ(var(--brand-rx))
+        scale(var(--scroll-cn-scale));
+      transform-origin: left bottom;
+      will-change: transform, gap;
+    }
+
+    .hero-title-en {
+      --scroll-en-x: 0px;
+      --scroll-en-y: 0px;
+      --scroll-en-scale: 1;
+      transform:
+        translate3d(
+          calc((var(--brand-x) * -.38) + var(--scroll-en-x)),
+          calc((var(--brand-y) * -.28) + var(--scroll-en-y)),
+          0
+        )
+        scale(var(--scroll-en-scale));
+      transform-origin: left center;
+      will-change: transform, letter-spacing;
+    }
+
+    .hero-title-glyph {
+      will-change: transform;
+    }
+
+    /* A thin route signal grows as the user scrolls out of the hero. */
+    .hero-title-mark::before {
+      content: "";
+      position: absolute;
+      left: -6px;
+      top: 50%;
+      width: 1px;
+      height: calc(42px + (var(--hero-scroll) * 82px));
+      background:
+        linear-gradient(
+          180deg,
+          transparent,
+          rgba(181,245,80,.85),
+          transparent
+        );
+      opacity: calc(.18 + (var(--hero-scroll) * .62));
+      transform: translateX(calc(var(--hero-scroll) * -10px));
+      pointer-events: none;
+    }
+
+    /* Mission card drag system. Base layout + scroll drift + drag offset coexist. */
+    .mission-card {
+      --drag-x: 0px;
+      --drag-y: 0px;
+      --drag-r: 0deg;
+      --scroll-card-x: 0px;
+      --scroll-card-y: 0px;
+      --drag-scale: 1;
+
+      transform:
+        translate3d(
+          calc(-10px + var(--scroll-card-x) + var(--drag-x)),
+          calc(54px + var(--scroll-card-y) + var(--drag-y)),
+          0
+        )
+        rotate(var(--drag-r))
+        scale(var(--drag-scale));
+      transform-origin: 50% 24%;
+      transition:
+        border-color .22s ease,
+        box-shadow .22s ease;
+      touch-action: none;
+    }
+
+    .mission-card.is-dragging {
+      --drag-scale: 1.025;
+      animation-play-state: paused;
+      border-color: rgba(177,235,79,.48);
+      box-shadow:
+        0 34px 100px rgba(0,0,0,.48),
+        0 0 0 1px rgba(118,185,0,.08),
+        0 0 42px rgba(118,185,0,.10);
+    }
+
+    .mission-top[data-drag-handle="true"] {
+      cursor: grab;
+      user-select: none;
+    }
+
+    .mission-card.is-dragging .mission-top[data-drag-handle="true"] {
+      cursor: grabbing;
+    }
+
+    .mission-title {
+      flex: 0 0 auto;
+    }
+
+    .mission-drag-hint {
+      display: inline-flex;
+      gap: 3px;
+      margin-left: auto;
+      margin-right: 4px;
+      opacity: .34;
+      transition: opacity .2s ease;
+    }
+
+    .mission-drag-hint i {
+      display: block;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: rgba(232,241,234,.82);
+    }
+
+    .mission-card:hover .mission-drag-hint,
+    .mission-card.is-dragging .mission-drag-hint {
+      opacity: .82;
+    }
+
+    .mission-card.is-returning {
+      border-color: rgba(118,185,0,.22);
+    }
+
+    /* While the card is dragged, route dots remain visually alive. */
+    .mission-card.is-dragging .route-progress::after {
+      animation-duration: 1.45s;
+    }
+
+    .hero-scroll-hint {
+      position: absolute;
+      left: 50%;
+      bottom: 24px;
+      z-index: 4;
+      transform: translateX(-50%);
+      display: grid;
+      justify-items: center;
+      gap: 7px;
+      color: rgba(238,244,239,.35);
+      font-size: 9px;
+      letter-spacing: .12em;
+      pointer-events: none;
+      opacity: calc(1 - var(--hero-scroll));
+    }
+
+    .hero-scroll-hint::before {
+      content: "";
+      width: 1px;
+      height: 28px;
+      background:
+        linear-gradient(180deg, rgba(190,247,92,.15), rgba(190,247,92,.82));
+      animation: scrollHintLine 1.8s ease-in-out infinite;
+      transform-origin: top;
+    }
+
+    @keyframes scrollHintLine {
+      0%,100% { scale: 1 .45; opacity: .45; }
+      50% { scale: 1 1; opacity: 1; }
+    }
+
+    @media (max-width: 860px) {
+      .hero-morph-shape {
+        right: -14%;
+        top: 20%;
+        width: 74vw;
+        opacity: .13;
+      }
+
+      .mission-card {
+        touch-action: auto;
+      }
+
+      .mission-drag-hint {
+        display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-morph-shape,
+      .hero-morph-ring,
+      .hero-morph-node,
+      .hero-scroll-hint {
+        animation: none !important;
+      }
+
+      .hero-title-cn,
+      .hero-title-en,
+      .mission-card,
+      .hero-morph-shape {
+        transform: none !important;
+      }
+    }
+
     section { padding: 86px 0; }
 
     .section-head {
@@ -2564,6 +2842,10 @@
   </div>
 
   <header id="top" class="hero">
+    <div class="hero-morph-shape" aria-hidden="true">
+      <span class="hero-morph-ring"></span>
+      <span class="hero-morph-node"></span>
+    </div>
     <div class="shell hero-grid">
       <div>
         <h1 class="hero-title-mark" id="heroBrandTitle">
@@ -2587,8 +2869,9 @@
         </div>
       </div>
       <aside class="mission-card" aria-label="Live mission preview">
-        <div class="mission-top">
-          <span>Live mission</span>
+        <div class="mission-top" data-drag-handle="true">
+          <span class="mission-title">Live mission</span>
+          <span class="mission-drag-hint" aria-hidden="true"><i></i><i></i><i></i></span>
           <span class="status-pill">Route adaptive</span>
         </div>
         <div class="route-strip" aria-hidden="true">
@@ -2599,6 +2882,7 @@
         </div>
       </aside>
     </div>
+    <div class="hero-scroll-hint" aria-hidden="true">SCROLL TO MORPH</div>
   </header>
 
   <main>
@@ -3780,6 +4064,7 @@
 
           const getActionLabel = target => {
             if (!target) return "";
+            if (target.closest(".mission-card")) return "DRAG";
             if (target.closest(".demo-video-frame")) return "VIEW";
             if (target.closest(".map-node.selectable")) return "PICK";
             if (target.closest(".loop-step")) return "STEP";
@@ -3929,6 +4214,257 @@
             copy.textContent = original;
           }, 1300);
         });
+      }
+    })();
+
+
+    (() => {
+      const hero = document.querySelector(".hero");
+      const title = document.getElementById("heroBrandTitle");
+      const cn = title?.querySelector(".hero-title-cn");
+      const en = title?.querySelector(".hero-title-en");
+      const glyphA = title?.querySelector(".hero-title-glyph-a");
+      const glyphB = title?.querySelector(".hero-title-glyph-b");
+      const morph = hero?.querySelector(".hero-morph-shape");
+      const card = hero?.querySelector(".mission-card");
+      const handle = card?.querySelector('[data-drag-handle="true"]');
+
+      if (!hero || !title || !cn || !en || !card) return;
+
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const finePointer = window.matchMedia("(hover:hover) and (pointer:fine)").matches;
+
+      /* ----------------------------------------------------------
+         Scroll-driven morph
+         ---------------------------------------------------------- */
+      let scrollTicking = false;
+
+      const clamp01 = value => Math.max(0, Math.min(1, value));
+      const lerp = (a, b, t) => a + (b - a) * t;
+      const easeOut = t => 1 - Math.pow(1 - t, 3);
+
+      function updateHeroMorph() {
+        const rect = hero.getBoundingClientRect();
+        const travel = Math.max(window.innerHeight * .72, 520);
+        const p = clamp01((-rect.top) / travel);
+        const e = easeOut(p);
+
+        hero.style.setProperty("--hero-scroll", e.toFixed(4));
+
+        // Chinese title: float up, grow slightly, separate the seal glyphs.
+        cn.style.setProperty("--scroll-cn-y", `${lerp(0, -46, e).toFixed(2)}px`);
+        cn.style.setProperty("--scroll-cn-scale", lerp(1, 1.055, e).toFixed(4));
+        cn.style.gap = `${lerp(.25, .36, e).toFixed(3)}em`;
+
+        // English title: slides right/down slightly while shrinking,
+        // creating a clear shape change rather than a simple fade.
+        en.style.setProperty("--scroll-en-x", `${lerp(0, 42, e).toFixed(2)}px`);
+        en.style.setProperty("--scroll-en-y", `${lerp(0, 18, e).toFixed(2)}px`);
+        en.style.setProperty("--scroll-en-scale", lerp(1, .89, e).toFixed(4));
+        en.style.letterSpacing = `${lerp(.025, .065, e).toFixed(3)}em`;
+
+        if (glyphA && glyphB) {
+          glyphA.style.rotate = `${lerp(0, -2.3, e).toFixed(2)}deg`;
+          glyphB.style.rotate = `${lerp(0, 2.3, e).toFixed(2)}deg`;
+        }
+
+        // Mission card drifts toward the robot as scroll progresses.
+        card.style.setProperty("--scroll-card-x", `${lerp(0, 22, e).toFixed(2)}px`);
+        card.style.setProperty("--scroll-card-y", `${lerp(0, -36, e).toFixed(2)}px`);
+
+        // Scanner shape morphs from rounded rectangle toward a vertical capsule.
+        if (morph) {
+          morph.style.setProperty("--morph-x", `${lerp(0, 34, e).toFixed(2)}px`);
+          morph.style.setProperty("--morph-y", `${lerp(0, -18, e).toFixed(2)}px`);
+          morph.style.setProperty("--morph-scale-x", lerp(1, .62, e).toFixed(4));
+          morph.style.setProperty("--morph-scale-y", lerp(1, 1.14, e).toFixed(4));
+          morph.style.setProperty("--morph-rotate", `${lerp(0, 7.5, e).toFixed(2)}deg`);
+          morph.style.setProperty("--morph-radius", `${lerp(34, 49, e).toFixed(1)}%`);
+          morph.style.setProperty("--morph-opacity", lerp(.26, .10, e).toFixed(3));
+        }
+
+        scrollTicking = false;
+      }
+
+      if (!reduced) {
+        updateHeroMorph();
+        window.addEventListener("scroll", () => {
+          if (!scrollTicking) {
+            requestAnimationFrame(updateHeroMorph);
+            scrollTicking = true;
+          }
+        }, { passive: true });
+
+        window.addEventListener("resize", updateHeroMorph, { passive: true });
+      }
+
+      /* ----------------------------------------------------------
+         Spring-physics drag for Live Mission.
+         Pointer Events keep this framework-free and mouse/pen safe.
+         Desktop only: mobile keeps normal page scrolling.
+         ---------------------------------------------------------- */
+      if (!reduced && finePointer && handle) {
+        let dragging = false;
+        let pointerId = null;
+
+        let x = 0;
+        let y = 0;
+        let vx = 0;
+        let vy = 0;
+        let rotation = 0;
+
+        let lastX = 0;
+        let lastY = 0;
+        let lastTime = 0;
+        let startPX = 0;
+        let startPY = 0;
+        let startX = 0;
+        let startY = 0;
+
+        let springFrame = 0;
+
+        const boundsFor = () => {
+          const heroRect = hero.getBoundingClientRect();
+          const cardRect = card.getBoundingClientRect();
+
+          // generous but safe travel area inside the hero
+          return {
+            minX: -(cardRect.left - heroRect.left) + 22,
+            maxX: (heroRect.right - cardRect.right) - 22,
+            minY: -(cardRect.top - heroRect.top) + 86,
+            maxY: (heroRect.bottom - cardRect.bottom) - 34
+          };
+        };
+
+        const applyDrag = () => {
+          card.style.setProperty("--drag-x", `${x.toFixed(2)}px`);
+          card.style.setProperty("--drag-y", `${y.toFixed(2)}px`);
+          card.style.setProperty("--drag-r", `${rotation.toFixed(2)}deg`);
+        };
+
+        const stopSpring = () => {
+          if (springFrame) cancelAnimationFrame(springFrame);
+          springFrame = 0;
+        };
+
+        const springHome = () => {
+          stopSpring();
+          card.classList.add("is-returning");
+
+          // Spring + damping. Velocity from release carries into the return.
+          const stiffness = .085;
+          const damping = .78;
+
+          const frame = () => {
+            vx += (0 - x) * stiffness;
+            vy += (0 - y) * stiffness;
+
+            vx *= damping;
+            vy *= damping;
+
+            x += vx;
+            y += vy;
+            rotation += (0 - rotation) * .12;
+
+            applyDrag();
+
+            const settled =
+              Math.abs(x) < .25 &&
+              Math.abs(y) < .25 &&
+              Math.abs(vx) < .25 &&
+              Math.abs(vy) < .25 &&
+              Math.abs(rotation) < .08;
+
+            if (settled) {
+              x = y = vx = vy = rotation = 0;
+              applyDrag();
+              card.classList.remove("is-returning");
+              springFrame = 0;
+              return;
+            }
+
+            springFrame = requestAnimationFrame(frame);
+          };
+
+          springFrame = requestAnimationFrame(frame);
+        };
+
+        handle.addEventListener("pointerdown", event => {
+          if (event.button !== 0) return;
+
+          stopSpring();
+          dragging = true;
+          pointerId = event.pointerId;
+          handle.setPointerCapture(pointerId);
+
+          startPX = event.clientX;
+          startPY = event.clientY;
+          startX = x;
+          startY = y;
+
+          lastX = event.clientX;
+          lastY = event.clientY;
+          lastTime = performance.now();
+
+          vx = 0;
+          vy = 0;
+
+          card.classList.add("is-dragging");
+          event.preventDefault();
+        });
+
+        handle.addEventListener("pointermove", event => {
+          if (!dragging || event.pointerId !== pointerId) return;
+
+          const now = performance.now();
+          const dt = Math.max(8, now - lastTime);
+          const b = boundsFor();
+
+          const targetX = startX + (event.clientX - startPX);
+          const targetY = startY + (event.clientY - startPY);
+
+          x = Math.max(b.minX, Math.min(b.maxX, targetX));
+          y = Math.max(b.minY, Math.min(b.maxY, targetY));
+
+          // px per ~16ms frame, capped so release stays tasteful
+          vx = Math.max(-22, Math.min(22, (event.clientX - lastX) / dt * 16));
+          vy = Math.max(-22, Math.min(22, (event.clientY - lastY) / dt * 16));
+
+          rotation = Math.max(-7, Math.min(7, vx * .22));
+
+          lastX = event.clientX;
+          lastY = event.clientY;
+          lastTime = now;
+
+          applyDrag();
+        });
+
+        const finishDrag = event => {
+          if (!dragging || event.pointerId !== pointerId) return;
+          dragging = false;
+          card.classList.remove("is-dragging");
+
+          try {
+            handle.releasePointerCapture(pointerId);
+          } catch (_) {}
+
+          pointerId = null;
+          springHome();
+        };
+
+        handle.addEventListener("pointerup", finishDrag);
+        handle.addEventListener("pointercancel", finishDrag);
+
+        // Double-click = instantly reset position.
+        handle.addEventListener("dblclick", () => {
+          stopSpring();
+          x = y = vx = vy = rotation = 0;
+          applyDrag();
+          card.classList.remove("is-returning", "is-dragging");
+        });
+
+        // Give the existing custom cursor a more accurate drag cue.
+        card.dataset.cursorAction = "DRAG";
       }
     })();
 
