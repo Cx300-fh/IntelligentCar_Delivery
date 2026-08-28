@@ -959,9 +959,9 @@
     .map-stage.congested .old-road { opacity: 1; }
 
     .map-node {
-      fill: #0f1210;
-      stroke: rgba(241,243,240,.72);
-      stroke-width: 2.2;
+      fill: rgba(245,247,244,.94);
+      stroke: #0f1210;
+      stroke-width: 1.4;
     }
 
     .map-node.key {
@@ -977,8 +977,9 @@
     }
 
     .map-node.route {
-      fill: var(--blue);
-      stroke: #0c0e0d;
+      fill: rgba(245,247,244,.94);
+      stroke: #0f1210;
+      stroke-width: 1.4;
     }
 
     .map-label {
@@ -1007,10 +1008,10 @@
     .vehicle-dot {
       fill: var(--green);
       stroke: #f4f7f2;
-      stroke-width: 2.4;
+      stroke-width: 2.2;
       filter:
-        drop-shadow(0 0 8px rgba(118,185,0,.90))
-        drop-shadow(0 0 18px rgba(118,185,0,.46));
+        drop-shadow(0 0 8px rgba(118,185,0,.92))
+        drop-shadow(0 0 18px rgba(118,185,0,.48));
       pointer-events: none;
     }
     /* ===== MAP ONLY: modified section ends ===== */
@@ -1051,8 +1052,9 @@
     }
 
     .map-node.selectable:hover {
-      r: 7;
+      r: 5;
       stroke: var(--green);
+      stroke-width: 2;
     }
 
     .map-node.selected-start {
@@ -1622,7 +1624,7 @@
             <g id="anomalyRoad"></g>
             <g id="currentRoute"></g>
             <g id="nodes"></g>
-            <circle class="vehicle-dot" id="vehicleDot" r="8" cx="388" cy="205"></circle>
+            <circle class="vehicle-dot" id="vehicleDot" r="8" cx="0" cy="0" visibility="hidden"></circle>
           </svg>
         </div>
 
@@ -1855,64 +1857,84 @@
     const maps = {
       thu: {
         name: "THU campus route",
-        copy: "选择任意配送节点，路径会严格沿现有道路几何生成；不会再用节点之间的直线近似道路。",
+        copy: "",
         viewBox: "0 0 900 560",
+
+        /* Geometry traced from the supplied THU reference map. */
         roads: [
-          "M120 205 H500 V450 H120 Q78 450 78 408 V250 Q78 205 120 205 Z",
-          "M500 205 H820 Q842 205 842 238 V450 H500 Z",
-          "M500 450 H842 V495 Q842 522 810 522 H545 Q500 522 500 485 Z",
-          "M500 205 V122 Q500 78 548 78 H650 Q700 78 700 122 V205 Z",
-          "M700 205 V450",
-          "M78 330 H500",
-          "M500 330 H842"
+          /* West main loop */
+          "M120 190 H500 V390 H120 Q75 390 75 345 V235 Q75 190 120 190 Z",
+
+          /* East main loop */
+          "M500 190 H775 Q820 190 820 235 V390 H500 Z",
+
+          /* North raised loop: Library -> Zijing Track -> East Track */
+          "M350 190 V110 Q350 62 398 62 H602 Q650 62 650 110 V190",
+
+          /* South lowered loop: Auditorium -> Zhaolan / Science Building -> A */
+          "M350 390 V462 Q350 510 398 510 H772 Q820 510 820 462 V390"
         ],
+
         nodes: [
-          {id:1,  x:600, y:78,  label:"紫荆操场", dx:-18, dy:-14, cls:"major", selectable:false},
-          {id:2,  x:220, y:205, label:"理科楼", dx:-26, dy:-14, cls:"major", selectable:true},
-          {id:3,  x:365, y:205, label:"图书馆", dx:-26, dy:-14, cls:"major", selectable:true},
-          {id:4,  x:500, y:205, label:"苏世民书院", dx:12, dy:-14, cls:"major", selectable:true},
-          {id:5,  x:500, y:330, label:"5", dx:10, dy:-10, cls:"minor", selectable:false},
-          {id:6,  x:78,  y:330, label:"校医院", dx:-4, dy:-16, cls:"major", selectable:true},
-          {id:7,  x:700, y:330, label:"学生宿舍", dx:-66, dy:-16, cls:"major", selectable:true},
-          {id:8,  x:842, y:330, label:"东门", dx:12, dy:5, cls:"major", selectable:true},
-          {id:9,  x:365, y:450, label:"大礼堂", dx:-24, dy:-15, cls:"major", selectable:true},
-          {id:10, x:700, y:205, label:"东大操场", dx:12, dy:-14, cls:"major", selectable:true},
-          {id:11, x:500, y:450, label:"新清华学堂", dx:12, dy:24, cls:"major", selectable:true},
-          {id:12, x:700, y:450, label:"中央主楼", dx:-58, dy:24, cls:"major", selectable:true},
-          {id:13, x:560, y:522, label:"照澜院", dx:-26, dy:-14, cls:"major", selectable:true},
-          {id:14, x:700, y:522, label:"科技大楼", dx:-32, dy:-14, cls:"major", selectable:true}
+          {id:1,  x:500, y:62,  label:"紫荆操场", dx:-28, dy:-14, cls:"major", selectable:true},
+
+          {id:2,  x:210, y:190, label:"理科楼", dx:-27, dy:-14, cls:"major", selectable:true},
+          {id:3,  x:350, y:190, label:"图书馆", dx:-27, dy:-14, cls:"major", selectable:true},
+          {id:4,  x:500, y:190, label:"苏世民书院", dx:12, dy:-14, cls:"major", selectable:true},
+          {id:10, x:650, y:190, label:"东大操场", dx:12, dy:-14, cls:"major", selectable:true},
+
+          {id:6,  x:75,  y:290, label:"校医院", dx:-8, dy:-16, cls:"major", selectable:true},
+          {id:7,  x:500, y:290, label:"学生宿舍", dx:12, dy:-6, cls:"major", selectable:true},
+          {id:8,  x:820, y:290, label:"东门", dx:12, dy:5, cls:"major", selectable:true},
+
+          {id:9,  x:350, y:390, label:"大礼堂", dx:-26, dy:-14, cls:"major", selectable:true},
+          {id:11, x:500, y:390, label:"新清华学堂", dx:12, dy:24, cls:"major", selectable:true},
+          {id:12, x:650, y:390, label:"中央主楼", dx:-58, dy:24, cls:"major", selectable:true},
+          {id:15, x:820, y:390, label:"A", dx:14, dy:4, cls:"major", selectable:true},
+
+          {id:13, x:500, y:510, label:"照澜院", dx:-26, dy:-14, cls:"major", selectable:true},
+          {id:14, x:650, y:510, label:"科技大楼", dx:-34, dy:-14, cls:"major", selectable:true}
         ],
+
+        /*
+         * Each graph edge owns the exact SVG geometry of the road segment.
+         * Dijkstra chooses edges; the active route concatenates those paths.
+         */
         edges: [
-          {a:2,b:3,d:"M220 205 H365"},
-          {a:3,b:4,d:"M365 205 H500"},
-          {a:4,b:10,d:"M500 205 H700"},
+          /* Main top road */
+          {a:2, b:3,  d:"M210 190 H350"},
+          {a:3, b:4,  d:"M350 190 H500"},
+          {a:4, b:10, d:"M500 190 H650"},
 
-          {a:6,b:5,d:"M78 330 H500"},
-          {a:5,b:7,d:"M500 330 H700"},
-          {a:7,b:8,d:"M700 330 H842"},
+          /* West rounded side */
+          {a:2, b:6, d:"M210 190 H120 Q75 190 75 235 V290"},
+          {a:6, b:9, d:"M75 290 V345 Q75 390 120 390 H350"},
 
-          {a:9,b:11,d:"M365 450 H500"},
-          {a:11,b:12,d:"M500 450 H700"},
+          /* Central vertical */
+          {a:4, b:7,  d:"M500 190 V290"},
+          {a:7, b:11, d:"M500 290 V390"},
 
-          {a:4,b:5,d:"M500 205 V330"},
-          {a:5,b:11,d:"M500 330 V450"},
-          {a:10,b:7,d:"M700 205 V330"},
-          {a:7,b:12,d:"M700 330 V450"},
+          /* East rounded side */
+          {a:10, b:8,  d:"M650 190 H775 Q820 190 820 235 V290"},
+          {a:8,  b:15, d:"M820 290 V390"},
 
-          {a:11,b:13,d:"M500 450 V485 Q500 522 545 522 H560"},
-          {a:13,b:14,d:"M560 522 H700"},
-          {a:14,b:12,d:"M700 522 H810 Q842 522 842 495 V450 H700"},
+          /* Main bottom road */
+          {a:9,  b:11, d:"M350 390 H500"},
+          {a:11, b:12, d:"M500 390 H650"},
+          {a:12, b:15, d:"M650 390 H820"},
 
-          /* Western loop edges follow the rounded road, never diagonally cut across the map. */
-          {a:2,b:6,d:"M220 205 H120 Q78 205 78 250 V330"},
-          {a:6,b:9,d:"M78 330 V408 Q78 450 120 450 H365"},
+          /* North loop */
+          {a:3, b:1, d:"M350 190 V110 Q350 62 398 62 H500"},
+          {a:1, b:10,d:"M500 62 H602 Q650 62 650 110 V190"},
 
-          /* Eastern rounded perimeter */
-          {a:8,b:12,d:"M842 330 V450 H700"}
+          /* South loop */
+          {a:9, b:13, d:"M350 390 V462 Q350 510 398 510 H500"},
+          {a:13,b:14, d:"M500 510 H650"},
+          {a:14,b:15, d:"M650 510 H772 Q820 510 820 462 V390"}
         ],
+
         defaultStart: 3,
-        defaultEnd: 9,
-        congestionEdge: [5,11]
+        defaultEnd: 9
       },
 
       sutd: {
@@ -2271,7 +2293,7 @@
         const circle = svgEl("circle", {
           cx: node.x,
           cy: node.y,
-          r: node.id === state.pickup || node.id === state.dropoff ? 7 : 4,
+          r: node.id === state.pickup || node.id === state.dropoff ? 6.5 : 2.5,
           class: cls,
           tabindex: node.selectable ? 0 : -1,
           role: node.selectable ? "button" : "img",
@@ -2381,6 +2403,7 @@
         costText.textContent = "—";
         etaText.textContent = "—";
         routeSummary.textContent = "当前两点之间没有可用路径。";
+        vehicleDot.setAttribute("visibility", "hidden");
         drawNodes(map, []);
         return;
       }
@@ -2419,7 +2442,7 @@
       }, 0);
 
       if (routeText) routeText.textContent = nodePath.join("-");
-      heroRoute.textContent = nodePath.join(" -> ");
+      if (heroRoute) heroRoute.textContent = nodePath.join(" -> ");
       costText.textContent = Math.round(totalCost);
       etaText.textContent = `${Math.max(1.2, totalCost / 80).toFixed(1)}m`;
       if (state.congested && state.congestionEdge) {
@@ -2432,6 +2455,7 @@
 
       vehicleDot.setAttribute("cx", startNode.x);
       vehicleDot.setAttribute("cy", startNode.y);
+      vehicleDot.setAttribute("visibility", "visible");
 
       if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         animateRouteDraw(routePath);
