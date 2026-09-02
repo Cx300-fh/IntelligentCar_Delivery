@@ -89,6 +89,7 @@ int main()
             ele_current = bias_calculate();  // 计算循迹偏差
             Tag_Scan_Process();         // 标签识别处理
             detect_obstacle(image_frame);    // 色块识别（红/黄色块）
+            obstacle_reroute_check();   // 红色路障=道路阻塞：通知导航重新规划，不做局部物理绕障
             Draw_RGB();                 // 绘制所有可视化内容（边线、Tag等）
             Send_Image(1);              // 图传发送图像 (0-不发送, 1-原图, 2-灰度图, 3-二值化图, 4-合并色块图, 5-红色块图, 6-黄色块图)
         } else {

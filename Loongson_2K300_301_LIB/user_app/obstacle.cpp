@@ -199,6 +199,30 @@ cv::Mat get_color_mask_image(void)
     return image_color_mask;
 }
 
+/**
+ * @brief 红色路障绕行检查：检测到红色色块时，把当前道路标记为阻塞并触发重新规划
+ * @details 只在red_block_detected的上升沿触发一次（避免同一障碍物每帧重复重规划）。
+ *          仅在导航任务激活时处理：任务结束后current_id/next_id不会自动清零，
+ *          空闲时触发会误标记上一次任务遗留的边，而非车辆当前真正面对的道路。
+ *          当前节点/下一节点未知（AprilTag未定位）时同样无法确定阻塞的是哪条边，跳过。
+ */
+void obstacle_reroute_check(void)
+{
+    static bool prev_red_block = false;
+
+    if (red_block_detected && !prev_red_block && nav_fsm.is_navigating()) {
+        const NavStatus& st = nav_fsm.get_status();
+        if (st.current_id > 0 && st.next_id > 0) {
+            printf("[Obstacle] 检测到红色路障：%d -> %d，停车并请求绕行\n", st.current_id, st.next_id);
+            nav_fsm.reroute_blocked_edge(st.current_id, st.next_id);
+        } else {
+            printf("[Obstacle] 检测到红色路障，但当前位置/下一节点未知，无法定位阻塞边\n");
+        }
+    }
+
+    prev_red_block = red_block_detected;
+}
+
 //================================================================================
 // 避障状态机相关
 //================================================================================

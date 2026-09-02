@@ -78,6 +78,15 @@ void detect_obstacle(const cv::Mat& image_frame);
 cv::Mat get_color_mask_image(void);
 
 /**
+ * @brief 红色路障绕行检查（每帧调用，需在 detect_obstacle() 之后）
+ * @details 红色色块=道路被挡住，不做局部左右物理绕障，而是：
+ *          停车 -> 以当前节点-下一节点为阻塞边通知导航状态机(NavigationFSM::reroute_blocked_edge)
+ *          -> Dijkstra重新规划 -> 沿新路径继续，不取消当前配送任务。
+ *          内部按红色检测的上升沿触发一次，避免同一障碍物持续触发重复重规划。
+ */
+void obstacle_reroute_check(void);
+
+/**
  * @brief 更新yaw角（根据陀螺仪Z轴角速度积分）
  * @param gz 陀螺仪Z轴原始数据
  */

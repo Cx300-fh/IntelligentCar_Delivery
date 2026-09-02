@@ -443,12 +443,36 @@ void Dijkstra::add_undirected_edge(int from, int to, int weight) {
 }
 
 /**
+ * @brief 临时阻塞一条边（道路无向，两个方向都标记）
+ * @details 不删除边、不改权重，只置blocked标志；find_shortest_path()据此跳过。
+ *          用 unblock_edge() 可恢复，供避障绕行后道路重新可用时使用。
+ */
+void Dijkstra::block_edge(int from, int to) {
+    if (from <= 0 || from >= active_node_count || to <= 0 || to >= active_node_count) return;
+    for (Edge& e : graph[from]) if (e.to == to) e.blocked = true;
+    for (Edge& e : graph[to]) if (e.to == from) e.blocked = true;
+}
+
+void Dijkstra::unblock_edge(int from, int to) {
+    if (from <= 0 || from >= active_node_count || to <= 0 || to >= active_node_count) return;
+    for (Edge& e : graph[from]) if (e.to == to) e.blocked = false;
+    for (Edge& e : graph[to]) if (e.to == from) e.blocked = false;
+}
+
+bool Dijkstra::is_edge_blocked(int from, int to) {
+    if (from <= 0 || from >= active_node_count || to <= 0 || to >= active_node_count) return false;
+    for (const Edge& e : graph[from]) if (e.to == to) return e.blocked;
+    return false;
+}
+
+/**
  * @brief 计算 start 到 end 的最短距离
  * @details
  *   使用朴素 Dijkstra，复杂度 O(V^2)。本项目节点数很少，没必要引入优先队列。
  *   计算完成后：
  *   - dist[end] 是最短距离；
  *   - prev[] 保存最短路径前驱，供 get_path() 回溯路径。
+ *   被 block_edge() 标记的边跳过，不参与松弛（等效于临时从图中移除该边）。
  */
 int Dijkstra::find_shortest_path(int start, int end) {
     if (start <= 0 || start >= active_node_count || end <= 0 || end >= active_node_count) return -1;
@@ -458,7 +482,7 @@ int Dijkstra::find_shortest_path(int start, int end) {
         int u=-1, md=INF;
         for(int j=1;j<active_node_count;j++) if(!visited[j]&&dist[j]<md){md=dist[j];u=j;}
         if(u==-1)break; visited[u]=true;
-        for(const Edge& e:graph[u]) if(!visited[e.to]&&dist[u]+e.weight<dist[e.to]){dist[e.to]=dist[u]+e.weight;prev[e.to]=u;}
+        for(const Edge& e:graph[u]) if(!e.blocked&&!visited[e.to]&&dist[u]+e.weight<dist[e.to]){dist[e.to]=dist[u]+e.weight;prev[e.to]=u;}
     }
     return dist[end]==INF?-1:dist[end];
 }
