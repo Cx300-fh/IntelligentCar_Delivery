@@ -5,6 +5,7 @@ const {
   PROTOCOL_VERSION,
   CAR_CAPACITY,
   MAX_DETOUR_PERCENT,
+  ROBOT_SPEED_UNITS_PER_SEC,
   ORDER_STATUS,
   DISPATCH_STATE,
   STOP_STATE,
@@ -255,11 +256,13 @@ class DispatchScheduler extends EventEmitter {
       location_id: stop.location_id,
       location_name: this.database.getLocation(stop.location_id)?.name || stop.location_id,
       operations: stop.operations.map(({ order_id, action }) => ({ order_id, action })),
-      server_suggested_path: route.path
+      server_suggested_path: route.path,
+      estimated_duration_ms: Math.max(1, Math.round((route.distance / ROBOT_SPEED_UNITS_PER_SEC) * 1000))
     };
     this.database.createCommand(command);
     this.database.issueStop(trip.trip_id, stop.stop_id, commandVersion, route.path);
     this.sendPersisted(command);
+    console.log(`[dispatch] goto_stop ${stop.location_id} (node ${stop.node_id}) via path [${route.path.join(',')}] distance=${Math.round(route.distance)} ops=${JSON.stringify(stop.operations.map((o) => `${o.action}:${o.order_id}`))}`);
     this.changed('stop_issued');
   }
 

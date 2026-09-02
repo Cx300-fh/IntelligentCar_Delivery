@@ -28,7 +28,9 @@
     '10-11': ['xinqinghua', 'zhongyang'],
     '11-12': ['zhongyang', 'aBuild'],
     '12-14': ['aBuild', 'j8', 'keji'],
-    '13-14': ['zhaolan', 'keji']
+    '13-14': ['zhaolan', 'keji'],
+    '3-4': ['library', 'jBumpL', 'sushimin'],
+    '1-4': ['zijing', 'jBumpTL', 'jBumpL', 'sushimin']
   });
 
   const adapter = {
@@ -303,7 +305,12 @@
       const order = state.orders.find((item) =>
         (leg.operations || []).some((operation) => operation.order_id === item.serverOrderId)
       );
-      const marker = buildStopMarker(uiNode, markerNumber, order?.color);
+      let iconMode = null;
+      if (leg.is_current && order) {
+        if (order.statusCode === 2) iconMode = 'load';
+        else if (order.statusCode === 4) iconMode = 'unload';
+      }
+      const marker = buildStopMarker(uiNode, markerNumber, order?.color, iconMode);
       marker.title = operationText;
       marker.setAttribute('aria-label', operationText);
       markerLayer.appendChild(marker);

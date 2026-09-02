@@ -2,6 +2,11 @@ const VEHICLE_ID = 0;
 const PROTOCOL_VERSION = 1;
 const CAR_CAPACITY = 5;
 const MAX_DETOUR_PERCENT = 15;
+// Matches the UI prototype's calibrated RUN_SPEED for this same campus
+// pixel-coordinate system (see UI.html) — the one place travel speed is
+// defined, so the ETA shown to users and the simulated car's actual
+// movement duration can never drift apart.
+const ROBOT_SPEED_UNITS_PER_SEC = 90;
 
 const ORDER_STATUS = Object.freeze({
   QUEUED: 1,
@@ -76,6 +81,7 @@ module.exports = {
   PROTOCOL_VERSION,
   CAR_CAPACITY,
   MAX_DETOUR_PERCENT,
+  ROBOT_SPEED_UNITS_PER_SEC,
   ORDER_STATUS,
   ORDER_STATUS_CODE,
   DISPATCH_STATE,

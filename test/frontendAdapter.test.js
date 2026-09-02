@@ -11,7 +11,9 @@ test('production page preserves the original UI except for adapter display hooks
   const production = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8')
     .replace("(o.statusLabel || o.status)", 'o.status')
     .replace("${m.statusLabel || m.status}", '${m.status}')
-    .replace('<script src="/backend-adapter.js"></script>\n', '');
+    .replace("${o.statusLabel === '等待装载' ? ICON_LOAD : o.statusLabel === '等待取件' ? ICON_UNLOAD : ''}", '')
+    .replace("${m.statusLabel === '等待装载' ? ICON_LOAD : m.statusLabel === '等待取件' ? ICON_UNLOAD : ''}", '')
+    .replace('<script src="/backend-adapter.js"></script>\r\n', '');
   assert.equal(production, original);
 });
 

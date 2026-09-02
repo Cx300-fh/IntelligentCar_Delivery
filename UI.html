@@ -69,7 +69,7 @@
   }
   .pin-label{
     position:absolute; left:0; top:13px; transform:translate(-50%,0);
-    font-size:20px; font-weight:600; color:var(--text-soft);
+    font-size:25px; font-weight:600; color:var(--text-soft);
     text-shadow:0 1px 4px rgba(0,0,0,.85), 0 0 8px rgba(0,0,0,.6);
     white-space:nowrap; transition:color .18s ease;
   }
@@ -92,13 +92,13 @@
   .endpoint-badge-to{background:var(--to);}
   .endpoint-tag{
     position:absolute; left:0; top:19px; transform:translate(-50%,0);
-    font-size:20px; font-weight:700; white-space:nowrap;
+    font-size:25px; font-weight:700; white-space:nowrap;
     text-shadow:0 1px 4px rgba(0,0,0,.85), 0 0 8px rgba(0,0,0,.6);}
   .tag-from{color:var(--from);}
   .tag-to{color:var(--to);}
 
   /* Numbered stops (1=pickup, 2=dropoff) along the active order's route */
-  .stop-marker{ position:absolute; z-index:6; pointer-events:none; }
+  .stop-marker{ position:absolute; z-index:11; pointer-events:none; }
   .stop-badge{
     position:absolute; left:0; top:0; transform:translate(-50%,-50%);
     width:52px; height:52px; border-radius:50%;
@@ -111,8 +111,7 @@
     position:absolute; width:52px; height:52px; transform:translate(-50%,-50%);
     display:flex; align-items:center; justify-content:center;
     filter:drop-shadow(0 2px 10px rgba(0,0,0,.5));
-    transition:left .85s linear, top .85s linear;
-    z-index:5;
+    z-index:10;
   }
   #robotMarker svg{width:52px; height:52px;}
 
@@ -144,9 +143,7 @@
   .panel-card{
     background:var(--panel); border:1px solid var(--border); border-radius:20px;
     padding:20px 22px 18px; box-shadow:0 24px 60px rgba(0,0,0,.45);
-    animation:panelIn .22s ease;
   }
-  @keyframes panelIn{from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);}}
   .drag-handle{width:40px; height:4px; border-radius:2px; background:var(--border); margin:0 auto 14px;}
   .panel-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
   .panel-title{font-size:20px; font-weight:800; color:var(--text);}
@@ -472,6 +469,36 @@ function roundedPoints(pts, r, steps = 8) {
   return out;
 }
 
+// Same rounding as roundedPoints, but also returns which output-array index
+// each ORIGINAL waypoint landed on. Progress fractions must be measured
+// against this same resampled array's own length, or a fraction computed
+// from the raw (sharp-corner, longer) distances will overshoot the shorter
+// rounded curve at every corner, making the robot marker visibly leap ahead
+// each time it turns.
+function roundedPointsWithBreaks(pts, r, steps = 8) {
+  if (pts.length < 3) {
+    const flat = pts.slice();
+    return { points: flat, breakIndices: flat.map((_, i) => i) };
+  }
+  const out = [pts[0]];
+  const breakIndices = [0];
+  for (let i=1;i<pts.length-1;i++) {
+    const prev = pts[i-1], p = pts[i], next = pts[i+1];
+    const segInLen = Math.hypot(p.x-prev.x, p.y-prev.y);
+    const segOutLen = Math.hypot(next.x-p.x, next.y-p.y);
+    const rr = Math.min(r, segInLen/2, segOutLen/2);
+    const inPt = { x: p.x - (p.x-prev.x)/segInLen*rr, y: p.y - (p.y-prev.y)/segInLen*rr };
+    const outPt = { x: p.x + (next.x-p.x)/segOutLen*rr, y: p.y + (next.y-p.y)/segOutLen*rr };
+    out.push(inPt);
+    for (let s=1;s<steps;s++) out.push(quadPoint(inPt, p, outPt, s/steps));
+    out.push(outPt);
+    breakIndices.push(out.length - 1);
+  }
+  out.push(pts[pts.length-1]);
+  breakIndices.push(out.length - 1);
+  return { points: out, breakIndices };
+}
+
 function pointsToPathD(pts) {
   if (pts.length < 2) return '';
   return `M ${pts[0].x} ${pts[0].y} ` + pts.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ');
@@ -489,6 +516,10 @@ const ORDER_COLORS = ['#5292FF','#FF8787','#3DDCA6','#FFC94D','#B98BFF','#5DD8FF
 const ICON_FROM = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M4 9l8-5 8 5"/></svg>';
 const ICON_TO = '<svg viewBox="0 0 24 24" width="13" height="13" fill="#fff"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>';
 const ICON_CHECK = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+// Open-box glyphs for the loading/unloading wait states — arrow direction
+// (into vs. out of the box) is the only visual difference between the two.
+const ICON_LOAD = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4-6M20 10l-4-6" stroke="#fff" stroke-width="1.6"/><path d="M4 10h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V10z" stroke="#fff" stroke-width="1.6"/><path d="M12 4v8M9 9l3 3 3-3" stroke="#3DDCA6" stroke-width="2"/></svg>';
+const ICON_UNLOAD = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4-6M20 10l-4-6" stroke="#fff" stroke-width="1.6"/><path d="M4 10h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V10z" stroke="#fff" stroke-width="1.6"/><path d="M12 20v-8M9 15l3-3 3 3" stroke="#3DDCA6" stroke-width="2"/></svg>';
 const NAME_POOL = ['林晓','苏晴','黄磊','吴悠','郑凯','孙艺','王小明','陈可','周雨薇','赵航','李芸','马斌','高远','谢婷'];
 let nameCursor = 0, orderSeq = 42;
 function peekName() { return NAME_POOL[nameCursor % NAME_POOL.length]; }
@@ -531,11 +562,8 @@ function buildRun(waypointIds) {
     rawPath = rawPath.concat(shortestPath(waypointIds[i], waypointIds[i+1]).slice(1));
   }
   const rawCoords = rawPath.map(id => NODES[id]);
-  const points = roundedPoints(rawCoords, ROUTE_CORNER_R);
-  const breakLen = [0];
-  for (let i = 1; i < rawCoords.length; i++) {
-    breakLen.push(breakLen[i-1] + Math.hypot(rawCoords[i].x-rawCoords[i-1].x, rawCoords[i].y-rawCoords[i-1].y));
-  }
+  const { points, breakIndices } = roundedPointsWithBreaks(rawCoords, ROUTE_CORNER_R);
+  const breakLen = breakIndices.map((index) => pathLength(points.slice(0, index + 1)));
   return { rawPath, points, breakLen, totalLen: breakLen[breakLen.length-1] };
 }
 
@@ -758,13 +786,18 @@ function renderSvgOverlay() {
   }
 }
 
-function buildStopMarker(nodeId, num, color) {
+function buildStopMarker(nodeId, num, color, iconMode) {
   const n = NODES[nodeId];
   const el = document.createElement('div');
   el.className = 'stop-marker';
   el.style.left = n.x + 'px';
   el.style.top = n.y + 'px';
-  el.innerHTML = `<div class="stop-badge" style="background:${color || 'var(--blue)'}">${num}</div>`;
+  const content = iconMode === 'load' ? ICON_LOAD : iconMode === 'unload' ? ICON_UNLOAD : num;
+  // Load/unload icons are always white-outline + teal arrow, so the badge
+  // itself must stay a fixed color here — an order's own assigned color can
+  // land on the exact same teal, making the arrow invisible against it.
+  const badgeColor = iconMode ? 'var(--blue)' : (color || 'var(--blue)');
+  el.innerHTML = `<div class="stop-badge" style="background:${badgeColor}">${content}</div>`;
   return el;
 }
 

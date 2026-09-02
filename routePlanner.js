@@ -21,10 +21,10 @@ class RoutePlanner {
 
     const graph = new Map();
     for (const node of Object.keys(map.nodes).map(Number)) graph.set(node, []);
-    for (const [from, to, baseDistance] of map.edges) {
+    for (const [from, to, storedDistance] of map.edges) {
       const condition = this.mapWeights.getEdgeCondition(mapId, from, to);
       if (condition.blocked) continue;
-      const weight = Math.max(0, Number(baseDistance)) +
+      const weight = this.mapWeights.baseDistance(mapId, from, to, storedDistance) +
         Math.max(0, Number(condition.manual_penalty || 0)) +
         Math.max(0, Number(condition.dynamic_penalty || 0));
       graph.get(from).push({ to, weight });
@@ -92,7 +92,7 @@ class RoutePlanner {
       if (!edge) return { reachable: false, distance: Infinity };
       const condition = this.mapWeights.getEdgeCondition(mapId, from, to);
       if (condition.blocked) return { reachable: false, distance: Infinity };
-      distance += Math.max(0, Number(edge[2])) +
+      distance += this.mapWeights.baseDistance(mapId, from, to, edge[2]) +
         Math.max(0, Number(condition.manual_penalty || 0)) +
         Math.max(0, Number(condition.dynamic_penalty || 0));
     }

@@ -80,15 +80,19 @@ function sendArrival(message) {
 function startAutoMove(message) {
   if (movementTimer) clearTimeout(movementTimer);
   const path = normalizedPath(message);
+  // The server computes this from the real route distance and the shared
+  // ROBOT_SPEED_UNITS_PER_SEC constant, so the simulated drive always takes
+  // as long as the distance actually warrants instead of a flat per-leg time.
+  const duration = Math.max(200, Number(message.estimated_duration_ms) || autoFlowDelayMs);
   if (path.length < 2) {
-    movementTimer = setTimeout(() => sendArrival(message), autoFlowDelayMs);
+    movementTimer = setTimeout(() => sendArrival(message), duration);
     return;
   }
 
   const startedAt = Date.now();
   const segmentCount = path.length - 1;
   const tick = () => {
-    const overallProgress = Math.min(1, (Date.now() - startedAt) / autoFlowDelayMs);
+    const overallProgress = Math.min(1, (Date.now() - startedAt) / duration);
     const scaledProgress = overallProgress * segmentCount;
     const pathIndex = Math.min(segmentCount - 1, Math.floor(scaledProgress));
     const segmentProgress = overallProgress >= 1 ? 1 : scaledProgress - pathIndex;

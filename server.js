@@ -13,7 +13,7 @@ const { RoutePlanner } = require('./routePlanner');
 const { CarGateway } = require('./carGateway');
 const { DispatchScheduler } = require('./scheduler');
 const { SnapshotBuilder, decorateOrder } = require('./snapshot');
-const { PROTOCOL_VERSION, VEHICLE_ID } = require('./domain');
+const { PROTOCOL_VERSION, VEHICLE_ID, ROBOT_SPEED_UNITS_PER_SEC } = require('./domain');
 
 const database = new AppDatabase(config.dbPath);
 const mapWeights = new MapWeights(config);
@@ -216,7 +216,7 @@ async function handleApi(req, res) {
         throw error;
       }
       const queuedOrderCount = database.listOrders(1000, false).length;
-      const travelMinutes = Math.max(1, Math.ceil(route.distance / 60));
+      const travelMinutes = Math.max(1, Math.ceil(route.distance / ROBOT_SPEED_UNITS_PER_SEC / 60));
       const estimatedWaitMinutes = queuedOrderCount * 3;
       return sendJson(res, 200, {
         ok: true,
@@ -233,10 +233,12 @@ async function handleApi(req, res) {
     if (req.method === 'POST' && url.pathname === '/api/orders') {
       const result = scheduler.createOrder(body);
       const locations = new Map(database.listLocations().map((item) => [item.location_id, item]));
+      const decorated = decorateOrder(result.order, locations);
+      console.log(`[order] ${result.created ? 'created' : 'replayed'} ${decorated.order_id} ${decorated.pickup_location_id} -> ${decorated.dropoff_location_id} status=${decorated.status_code}`);
       return sendJson(res, result.created ? 201 : 200, {
         ok: true,
         created: result.created,
-        order: decorateOrder(result.order, locations)
+        order: decorated
       });
     }
     if (req.method === 'POST' && (url.pathname === '/api/admin/emergency-stop' || url.pathname === '/api/control/stop')) {

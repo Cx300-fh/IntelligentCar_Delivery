@@ -17,6 +17,7 @@ test('blocked THU edges are excluded from route preview', () => {
   const weights = new MapWeights({ trafficProvider: 'mock' });
   weights.setEdgeCondition(1, { from: 1, to: 3, blocked: true });
   weights.setEdgeCondition(1, { from: 2, to: 3, blocked: true });
+  weights.setEdgeCondition(1, { from: 3, to: 4, blocked: true });
   const planner = new RoutePlanner(weights);
   assert.equal(planner.shortestPath(1, 3, 9).reachable, false);
 });
@@ -27,7 +28,8 @@ test('pathCost evaluates the exact supplied path without choosing another route'
   const path = [9, 10, 11, 12];
   const cost = planner.pathCost(1, path);
   assert.equal(cost.reachable, true);
-  assert.equal(cost.distance, 245);
+  const expected = Math.hypot(555 - 801, 0) + Math.hypot(801 - 1064, 0) + Math.hypot(1064 - 1269, 0);
+  assert.equal(cost.distance, expected);
   weights.setEdgeCondition(1, { from: 10, to: 11, blocked: true });
   assert.equal(planner.pathCost(1, path).reachable, false);
 });

@@ -172,7 +172,8 @@ active trip, current stop and the latest command version. An empty system has
   "operations": [
     {"order_id":"ORD-20260827-000045","action":"DROPOFF"}
   ],
-  "server_suggested_path": [3, 4, 9, 13]
+  "server_suggested_path": [3, 4, 9, 13],
+  "estimated_duration_ms": 4820
 }
 ```
 
@@ -180,6 +181,10 @@ The server chooses both the next physical stop and its road-node path. The car m
 execute `server_suggested_path` in order using its existing navigation/control state
 machine. Local Dijkstra may validate reachability but may not replace the server path.
 The `path` echoed in `command_ack` must therefore equal `server_suggested_path`.
+
+`estimated_duration_ms` is the server's own distance / ROBOT_SPEED_UNITS_PER_SEC estimate
+for this leg — informational only (e.g. for a simulator to time its playback); the car's
+real motion is still driven by its own navigation stack, not this value.
 
 ### Other server commands
 

@@ -18,11 +18,25 @@ const MAPS = {
       13: 'ZLY',
       14: 'KJDL'
     },
+    // Straight-line pixel coordinates carried over from the UI prototype's
+    // campus map (UI.html NODES) so edge weights below can be computed as
+    // Euclidean distance instead of a separately-maintained constant.
+    coords: {
+      1: { x: 803, y: 30 }, 2: { x: 350, y: 242 }, 3: { x: 560, y: 242 },
+      4: { x: 801, y: 242 }, 5: { x: 1154, y: 242 }, 6: { x: 147, y: 465 },
+      7: { x: 801, y: 465 }, 8: { x: 1269, y: 465 }, 9: { x: 555, y: 662 },
+      10: { x: 801, y: 662 }, 11: { x: 1064, y: 662 }, 12: { x: 1269, y: 662 },
+      13: { x: 740, y: 870 }, 14: { x: 1004, y: 870 }
+    },
     edges: [
-      [1, 3, 65], [1, 5, 65], [2, 3, 75], [2, 6, 92],
-      [4, 5, 85], [4, 7, 65], [5, 8, 96], [6, 9, 162],
-      [9, 10, 85], [9, 13, 65], [7, 10, 65], [10, 11, 85],
-      [11, 12, 75], [8, 12, 65], [12, 14, 75], [13, 14, 85]
+      [1, 3], [1, 5], [2, 3], [2, 6],
+      [4, 5], [4, 7], [5, 8], [6, 9],
+      [9, 10], [9, 13], [7, 10], [10, 11],
+      [11, 12], [8, 12], [12, 14], [13, 14],
+      // These two roads are real on the campus map (through jBumpL /
+      // jBumpTL — see UI.html's EDGES) but were missing here, which forced
+      // every route near SSM through DDCC instead of the actual short way.
+      [3, 4], [1, 4]
     ]
   },
   2: {
@@ -84,6 +98,18 @@ class MapWeights {
     return MAPS;
   }
 
+  // Euclidean distance between the two nodes' mapped coordinates when
+  // available (currently THU / map 1); otherwise falls back to the
+  // edge's own stored constant (older maps that carry no coordinates).
+  baseDistance(mapId, from, to, storedDistance) {
+    const map = MAPS[Number(mapId)];
+    const coords = map && map.coords;
+    const a = coords && coords[Number(from)];
+    const b = coords && coords[Number(to)];
+    if (a && b) return Math.hypot(a.x - b.x, a.y - b.y);
+    return Math.max(0, Number(storedDistance || 0));
+  }
+
   validateEdge(mapId, from, to) {
     const map = MAPS[Number(mapId)];
     if (!map) return false;
@@ -126,9 +152,9 @@ class MapWeights {
   listEdgeConditions(mapId) {
     const map = MAPS[Number(mapId)];
     if (!map) return [];
-    return map.edges.map(([from, to, base_distance]) => ({
+    return map.edges.map(([from, to, storedDistance]) => ({
       ...this.getEdgeCondition(mapId, from, to),
-      base_distance
+      base_distance: this.baseDistance(mapId, from, to, storedDistance)
     }));
   }
 
@@ -161,7 +187,8 @@ class MapWeights {
     const weather = String(context.weather || 'normal').toLowerCase();
     const weatherPenalty = weather === 'rain' || weather === 'storm' ? 25 : 0;
 
-    return map.edges.map(([from, to, baseDistance], index) => {
+    return map.edges.map(([from, to, storedDistance], index) => {
+      const baseDistance = this.baseDistance(map.id, from, to, storedDistance);
       const congestionPenalty = peak && index % 3 === 0 ? Math.round(baseDistance * 0.2) : 0;
       return {
         from,
