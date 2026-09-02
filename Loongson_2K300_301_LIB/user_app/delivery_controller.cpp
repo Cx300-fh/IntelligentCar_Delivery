@@ -378,7 +378,11 @@ void DeliveryController::Handle_Goto_Stop(const ServerMessage& m)
                          std::vector<int>(), ERR_INVALID_MAP, "wrong map_id");
         return;
     }
-    if (c.required_map_version != cfg_.map_version) {
+    // required_map_version 在协议里是可选字段（delivery_protocol.cpp 按 required=false
+    // 解析），缺失时保持结构体默认值 0。0 表示服务器没有提出地图版本要求，此时必须
+    // 跳过校验：否则任何不带该字段的合法 goto_stop 都会被 MAP_VERSION_MISMATCH 拒收，
+    // 车端收到命令却原地不动（真后端就不发这个字段）。服务器明确给出版本时照常校验。
+    if (c.required_map_version != 0 && c.required_map_version != cfg_.map_version) {
         Send_Command_Ack(m.header.message_id, false, c.command_version,
                          std::vector<int>(), ERR_MAP_VERSION_MISMATCH,
                          "map version mismatch");
