@@ -1,0 +1,89 @@
+const VEHICLE_ID = 0;
+const PROTOCOL_VERSION = 1;
+const CAR_CAPACITY = 5;
+const MAX_DETOUR_PERCENT = 15;
+
+const ORDER_STATUS = Object.freeze({
+  QUEUED: 1,
+  WAIT_PICKUP_CONFIRM: 2,
+  DELIVERING: 3,
+  WAIT_DROPOFF_CONFIRM: 4,
+  COMPLETED: 5
+});
+
+const ORDER_STATUS_CODE = Object.freeze({
+  1: 'QUEUED',
+  2: 'WAIT_PICKUP_CONFIRM',
+  3: 'DELIVERING',
+  4: 'WAIT_DROPOFF_CONFIRM',
+  5: 'COMPLETED'
+});
+
+const DISPATCH_STATE = Object.freeze({
+  UNASSIGNED: 'UNASSIGNED',
+  TO_PICKUP: 'TO_PICKUP',
+  WAIT_PICKUP: 'WAIT_PICKUP',
+  TO_DROPOFF: 'TO_DROPOFF',
+  WAIT_DROPOFF: 'WAIT_DROPOFF',
+  DONE: 'DONE'
+});
+
+const TRIP_STATE = Object.freeze({
+  PLANNED: 'PLANNED',
+  ACTIVE: 'ACTIVE',
+  WAITING_CONFIRM: 'WAITING_CONFIRM',
+  PAUSED: 'PAUSED',
+  COMPLETED: 'COMPLETED'
+});
+
+const STOP_STATE = Object.freeze({
+  PENDING: 'PENDING',
+  ISSUED: 'ISSUED',
+  ARRIVED: 'ARRIVED',
+  WAITING_CONFIRM: 'WAITING_CONFIRM',
+  COMPLETED: 'COMPLETED'
+});
+
+const STOP_ACTION = Object.freeze({
+  PICKUP: 'PICKUP',
+  DROPOFF: 'DROPOFF'
+});
+
+const COMMAND_STATUS = Object.freeze({
+  PENDING: 'PENDING',
+  SENT: 'SENT',
+  ACKED: 'ACKED',
+  REJECTED: 'REJECTED'
+});
+
+const USER_ACTION = Object.freeze({
+  CONFIRM_PICKUP_LOADED: 'CONFIRM_PICKUP_LOADED',
+  CONFIRM_DROPOFF_TAKEN: 'CONFIRM_DROPOFF_TAKEN'
+});
+
+function statusCode(status) {
+  return ORDER_STATUS_CODE[Number(status)] || 'UNKNOWN';
+}
+
+function isLoadedStatus(status) {
+  const value = Number(status);
+  return value === ORDER_STATUS.DELIVERING ||
+    value === ORDER_STATUS.WAIT_DROPOFF_CONFIRM;
+}
+
+module.exports = {
+  VEHICLE_ID,
+  PROTOCOL_VERSION,
+  CAR_CAPACITY,
+  MAX_DETOUR_PERCENT,
+  ORDER_STATUS,
+  ORDER_STATUS_CODE,
+  DISPATCH_STATE,
+  TRIP_STATE,
+  STOP_STATE,
+  STOP_ACTION,
+  COMMAND_STATUS,
+  USER_ACTION,
+  statusCode,
+  isLoadedStatus
+};

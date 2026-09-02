@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>清送 · 校园配送机器人 · 交互原型</title>
+<style>
+  :root{
+    --bg:#05070D;
+    --panel:#121621;
+    --panel2:#0C0F19;
+    --border:#22314F;
+    --border-soft:rgba(34,49,79,.6);
+    --blue:#5292FF;
+    --blue-soft:rgba(82,146,255,.16);
+    --blue-strong:rgba(82,146,255,.6);
+    --from:#FF8787;
+    --to:#5292FF;
+    --green:#3DDCA6;
+    --green-bg:#0F2E26;
+    --carpool:#12B886;
+    --gold:#FFC94D;
+    --text:#EAF0FB;
+    --text-soft:#8C96AD;
+    --text-faint:#667087;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);overflow:hidden;
+    font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;}
+  #stage{
+    position:fixed; inset:0;
+    background:radial-gradient(115% 85% at 63% 32%, #17233d 0%, #0d1524 45%, #05070D 88%);
+    overflow:hidden;
+  }
+
+  /* ---------- Map layer ----------
+     Fixed 1440x900 logical box (matches the NODES/SVG coordinate system and
+     Figma's own frame size), positioned in the right portion of the screen
+     (left of it is reserved for the panel) and scaled via JS (layoutMap())
+     to fit whatever's left of the viewport — native size when it fits,
+     shrunk only when the screen is too small for it. */
+  #mapLayer{
+    position:absolute; left:50%; top:50%; width:1440px; height:900px;
+    transform:translate(-50%,-50%);
+    overflow:visible;
+  }
+  #roadLayer{position:absolute; inset:0; width:1440px; height:900px; pointer-events:none;}
+  .road-static{fill:none; stroke:rgba(140,150,173,.55); stroke-width:7; stroke-linecap:round;}
+  #routeSvg{position:absolute; inset:0; width:1440px; height:900px; pointer-events:none;}
+  .route-track{fill:none; stroke:rgba(255,201,77,.6); stroke-width:5; stroke-linecap:round; stroke-dasharray:10 9;}
+  .route-travelled{fill:none; stroke:var(--blue); stroke-width:6; stroke-linecap:round;
+    filter:drop-shadow(0 0 6px rgba(82,146,255,.55));}
+  .route-repositioning{fill:none; stroke:var(--text-soft); stroke-width:5; stroke-linecap:round; opacity:.7;}
+  .route-preview{fill:none; stroke:var(--gold); stroke-width:3; stroke-linecap:round;
+    stroke-dasharray:9 7; opacity:.95;}
+
+  #pinLayer{position:absolute; inset:0;}
+  #markerLayer{position:absolute; inset:0; pointer-events:none;}
+  /* .pin is a zero-size anchor at the exact node coordinate — dot and label
+     are independently-positioned absolute children (not a centered flex
+     stack) so the dot itself sits pixel-exact on the road line; the label
+     just hangs below it. */
+  .pin{ position:absolute; cursor:pointer; user-select:none; }
+  .pin-dot{
+    position:absolute; left:0; top:0; transform:translate(-50%,-50%);
+    width:14px; height:14px; border-radius:50%;
+    background:#fff; box-shadow:0 0 0 5px rgba(255,255,255,.15);
+    transition:all .18s ease;
+  }
+  .pin-label{
+    position:absolute; left:0; top:13px; transform:translate(-50%,0);
+    font-size:20px; font-weight:600; color:var(--text-soft);
+    text-shadow:0 1px 4px rgba(0,0,0,.85), 0 0 8px rgba(0,0,0,.6);
+    white-space:nowrap; transition:color .18s ease;
+  }
+  .pin:hover .pin-dot{background:#fff; box-shadow:0 0 0 6px rgba(255,255,255,.18); transform:translate(-50%,-50%) scale(1.15);}
+  .pin:hover .pin-label{color:#fff;}
+  .pin.is-from .pin-dot, .pin.is-to .pin-dot{opacity:0;}
+  .pin.is-from .pin-label, .pin.is-to .pin-label{opacity:0;}
+
+  /* Same zero-size-anchor pattern as .pin: the badge circle's own center
+     must sit exactly on the node coordinate, independent of the tag label. */
+  .endpoint-marker{ position:absolute; z-index:6; pointer-events:none; }
+  .endpoint-badge{
+    position:absolute; left:0; top:0; transform:translate(-50%,-50%);
+    width:52px; height:52px; border-radius:50%; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--from); border:2.5px solid var(--bg);
+    box-shadow:0 2px 8px rgba(0,0,0,.5);
+  }
+  .endpoint-badge svg{width:24px; height:24px;}
+  .endpoint-badge-to{background:var(--to);}
+  .endpoint-tag{
+    position:absolute; left:0; top:19px; transform:translate(-50%,0);
+    font-size:20px; font-weight:700; white-space:nowrap;
+    text-shadow:0 1px 4px rgba(0,0,0,.85), 0 0 8px rgba(0,0,0,.6);}
+  .tag-from{color:var(--from);}
+  .tag-to{color:var(--to);}
+
+  /* Numbered stops (1=pickup, 2=dropoff) along the active order's route */
+  .stop-marker{ position:absolute; z-index:6; pointer-events:none; }
+  .stop-badge{
+    position:absolute; left:0; top:0; transform:translate(-50%,-50%);
+    width:52px; height:52px; border-radius:50%;
+    background:var(--blue); color:#fff; font-size:26px; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+    border:2.5px solid var(--bg); box-shadow:0 2px 8px rgba(0,0,0,.5);
+  }
+
+  #robotMarker{
+    position:absolute; width:52px; height:52px; transform:translate(-50%,-50%);
+    display:flex; align-items:center; justify-content:center;
+    filter:drop-shadow(0 2px 10px rgba(0,0,0,.5));
+    transition:left .85s linear, top .85s linear;
+    z-index:5;
+  }
+  #robotMarker svg{width:52px; height:52px;}
+
+  /* ---------- Wordmark ---------- */
+  .wordmark{
+    position:absolute; left:32px; top:24px; z-index:20;
+    display:flex; align-items:center; gap:10px;
+  }
+  .wordmark-icon{
+    width:35px; height:35px; display:flex; align-items:center; justify-content:center;
+    filter:drop-shadow(0 4px 14px rgba(82,146,255,.35));
+  }
+  .wordmark-icon svg{width:35px; height:35px;}
+  .wordmark-text{font-size:25px; font-weight:800; color:#EBF0FA; letter-spacing:.5px;}
+
+  /* ---------- Hint chip ---------- */
+  /* left centers over the map region (right of the 480px panel reserve),
+     not the full viewport — calc(220px + 50vw) == 480px + (100vw-520px)/2 */
+  #hintChip{
+    position:absolute; top:28px; left:calc(220px + 50vw); transform:translateX(-50%); z-index:20;
+    padding:10px 22px; border-radius:100px;
+    background:rgba(18,22,33,.88); border:1px solid var(--border-soft);
+    color:var(--text); font-size:20px; font-weight:500; white-space:nowrap;
+    backdrop-filter:blur(6px);
+  }
+
+  /* ---------- Side panel ---------- */
+  #sidePanel{position:absolute; left:32px; top:74px; width:400px; z-index:20;}
+  .panel-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:20px;
+    padding:20px 22px 18px; box-shadow:0 24px 60px rgba(0,0,0,.45);
+    animation:panelIn .22s ease;
+  }
+  @keyframes panelIn{from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);}}
+  .drag-handle{width:40px; height:4px; border-radius:2px; background:var(--border); margin:0 auto 14px;}
+  .panel-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .panel-title{font-size:20px; font-weight:800; color:var(--text);}
+  .count-pill{
+    background:var(--blue-soft); color:var(--blue); font-size:20px; font-weight:700;
+    padding:4px 12px; border-radius:100px;
+  }
+  .icon-btn{
+    width:28px; height:28px; border-radius:8px; border:none; background:transparent;
+    color:var(--text-soft); font-size:20px; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:hover{background:var(--panel2); color:var(--text);}
+
+  .tabs{display:flex; gap:6px; background:var(--panel2); border-radius:12px; padding:4px; margin-bottom:14px;}
+  .tab{
+    flex:1; border:none; background:transparent; color:var(--text-soft);
+    font-size:20px; font-weight:700; padding:9px 0; border-radius:9px; cursor:pointer;
+    transition:all .15s ease;
+  }
+  .tab-active{background:var(--blue); color:#fff; box-shadow:0 4px 12px rgba(82,146,255,.35);}
+  .tab:not(.tab-active):hover{color:var(--text);}
+
+  .order-list{display:flex; flex-direction:column; gap:10px; max-height:560px; overflow-y:auto; padding-right:2px;}
+  .order-list::-webkit-scrollbar{width:5px;}
+  .order-list::-webkit-scrollbar-thumb{background:var(--border); border-radius:3px;}
+
+  .order-card{
+    background:var(--panel2); border:1.5px solid var(--border-soft); border-radius:14px; padding:13px 14px;
+    cursor:default; transition:border-color .15s ease;
+  }
+  .order-card-active{border-color:var(--blue-strong);}
+  .order-card-sub{border:1px solid var(--border); background:var(--panel2);}
+  .order-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+  .order-id{font-size:20px; color:var(--text-faint); font-weight:600;}
+  .badge{font-size:20px; font-weight:700; padding:3px 9px; border-radius:100px;}
+  .badge-active{background:var(--blue); color:#fff;}
+  .badge-waiting{background:rgba(255,201,77,.16); color:var(--gold);}
+  .badge-queued{background:rgba(140,150,173,.16); color:var(--text-soft);}
+  .badge-done{background:rgba(61,220,166,.16); color:var(--green);}
+  .order-name{font-size:20px; font-weight:700; color:var(--text); margin-bottom:3px;}
+  .order-route{font-size:20px; color:var(--text-soft);}
+  .progress-track{height:5px; border-radius:3px; background:var(--border); margin-top:10px; overflow:hidden;}
+  .progress-fill{height:100%; background:var(--blue); border-radius:3px; transition:width .85s linear;
+    box-shadow:0 0 8px rgba(82,146,255,.5);}
+
+  .carpool-box{
+    background:var(--green-bg); border:1px solid var(--carpool); border-radius:14px; padding:12px 12px 6px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .carpool-label{font-size:20px; font-weight:800; color:var(--carpool); margin-bottom:2px;
+    display:flex; align-items:center; gap:6px;}
+
+  .panel-footer{margin-top:14px; font-size:20px; color:var(--text-faint); text-align:center;}
+
+  .empty-slogan{font-size:20px; font-weight:800; color:var(--to); text-align:center; margin:6px 0 14px;}
+  .log-empty{color:var(--text-faint); font-size:20px; text-align:center; padding:20px 10px 36px; line-height:1.8;}
+
+  /* ---------- Selection panel extras ---------- */
+  .ft-card{position:relative; background:var(--panel2); border:1px solid var(--border); border-radius:14px; padding:4px 46px 4px 14px; margin-bottom:12px;}
+  .ft-row{display:flex; align-items:center; gap:12px; padding:12px 0;}
+  .ft-row + .ft-row{border-top:1px solid var(--border);}
+  .ft-icon{width:26px; height:26px; border-radius:50%; background:var(--from); flex:none;
+    display:flex; align-items:center; justify-content:center;}
+  .ft-icon-to{background:var(--to);}
+  .ft-text{display:flex; flex-direction:column; gap:2px; min-width:0;}
+  .ft-tag{font-size:20px; font-weight:800; color:var(--from);}
+  .ft-tag-to{color:var(--to);}
+  .ft-val{font-size:20px; font-weight:700; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .ft-placeholder{color:var(--text-faint); font-weight:500;}
+  .status-line{font-size:20px; color:var(--to); text-align:center; padding:2px 4px 14px;}
+
+  .swap-btn{
+    position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    width:30px; height:30px; border-radius:50%; background:var(--panel); border:1px solid var(--border);
+    color:var(--text-soft); font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:all .15s ease;
+  }
+  .swap-btn:hover{color:var(--text); border-color:var(--blue-strong);}
+
+  .eta-heading{font-size:22px; font-weight:800; color:var(--text); margin:2px 0 4px;}
+  .eta-sub{font-size:20px; color:var(--text-soft); margin-bottom:16px;}
+
+  .name-field{margin-bottom:16px;}
+  .name-label{font-size:20px; font-weight:800; color:var(--text-faint); margin-bottom:6px;}
+  .name-input{width:100%; background:var(--panel2); border:1px solid var(--border); border-radius:12px;
+    padding:12px 14px; font-size:20px; font-weight:700; color:var(--text); outline:none; font-family:inherit;}
+  .name-input:focus{border-color:var(--blue-strong);}
+
+  .sel-actions{display:flex; gap:10px;}
+  .btn{flex:1; border:none; border-radius:12px; padding:13px 0; font-size:20px; font-weight:700; cursor:pointer; transition:all .15s ease;}
+  .btn-primary{background:var(--blue); color:#fff; box-shadow:0 8px 20px rgba(82,146,255,.35);}
+  .btn-primary:hover{background:#3f7fef;}
+  .btn-ghost{background:var(--panel2); color:var(--text-soft); border:1px solid var(--border);}
+  .btn-ghost:hover{color:var(--text);}
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:absolute; top:28px; left:calc(220px + 50vw); transform:translate(-50%,-10px);
+    background:rgba(18,22,33,.95); border:1px solid var(--border-soft); color:var(--text);
+    padding:10px 22px 10px 14px; border-radius:100px; font-size:20px; font-weight:600;
+    box-shadow:0 20px 50px rgba(0,0,0,.5); opacity:0; pointer-events:none; z-index:21;
+    transition:all .28s cubic-bezier(.2,.9,.3,1.3); white-space:nowrap;
+    display:flex; align-items:center; gap:8px;
+  }
+  #toast.show{opacity:1; transform:translate(-50%,0);}
+  #toast .toast-check{
+    width:18px; height:18px; border-radius:50%; background:var(--blue); flex:none;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #hintChip{transition:opacity .2s ease;}
+  #hintChip.hint-hidden{opacity:0;}
+</style>
+</head>
+<body>
+  <div id="stage">
+    <div id="mapLayer">
+      <svg id="roadLayer" viewBox="0 0 1440 900"></svg>
+      <svg id="routeSvg" viewBox="0 0 1440 900"></svg>
+      <div id="pinLayer"></div>
+      <div id="markerLayer"></div>
+      <div id="robotMarker">
+        <svg width="26" height="26" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g clip-path="url(#wmClipRobot)">
+            <rect x="1.5625" y="1.5625" width="31.25" height="31.25" rx="10.9375" fill="#5292FF"/>
+            <rect x="1.5625" y="1.5625" width="31.25" height="31.25" rx="10.9375" stroke="#05070D" stroke-width="3.125"/>
+            <path d="M13.8825 20.4928C13.6646 20.4928 13.4515 20.5575 13.2704 20.6785C13.0892 20.7996 12.948 20.9717 12.8646 21.173C12.7812 21.3743 12.7594 21.5958 12.8019 21.8095C12.8444 22.0233 12.9493 22.2196 13.1034 22.3737C13.2575 22.5278 13.4538 22.6327 13.6675 22.6752C13.8812 22.7177 14.1028 22.6959 14.3041 22.6125C14.5054 22.5291 14.6775 22.3879 14.7985 22.2067C14.9196 22.0255 14.9842 21.8125 14.9842 21.5946C14.9842 21.3024 14.8681 21.0222 14.6615 20.8155C14.4549 20.6089 14.1747 20.4928 13.8825 20.4928ZM6.17012 19.3911C5.87792 19.3911 5.59768 19.5072 5.39106 19.7138C5.18444 19.9204 5.06836 20.2006 5.06836 20.4928V22.6964C5.06836 22.9886 5.18444 23.2688 5.39106 23.4754C5.59768 23.6821 5.87792 23.7981 6.17012 23.7981C6.46233 23.7981 6.74257 23.6821 6.94919 23.4754C7.15581 23.2688 7.27189 22.9886 7.27189 22.6964V20.4928C7.27189 20.2006 7.15581 19.9204 6.94919 19.7138C6.74257 19.5072 6.46233 19.3911 6.17012 19.3911ZM28.2054 19.3911C27.9132 19.3911 27.6329 19.5072 27.4263 19.7138C27.2197 19.9204 27.1036 20.2006 27.1036 20.4928V22.6964C27.1036 22.9886 27.2197 23.2688 27.4263 23.4754C27.6329 23.6821 27.9132 23.7981 28.2054 23.7981C28.4976 23.7981 28.7778 23.6821 28.9844 23.4754C29.1911 23.2688 29.3071 22.9886 29.3071 22.6964V20.4928C29.3071 20.2006 29.1911 19.9204 28.9844 19.7138C28.7778 19.5072 28.4976 19.3911 28.2054 19.3911ZM22.6966 11.6787H18.2895V10.2685C18.6225 10.0762 18.8995 9.80013 19.0928 9.46768C19.286 9.13524 19.389 8.75799 19.3913 8.37345C19.3913 7.78904 19.1591 7.22856 18.7459 6.81532C18.3326 6.40208 17.7722 6.16992 17.1878 6.16992C16.6033 6.16992 16.0429 6.40208 15.6296 6.81532C15.2164 7.22856 14.9842 7.78904 14.9842 8.37345C14.9865 8.75799 15.0895 9.13524 15.2827 9.46768C15.476 9.80013 15.753 10.0762 16.086 10.2685V11.6787H11.6789C10.8023 11.6787 9.96161 12.027 9.34174 12.6468C8.72188 13.2667 8.37365 14.1074 8.37365 14.984V24.8999C8.37365 25.7765 8.72188 26.6172 9.34174 27.2371C9.96161 27.8569 10.8023 28.2052 11.6789 28.2052H22.6966C23.5732 28.2052 24.4139 27.8569 25.0338 27.2371C25.6536 26.6172 26.0019 25.7765 26.0019 24.8999V14.984C26.0019 14.1074 25.6536 13.2667 25.0338 12.6468C24.4139 12.027 23.5732 11.6787 22.6966 11.6787ZM19.0828 13.8823L18.5319 16.0858H15.8436L15.2927 13.8823H19.0828ZM23.7983 24.8999C23.7983 25.1921 23.6823 25.4723 23.4756 25.679C23.269 25.8856 22.9888 26.0017 22.6966 26.0017H11.6789C11.3867 26.0017 11.1065 25.8856 10.8999 25.679C10.6933 25.4723 10.5772 25.1921 10.5772 24.8999V14.984C10.5772 14.6918 10.6933 14.4116 10.8999 14.205C11.1065 13.9983 11.3867 13.8823 11.6789 13.8823H13.0231L13.8825 17.452C13.9428 17.6964 14.085 17.9128 14.2855 18.0652C14.4859 18.2176 14.7325 18.2966 14.9842 18.2893H19.3913C19.643 18.2966 19.8896 18.2176 20.09 18.0652C20.2905 17.9128 20.4327 17.6964 20.493 17.452L21.3524 13.8823H22.6966C22.9888 13.8823 23.269 13.9983 23.4756 14.205C23.6823 14.4116 23.7983 14.6918 23.7983 14.984V24.8999ZM20.493 20.4928C20.2751 20.4928 20.0621 20.5575 19.8809 20.6785C19.6997 20.7996 19.5585 20.9717 19.4751 21.173C19.3918 21.3743 19.3699 21.5958 19.4124 21.8095C19.455 22.0233 19.5599 22.2196 19.714 22.3737C19.8681 22.5278 20.0644 22.6327 20.2781 22.6752C20.4918 22.7177 20.7133 22.6959 20.9147 22.6125C21.116 22.5291 21.2881 22.3879 21.4091 22.2067C21.5302 22.0255 21.5948 21.8125 21.5948 21.5946C21.5948 21.3024 21.4787 21.0222 21.2721 20.8155C21.0655 20.6089 20.7852 20.4928 20.493 20.4928Z" fill="black"/>
+          </g>
+          <defs>
+            <clipPath id="wmClipRobot"><rect width="34.375" height="34.375" fill="white"/></clipPath>
+          </defs>
+        </svg>
+      </div>
+    </div>
+
+    <div class="wordmark">
+      <div class="wordmark-icon">
+        <svg width="35" height="35" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g clip-path="url(#wmClip)">
+            <rect x="1.5625" y="1.5625" width="31.25" height="31.25" rx="10.9375" fill="#5292FF"/>
+            <rect x="1.5625" y="1.5625" width="31.25" height="31.25" rx="10.9375" stroke="#05070D" stroke-width="3.125"/>
+            <path d="M13.8825 20.4928C13.6646 20.4928 13.4515 20.5575 13.2704 20.6785C13.0892 20.7996 12.948 20.9717 12.8646 21.173C12.7812 21.3743 12.7594 21.5958 12.8019 21.8095C12.8444 22.0233 12.9493 22.2196 13.1034 22.3737C13.2575 22.5278 13.4538 22.6327 13.6675 22.6752C13.8812 22.7177 14.1028 22.6959 14.3041 22.6125C14.5054 22.5291 14.6775 22.3879 14.7985 22.2067C14.9196 22.0255 14.9842 21.8125 14.9842 21.5946C14.9842 21.3024 14.8681 21.0222 14.6615 20.8155C14.4549 20.6089 14.1747 20.4928 13.8825 20.4928ZM6.17012 19.3911C5.87792 19.3911 5.59768 19.5072 5.39106 19.7138C5.18444 19.9204 5.06836 20.2006 5.06836 20.4928V22.6964C5.06836 22.9886 5.18444 23.2688 5.39106 23.4754C5.59768 23.6821 5.87792 23.7981 6.17012 23.7981C6.46233 23.7981 6.74257 23.6821 6.94919 23.4754C7.15581 23.2688 7.27189 22.9886 7.27189 22.6964V20.4928C7.27189 20.2006 7.15581 19.9204 6.94919 19.7138C6.74257 19.5072 6.46233 19.3911 6.17012 19.3911ZM28.2054 19.3911C27.9132 19.3911 27.6329 19.5072 27.4263 19.7138C27.2197 19.9204 27.1036 20.2006 27.1036 20.4928V22.6964C27.1036 22.9886 27.2197 23.2688 27.4263 23.4754C27.6329 23.6821 27.9132 23.7981 28.2054 23.7981C28.4976 23.7981 28.7778 23.6821 28.9844 23.4754C29.1911 23.2688 29.3071 22.9886 29.3071 22.6964V20.4928C29.3071 20.2006 29.1911 19.9204 28.9844 19.7138C28.7778 19.5072 28.4976 19.3911 28.2054 19.3911ZM22.6966 11.6787H18.2895V10.2685C18.6225 10.0762 18.8995 9.80013 19.0928 9.46768C19.286 9.13524 19.389 8.75799 19.3913 8.37345C19.3913 7.78904 19.1591 7.22856 18.7459 6.81532C18.3326 6.40208 17.7722 6.16992 17.1878 6.16992C16.6033 6.16992 16.0429 6.40208 15.6296 6.81532C15.2164 7.22856 14.9842 7.78904 14.9842 8.37345C14.9865 8.75799 15.0895 9.13524 15.2827 9.46768C15.476 9.80013 15.753 10.0762 16.086 10.2685V11.6787H11.6789C10.8023 11.6787 9.96161 12.027 9.34174 12.6468C8.72188 13.2667 8.37365 14.1074 8.37365 14.984V24.8999C8.37365 25.7765 8.72188 26.6172 9.34174 27.2371C9.96161 27.8569 10.8023 28.2052 11.6789 28.2052H22.6966C23.5732 28.2052 24.4139 27.8569 25.0338 27.2371C25.6536 26.6172 26.0019 25.7765 26.0019 24.8999V14.984C26.0019 14.1074 25.6536 13.2667 25.0338 12.6468C24.4139 12.027 23.5732 11.6787 22.6966 11.6787ZM19.0828 13.8823L18.5319 16.0858H15.8436L15.2927 13.8823H19.0828ZM23.7983 24.8999C23.7983 25.1921 23.6823 25.4723 23.4756 25.679C23.269 25.8856 22.9888 26.0017 22.6966 26.0017H11.6789C11.3867 26.0017 11.1065 25.8856 10.8999 25.679C10.6933 25.4723 10.5772 25.1921 10.5772 24.8999V14.984C10.5772 14.6918 10.6933 14.4116 10.8999 14.205C11.1065 13.9983 11.3867 13.8823 11.6789 13.8823H13.0231L13.8825 17.452C13.9428 17.6964 14.085 17.9128 14.2855 18.0652C14.4859 18.2176 14.7325 18.2966 14.9842 18.2893H19.3913C19.643 18.2966 19.8896 18.2176 20.09 18.0652C20.2905 17.9128 20.4327 17.6964 20.493 17.452L21.3524 13.8823H22.6966C22.9888 13.8823 23.269 13.9983 23.4756 14.205C23.6823 14.4116 23.7983 14.6918 23.7983 14.984V24.8999ZM20.493 20.4928C20.2751 20.4928 20.0621 20.5575 19.8809 20.6785C19.6997 20.7996 19.5585 20.9717 19.4751 21.173C19.3918 21.3743 19.3699 21.5958 19.4124 21.8095C19.455 22.0233 19.5599 22.2196 19.714 22.3737C19.8681 22.5278 20.0644 22.6327 20.2781 22.6752C20.4918 22.7177 20.7133 22.6959 20.9147 22.6125C21.116 22.5291 21.2881 22.3879 21.4091 22.2067C21.5302 22.0255 21.5948 21.8125 21.5948 21.5946C21.5948 21.3024 21.4787 21.0222 21.2721 20.8155C21.0655 20.6089 20.7852 20.4928 20.493 20.4928Z" fill="black"/>
+          </g>
+          <defs>
+            <clipPath id="wmClip"><rect width="34.375" height="34.375" fill="white"/></clipPath>
+          </defs>
+        </svg>
+      </div>
+      <div class="wordmark-text">清送</div>
+    </div>
+
+    <div id="hintChip">点选地图上的建筑，选择取件与送达地点</div>
+
+    <div id="sidePanel"></div>
+
+    <div id="toast"></div>
+  </div>
+
+  <script>
+/* ============================================================
+   清送 (QingSong) — Interactive Prototype Engine
+   Combines V4 map geometry (4-block campus loop, 14 buildings)
+   with V2 delivery-progress semantics + V3 floating-panel UI.
+   ============================================================ */
+
+/* ---------- 1. Map graph: junctions + 14 selectable buildings ----------
+   Coordinates measured directly from THU_map_clean.png (the real campus
+   road reference, 1440x816 photo — x kept 1:1, y scaled by 900/816≈1.103
+   to fit this stage's 900px height). The 紫荆操场 spur is a real loop back
+   down to the main edge (confirmed by thresholding the road-ink pixels and
+   finding a continuous 3-sided rounded-rect bump, not a dead-end stub). */
+/* Coordinates measured off THU_new_coords_overlay_3x.png (red ground-truth
+   boxes, pixel-thresholded). x 1:1, y scaled by 900/816. Per live annotation
+   feedback, 苏世民书院 and 'A' actually sit exactly AT their nearby junction
+   (not just near it, like 图书馆/新清华学堂 do) — so those two junctions
+   (formerly jSpineTop, j6) are merged directly into the sushimin/aBuild
+   building nodes instead of being separate coincident points. */
+const NODES = {
+  // selectable buildings (id: {x,y,label, selectable:true})
+  zijing:    { x: 803,  y: 30,  label: '紫荆操场',   selectable: true },
+  like:      { x: 350,  y: 242, label: '理科楼',     selectable: true },
+  library:   { x: 560,  y: 242, label: '图书馆',     selectable: true },
+  sushimin:  { x: 801,  y: 242, label: '苏世民书院', selectable: true },
+  dongda:    { x: 1154, y: 242, label: '东大操场',   selectable: true },
+  hospital:  { x: 147,  y: 465, label: '校医院',     selectable: true },
+  dorm:      { x: 801,  y: 465, label: '学生宿舍',   selectable: true },
+  dongmen:   { x: 1269, y: 465, label: '东门',       selectable: true },
+  hall:      { x: 555,  y: 662, label: '大礼堂',     selectable: true, home: true },
+  xinqinghua:{ x: 801,  y: 662, label: '新清华学堂', selectable: true },
+  zhongyang: { x: 1064, y: 662, label: '中央主楼',   selectable: true },
+  aBuild:    { x: 1269, y: 662, label: 'A',          selectable: true },
+  zhaolan:   { x: 740,  y: 870, label: '照澜院',     selectable: true },
+  keji:      { x: 1004, y: 870, label: '科技大楼',   selectable: true },
+  // junctions (routing only, not selectable / not drawn)
+  j1:        { x: 147,  y: 242, label: '', selectable: false },
+  jBumpL:    { x: 555,  y: 242, label: '', selectable: false },
+  jBumpR:    { x: 1050, y: 242, label: '', selectable: false },
+  j3:        { x: 1269, y: 242, label: '', selectable: false },
+  jBumpTL:   { x: 555,  y: 30,  label: '', selectable: false },
+  jBumpTR:   { x: 1050, y: 30,  label: '', selectable: false },
+  j4:        { x: 147,  y: 662, label: '', selectable: false },
+  j7:        { x: 555,  y: 870, label: '', selectable: false },
+  j8:        { x: 1269, y: 870, label: '', selectable: false },
+};
+
+const EDGES = [
+  ['j1','like'],['like','library'],['library','jBumpL'],
+  ['jBumpL','sushimin'],
+  ['sushimin','jBumpR'],
+  ['jBumpR','dongda'],['dongda','j3'],
+  ['jBumpL','jBumpTL'],['jBumpTL','zijing'],['zijing','jBumpTR'],['jBumpTR','jBumpR'],
+  ['j1','hospital'],['hospital','j4'],
+  ['sushimin','dorm'],['dorm','xinqinghua'],
+  ['j3','dongmen'],['dongmen','aBuild'],
+  ['j4','hall'],['hall','xinqinghua'],['xinqinghua','zhongyang'],['zhongyang','aBuild'],
+  ['aBuild','j8'],
+  ['hall','j7'],['j7','zhaolan'],['zhaolan','keji'],['keji','j8'],
+];
+
+const dist = (a,b) => Math.hypot(NODES[a].x-NODES[b].x, NODES[a].y-NODES[b].y);
+
+const ADJ = {};
+Object.keys(NODES).forEach(k => ADJ[k] = []);
+EDGES.forEach(([a,b]) => {
+  const d = dist(a,b);
+  ADJ[a].push({to:b, d}); ADJ[b].push({to:a, d});
+});
+
+function shortestPath(start, end) {
+  const distMap = {}, prev = {}, visited = new Set();
+  Object.keys(NODES).forEach(k => distMap[k] = Infinity);
+  distMap[start] = 0;
+  const pq = new Set(Object.keys(NODES));
+  while (pq.size) {
+    let u = null, best = Infinity;
+    pq.forEach(k => { if (distMap[k] < best) { best = distMap[k]; u = k; } });
+    if (u === null) break;
+    pq.delete(u); visited.add(u);
+    if (u === end) break;
+    ADJ[u].forEach(({to, d}) => {
+      if (visited.has(to)) return;
+      const nd = distMap[u] + d;
+      if (nd < distMap[to]) { distMap[to] = nd; prev[to] = u; }
+    });
+  }
+  const path = [end];
+  let cur = end;
+  while (cur !== start) {
+    cur = prev[cur];
+    if (cur === undefined) return [start, end]; // fallback, shouldn't happen
+    path.unshift(cur);
+  }
+  return path;
+}
+
+const ROUTE_CORNER_R = 38;
+
+// Dense, already-corner-rounded point list — this is the single source of
+// truth for both the drawn route AND the robot's animated position, so the
+// robot marker can never drift off the visible (rounded) line at a turn.
+function pathPoints(start, end) {
+  const raw = shortestPath(start, end).map(id => ({x: NODES[id].x, y: NODES[id].y}));
+  return roundedPoints(raw, ROUTE_CORNER_R);
+}
+
+function etaInfo(from, to) {
+  const pts = pathPoints(from, to);
+  const distM = Math.round(pathLength(pts) * 1.2 / 10) * 10;
+  const travelMin = Math.max(1, Math.round(distM / 45));
+  const queueAhead = totalOpen();
+  const waitMin = Math.round(queueAhead * 2.5);
+  return { distM, travelMin, waitMin, totalMin: travelMin + waitMin, queueAhead };
+}
+
+function pathLength(pts) {
+  let total = 0;
+  for (let i=1;i<pts.length;i++) total += Math.hypot(pts[i].x-pts[i-1].x, pts[i].y-pts[i-1].y);
+  return total;
+}
+
+function pointAtFraction(pts, frac) {
+  const total = pathLength(pts);
+  let target = total * Math.max(0, Math.min(1, frac));
+  for (let i=1;i<pts.length;i++) {
+    const segLen = Math.hypot(pts[i].x-pts[i-1].x, pts[i].y-pts[i-1].y);
+    if (target <= segLen || i === pts.length-1) {
+      const t = segLen === 0 ? 0 : target/segLen;
+      return {
+        x: pts[i-1].x + (pts[i].x-pts[i-1].x) * t,
+        y: pts[i-1].y + (pts[i].y-pts[i-1].y) * t,
+      };
+    }
+    target -= segLen;
+  }
+  return pts[pts.length-1];
+}
+
+/* rounded-corner SVG path from an ordered point list (arc radius r) */
+function quadPoint(a, c, b, t) {
+  const mt = 1 - t;
+  return { x: mt*mt*a.x + 2*mt*t*c.x + t*t*b.x, y: mt*mt*a.y + 2*mt*t*c.y + t*t*b.y };
+}
+
+// Resamples a sharp-corner polyline into a dense point list where each
+// interior corner is replaced by a rounded (quadratic-bezier) arc of
+// radius r. Used as the SINGLE geometry both the visible route and the
+// robot's animated position are derived from, so they can never diverge.
+function roundedPoints(pts, r, steps = 8) {
+  if (pts.length < 3) return pts.slice();
+  const out = [pts[0]];
+  for (let i=1;i<pts.length-1;i++) {
+    const prev = pts[i-1], p = pts[i], next = pts[i+1];
+    const segInLen = Math.hypot(p.x-prev.x, p.y-prev.y);
+    const segOutLen = Math.hypot(next.x-p.x, next.y-p.y);
+    const rr = Math.min(r, segInLen/2, segOutLen/2);
+    const inPt = { x: p.x - (p.x-prev.x)/segInLen*rr, y: p.y - (p.y-prev.y)/segInLen*rr };
+    const outPt = { x: p.x + (next.x-p.x)/segOutLen*rr, y: p.y + (next.y-p.y)/segOutLen*rr };
+    out.push(inPt);
+    for (let s=1;s<steps;s++) out.push(quadPoint(inPt, p, outPt, s/steps));
+    out.push(outPt);
+  }
+  out.push(pts[pts.length-1]);
+  return out;
+}
+
+function pointsToPathD(pts) {
+  if (pts.length < 2) return '';
+  return `M ${pts[0].x} ${pts[0].y} ` + pts.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ');
+}
+
+// For raw/sharp-corner inputs (the static road network) — rounds, then stringifies.
+function roundedPathD(pts, r) {
+  return pointsToPathD(roundedPoints(pts, r));
+}
+
+/* ---------- 2. Order model & state ---------- */
+const ORDER_COLORS = ['#5292FF','#FF8787','#3DDCA6','#FFC94D','#B98BFF','#5DD8FF'];
+
+// shared from/to glyphs — used by the ft-card icon and the map endpoint marker
+const ICON_FROM = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M4 9l8-5 8 5"/></svg>';
+const ICON_TO = '<svg viewBox="0 0 24 24" width="13" height="13" fill="#fff"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>';
+const ICON_CHECK = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+const NAME_POOL = ['林晓','苏晴','黄磊','吴悠','郑凯','孙艺','王小明','陈可','周雨薇','赵航','李芸','马斌','高远','谢婷'];
+let nameCursor = 0, orderSeq = 42;
+function peekName() { return NAME_POOL[nameCursor % NAME_POOL.length]; }
+const MAX_SLOTS = 5;
+// UI/index.html's SPEED=45 was calibrated for its own graph's typical route
+// lengths; V4's graph has longer point-to-point distances (e.g. no direct
+// hall<->library edge — the real road doesn't have one), so the literal same
+// number made routine trips take 30+ seconds. Recalibrated so a typical run
+// still takes a brisk few seconds, keeping the same distance-proportional
+// duration model.
+const RUN_SPEED = 90; // 1440-space units / second
+
+const state = {
+  orders: [],
+  tab: 'active',           // 'active' | 'all'
+  selecting: null,         // null | {from:nodeId|null, to:nodeId|null}
+  robotPos: 'hall',        // node id the robot is physically resting at when idle
+  run: null,               // null | {orderIds, rawPath, points, breakLen, totalLen, startTime, duration, t}
+};
+
+function seedOrders() {
+  state.orders = [];
+  state.run = null;
+  state.robotPos = 'hall';
+}
+
+/* ---------- 3. Derived helpers ---------- */
+function activeCount() { return state.orders.filter(o => o.status === '配送中').length; }
+function totalOpen() { return state.orders.filter(o => o.status !== '已送达').length; }
+
+/* ---------- Robot dispatch engine — ported from UI/index.html: a single
+   continuous "run" the robot drives (robotPos -> stop -> stop -> ...),
+   with real pooling (a new order joins the CURRENT run if both its pickup
+   and dropoff already lie ahead on that run's path) instead of the earlier
+   per-order simulation. See UI/index.html's tryPoolOrStartOrder/startNextRun/
+   animateRun for the reference implementation this mirrors. ---------- */
+function buildRun(waypointIds) {
+  let rawPath = [waypointIds[0]];
+  for (let i = 0; i < waypointIds.length - 1; i++) {
+    rawPath = rawPath.concat(shortestPath(waypointIds[i], waypointIds[i+1]).slice(1));
+  }
+  const rawCoords = rawPath.map(id => NODES[id]);
+  const points = roundedPoints(rawCoords, ROUTE_CORNER_R);
+  const breakLen = [0];
+  for (let i = 1; i < rawCoords.length; i++) {
+    breakLen.push(breakLen[i-1] + Math.hypot(rawCoords[i].x-rawCoords[i-1].x, rawCoords[i].y-rawCoords[i-1].y));
+  }
+  return { rawPath, points, breakLen, totalLen: breakLen[breakLen.length-1] };
+}
+
+function currentProgressIdx() {
+  if (!state.run) return 0;
+  const curLen = (state.run.t || 0) * state.run.totalLen;
+  const bl = state.run.breakLen;
+  let idx = 0;
+  for (let i = 0; i < bl.length; i++) { if (bl[i] <= curLen) idx = i; else break; }
+  return idx;
+}
+
+// A confirmed order either joins the robot's current run (if it's genuinely
+// on the way — both stops already lie ahead on the run's path) or waits.
+// Returns true if the order joined the current run (pooled), false otherwise.
+function tryPoolOrStartOrder(order) {
+  if (state.run) {
+    const run = state.run;
+    const fromIdx = run.rawPath.indexOf(order.from);
+    const toIdx = run.rawPath.indexOf(order.to);
+    const progressIdx = currentProgressIdx();
+    if (fromIdx !== -1 && toIdx !== -1 && fromIdx >= progressIdx && toIdx > fromIdx) {
+      run.orderIds.push(order.id);
+      order.status = '配送中';
+      order.phase = 'to_pickup';
+      const primary = state.orders.find(o => o.id === run.orderIds[0]);
+      if (!primary.groupId) primary.groupId = 'grp' + primary.id;
+      order.groupId = primary.groupId;
+      renderSvgOverlay();
+      if (!state.selecting) updateQueuePanelLive();
+      return true;
+    }
+    return false; // not on the way — stays 排队中 until the current run finishes
+  }
+  startNextRun();
+  return false;
+}
+
+function startNextRun() {
+  if (state.run) return;
+  const next = state.orders.find(o => o.status === '排队中');
+  if (!next) return;
+  const built = buildRun([state.robotPos, next.from, next.to]);
+  next.status = '配送中';
+  next.phase = 'to_pickup';
+  state.run = Object.assign(built, {
+    orderIds: [next.id],
+    startTime: performance.now(),
+    duration: Math.max(1800, (built.totalLen / RUN_SPEED) * 1000),
+    t: 0,
+  });
+  renderSvgOverlay();
+  if (!state.selecting) updateQueuePanelLive();
+  requestAnimationFrame(animateRun);
+}
+
+function orderProgressPercent(o) {
+  if (!state.run || o.phase !== 'in_transit') return 0;
+  const run = state.run;
+  const fromIdx = run.rawPath.indexOf(o.from), toIdx = run.rawPath.indexOf(o.to);
+  const segStart = run.breakLen[fromIdx], segEnd = run.breakLen[toIdx];
+  if (segEnd <= segStart) return 100;
+  const curLen = run.t * run.totalLen;
+  return Math.max(0, Math.min(100, (curLen - segStart) / (segEnd - segStart) * 100));
+}
+
+function animateRun(now) {
+  const run = state.run;
+  if (!run) return;
+  const t = Math.min(1, (now - run.startTime) / run.duration);
+  run.t = t;
+  const progressIdx = currentProgressIdx();
+
+  let statusChanged = false;
+  run.orderIds.forEach(oid => {
+    const o = state.orders.find(x => x.id === oid);
+    if (!o) return;
+    const fromIdx = run.rawPath.indexOf(o.from), toIdx = run.rawPath.indexOf(o.to);
+    if (o.phase === 'to_pickup' && progressIdx >= fromIdx) { o.phase = 'in_transit'; statusChanged = true; }
+    if (o.phase === 'in_transit' && progressIdx >= toIdx) {
+      o.status = '已送达'; o.phase = null; statusChanged = true;
+      showToast(`订单 #0${o.id} 已送达 ${NODES[o.to].label}`);
+    }
+  });
+
+  renderSvgOverlay();
+  if (statusChanged && !state.selecting) updateQueuePanelLive();
+
+  if (t < 1) {
+    requestAnimationFrame(animateRun);
+  } else {
+    run.orderIds.forEach(oid => {
+      const o = state.orders.find(x => x.id === oid);
+      if (o && o.status !== '已送达') {
+        o.status = '已送达'; o.phase = null;
+        showToast(`订单 #0${o.id} 已送达 ${NODES[o.to].label}`);
+      }
+    });
+    state.robotPos = run.rawPath[run.rawPath.length-1];
+    state.run = null;
+    renderSvgOverlay();
+    if (!state.selecting) updateQueuePanelLive();
+    setTimeout(startNextRun, 400);
+  }
+}
+
+/* ---------- 4. Toast ---------- */
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.innerHTML = `<span class="toast-check">${ICON_CHECK}</span><span>${msg}</span>`;
+  el.classList.add('show');
+  document.getElementById('hintChip').classList.add('hint-hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    el.classList.remove('show');
+    document.getElementById('hintChip').classList.remove('hint-hidden');
+  }, 2600);
+}
+
+/* ---------- 5. Rendering: static road network ---------- */
+const STATIC_CHAINS = [
+  ['jBumpL','library','like','j1','hospital','j4','hall'],
+  ['jBumpL','sushimin'],
+  ['jBumpL','jBumpTL','zijing','jBumpTR','jBumpR'],
+  ['sushimin','jBumpR'],
+  ['sushimin','dorm','xinqinghua'],
+  ['jBumpR','dongda','j3','dongmen','aBuild'],
+  ['hall','xinqinghua'],
+  ['xinqinghua','zhongyang','aBuild'],
+  ['hall','j7','zhaolan','keji','j8'],
+  ['aBuild','j8'],
+];
+
+function buildStaticRoads() {
+  const svg = document.getElementById('roadLayer');
+  svg.innerHTML = STATIC_CHAINS.map(ids => {
+    const pts = ids.map(id => NODES[id]);
+    return `<path d="${roundedPathD(pts, ROUTE_CORNER_R)}" class="road-static" />`;
+  }).join('');
+}
+
+/* ---------- 6. Rendering: map pins ---------- */
+function buildPins() {
+  const layer = document.getElementById('pinLayer');
+  layer.innerHTML = '';
+  Object.entries(NODES).forEach(([id, n]) => {
+    if (!n.selectable) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'pin' + (n.home ? ' pin-home' : '');
+    wrap.style.left = n.x + 'px';
+    wrap.style.top = n.y + 'px';
+    wrap.dataset.node = id;
+    wrap.innerHTML = `<div class="pin-dot"></div><div class="pin-label">${n.label}</div>`;
+    wrap.addEventListener('click', (e) => { e.stopPropagation(); onPinClick(id); });
+    layer.appendChild(wrap);
+  });
+}
+
+function setPinState(nodeId, cls) {
+  const el = document.querySelector(`.pin[data-node="${nodeId}"]`);
+  if (el) el.classList.add(cls);
+}
+function clearPinStates() {
+  document.querySelectorAll('.pin').forEach(p => p.classList.remove('is-from','is-to','is-dim'));
+}
+
+/* ---------- 7. Rendering: route / selection overlay ---------- */
+function renderSvgOverlay() {
+  const svg = document.getElementById('routeSvg');
+  let markup = '';
+
+  const run = state.run;
+  if (run) {
+    markup += `<path d="${pointsToPathD(run.points)}" class="route-track" />`;
+    const travelPts = tracePartial(run.points, run.t);
+    if (travelPts.length > 1) markup += `<path d="${pointsToPathD(travelPts)}" class="route-travelled" />`;
+  }
+
+  // selection preview (from/to picking) — pathPoints() is already rounded
+  if (state.selecting && state.selecting.from && state.selecting.to) {
+    const pts = pathPoints(state.selecting.from, state.selecting.to);
+    markup += `<path d="${pointsToPathD(pts)}" class="route-preview" />`;
+  }
+
+  svg.innerHTML = markup;
+
+  // robot marker position — always on a real lane point, never teleported
+  const robotEl = document.getElementById('robotMarker');
+  if (run) {
+    const p = pointAtFraction(run.points, run.t);
+    robotEl.style.left = p.x + 'px';
+    robotEl.style.top = p.y + 'px';
+  } else {
+    const rest = NODES[state.robotPos] || NODES.hall;
+    robotEl.style.left = rest.x + 'px';
+    robotEl.style.top = rest.y + 'px';
+  }
+  robotEl.style.opacity = 1;
+
+  // from/to connector markers during selection, or numbered stops along the
+  // robot's current run (every pending pickup/dropoff of every pooled order,
+  // in the order the robot will actually reach them)
+  const markerLayer = document.getElementById('markerLayer');
+  markerLayer.innerHTML = '';
+  if (state.selecting) {
+    if (state.selecting.from) markerLayer.appendChild(buildEndpointMarker(state.selecting.from, 'from'));
+    if (state.selecting.to) markerLayer.appendChild(buildEndpointMarker(state.selecting.to, 'to'));
+  } else if (run) {
+    const stops = [];
+    run.orderIds.forEach(oid => {
+      const o = state.orders.find(x => x.id === oid);
+      if (!o || o.status === '已送达') return;
+      const fromIdx = run.rawPath.indexOf(o.from), toIdx = run.rawPath.indexOf(o.to);
+      if (o.phase === 'to_pickup') stops.push({ idx: fromIdx, nodeId: o.from, color: o.color });
+      stops.push({ idx: toIdx, nodeId: o.to, color: o.color });
+    });
+    stops.sort((a,b) => a.idx - b.idx);
+    stops.forEach((s,i) => markerLayer.appendChild(buildStopMarker(s.nodeId, i+1, s.color)));
+  }
+}
+
+function buildStopMarker(nodeId, num, color) {
+  const n = NODES[nodeId];
+  const el = document.createElement('div');
+  el.className = 'stop-marker';
+  el.style.left = n.x + 'px';
+  el.style.top = n.y + 'px';
+  el.innerHTML = `<div class="stop-badge" style="background:${color || 'var(--blue)'}">${num}</div>`;
+  return el;
+}
+
+function tracePartial(pts, frac) {
+  const total = pathLength(pts);
+  let target = total * Math.max(0, Math.min(1, frac));
+  const out = [pts[0]];
+  for (let i=1;i<pts.length;i++) {
+    const segLen = Math.hypot(pts[i].x-pts[i-1].x, pts[i].y-pts[i-1].y);
+    if (target <= segLen) {
+      const t = segLen === 0 ? 0 : target/segLen;
+      out.push({ x: pts[i-1].x + (pts[i].x-pts[i-1].x)*t, y: pts[i-1].y + (pts[i].y-pts[i-1].y)*t });
+      return out;
+    }
+    out.push(pts[i]);
+    target -= segLen;
+  }
+  return out;
+}
+
+function buildEndpointMarker(nodeId, kind) {
+  const n = NODES[nodeId];
+  const el = document.createElement('div');
+  el.className = 'endpoint-marker endpoint-' + kind;
+  el.style.left = n.x + 'px';
+  el.style.top = n.y + 'px';
+  const icon = kind === 'from' ? ICON_FROM : ICON_TO;
+  el.innerHTML = `
+    <div class="endpoint-badge endpoint-badge-${kind}">${icon}</div>
+    <div class="endpoint-tag tag-${kind}">${n.label}</div>`;
+  return el;
+}
+
+/* ---------- 8. Rendering: side panel ---------- */
+function renderPanel() {
+  const panel = document.getElementById('sidePanel');
+  if (state.selecting) {
+    panel.innerHTML = selectionPanelHTML();
+    wireSelectionPanel();
+    document.getElementById('hintChip').textContent = hintText();
+  } else {
+    panel.innerHTML = queuePanelHTML();
+    wireQueuePanel();
+    document.getElementById('hintChip').textContent = '点选地图上的建筑，选择取件与送达地点';
+  }
+}
+
+function hintText() {
+  const s = state.selecting;
+  if (s.from && !s.to) return '取件点已选择 · 请在地图上点选送达建筑';
+  if (s.from && s.to) return '已选择取送地点 · 点击下方「确认下单」';
+  return '请在地图上点选取件建筑';
+}
+
+function selectionPanelHTML() {
+  const s = state.selecting;
+  const fromLabel = s.from ? NODES[s.from].label : '点选地图上的建筑作为取件点';
+  const toLabel = s.to ? NODES[s.to].label : '点选地图上的建筑作为送达点';
+  const ready = s.from && s.to;
+  let extra = '';
+  if (ready) {
+    const eta = etaInfo(s.from, s.to);
+    const sub = eta.queueAhead > 0
+      ? `距离 ${eta.distM} 米 · 前面 ${eta.queueAhead} 单排队 · 预计 ${eta.waitMin} 分钟后出发`
+      : `距离 ${eta.distM} 米 · 机器人即将出发`;
+    extra = `
+      <div class="eta-heading">${eta.totalMin} 分钟后送达</div>
+      <div class="eta-sub">${sub}</div>
+      <div class="name-field">
+        <div class="name-label">姓名</div>
+        <input class="name-input" id="nameInput" type="text" maxlength="12" value="${s.name || peekName()}" />
+      </div>
+      <div class="sel-actions">
+        <button class="btn btn-primary" id="confirmSelBtn">确认下单</button>
+      </div>`;
+  }
+  return `
+    <div class="panel-card">
+      <div class="panel-header">
+        <div class="panel-title">新建配送</div>
+        <button class="icon-btn" id="closeSelBtn" aria-label="关闭">×</button>
+      </div>
+      <div class="ft-card">
+        <div class="ft-row">
+          <div class="ft-icon">${ICON_FROM}</div>
+          <div class="ft-text"><span class="ft-tag ft-tag-from">取件</span><span class="ft-val ${s.from?'':'ft-placeholder'}">${fromLabel}</span></div>
+        </div>
+        ${ ready ? `<button class="swap-btn" id="swapBtnSel" aria-label="交换取送地点">⇅</button>` : '' }
+        <div class="ft-row">
+          <div class="ft-icon ft-icon-to">${ICON_TO}</div>
+          <div class="ft-text"><span class="ft-tag ft-tag-to">送达</span><span class="ft-val ${s.to?'':'ft-placeholder'}">${toLabel}</span></div>
+        </div>
+      </div>
+      ${ ready ? '' : `<div class="status-line">${hintText()}</div>` }
+      ${extra}
+    </div>`;
+}
+
+function wireSelectionPanel() {
+  const closeBtn = document.getElementById('closeSelBtn');
+  if (closeBtn) closeBtn.addEventListener('click', cancelSelection);
+  const swapBtn = document.getElementById('swapBtnSel');
+  if (swapBtn) swapBtn.addEventListener('click', swapSelection);
+  const nameInput = document.getElementById('nameInput');
+  if (nameInput) nameInput.addEventListener('input', () => { state.selecting.name = nameInput.value; });
+  const confirmBtn = document.getElementById('confirmSelBtn');
+  if (confirmBtn) confirmBtn.addEventListener('click', confirmSelection);
+}
+
+function swapSelection() {
+  const s = state.selecting;
+  [s.from, s.to] = [s.to, s.from];
+  refreshPinVisuals();
+  renderSvgOverlay();
+  renderPanel();
+}
+
+function buildQueueBody() {
+  const list = state.orders.filter(o => state.tab === 'all' ? true : o.status !== '已送达');
+  const overflow = state.orders.filter(o => o.status === '排队中').length;
+
+  let bodyHTML = '';
+  if (list.length === 0) {
+    bodyHTML = `
+      <div class="empty-slogan">有了清送，更轻松</div>
+      <div class="log-empty">
+        ${state.tab === 'all'
+          ? '没有进行中或未来的订单<br>（都已送达，可切到"进行中"查看）'
+          : '暂无记录<br>选好起点和终点并点击「确认」后<br>会显示在这里'}
+      </div>`;
+  } else {
+    // group orders genuinely riding together in the same run (real pooling,
+    // not just a coincidental shared destination)
+    const rendered = new Set();
+    list.slice().sort(orderSort).forEach(o => {
+      if (rendered.has(o.id)) return;
+      const groupMembers = o.groupId ? list.filter(x => x.groupId === o.groupId) : [];
+      if (groupMembers.length >= 2 && state.tab !== 'all') {
+        bodyHTML += carpoolGroupHTML(groupMembers);
+        groupMembers.forEach(m => rendered.add(m.id));
+      } else {
+        bodyHTML += orderCardHTML(o);
+        rendered.add(o.id);
+      }
+    });
+  }
+
+  let footerHTML = '';
+  if (list.length) {
+    if (state.tab === 'all') {
+      const doneCount = state.orders.filter(o => o.status === '已送达').length;
+      footerHTML = `<div class="panel-footer">共 ${state.orders.length} 单 · ${doneCount} 单已送达</div>`;
+    } else {
+      footerHTML = overflow > 0
+        ? `<div class="panel-footer">还有 ${overflow} 单排队中 · 机器人最多同时处理 5 单</div>`
+        : `<div class="panel-footer">机器人最多同时处理 5 单</div>`;
+    }
+  }
+
+  return { bodyHTML, footerHTML };
+}
+
+function queuePanelHTML() {
+  const { bodyHTML, footerHTML } = buildQueueBody();
+  return `
+    <div class="panel-card">
+      <div class="drag-handle"></div>
+      <div class="panel-header">
+        <div class="panel-title">配送队列</div>
+        <div class="count-pill">${totalOpen()} 单</div>
+      </div>
+      <div class="tabs">
+        <button class="tab ${state.tab==='active'?'tab-active':''}" data-tab="active">进行中</button>
+        <button class="tab ${state.tab==='all'?'tab-active':''}" data-tab="all">全部</button>
+      </div>
+      <div class="order-list">${bodyHTML}</div>
+      <div class="panel-footer-slot">${footerHTML}</div>
+    </div>`;
+}
+
+function updateQueuePanelLive() {
+  const card = document.querySelector('#sidePanel .panel-card');
+  if (!card || !card.querySelector('.tabs')) { renderPanel(); return; }
+  const { bodyHTML, footerHTML } = buildQueueBody();
+  const countEl = card.querySelector('.count-pill');
+  if (countEl) countEl.textContent = `${totalOpen()} 单`;
+  const listEl = card.querySelector('.order-list');
+  if (listEl) listEl.innerHTML = bodyHTML;
+  const footerSlot = card.querySelector('.panel-footer-slot');
+  if (footerSlot) footerSlot.innerHTML = footerHTML;
+}
+
+function orderSort(a,b) {
+  const rank = {'配送中':0,'排队中':1,'已送达':2};
+  return (rank[a.status]-rank[b.status]) || (a.id-b.id);
+}
+
+function statusBadgeClass(status) {
+  return { '配送中':'badge-active','排队中':'badge-queued','已送达':'badge-done' }[status];
+}
+
+function orderCardHTML(o) {
+  const isActive = o.status === '配送中';
+  const isDone = o.status === '已送达';
+  const badgeLabel = isDone ? '✓ 已送达' : (o.statusLabel || o.status);
+  return `
+    <div class="order-card ${isActive?'order-card-active':''}" data-order="${o.id}">
+      <div class="order-top">
+        <div class="order-id">#0${o.id} · ${o.ts ? tsLabel(o.ts) : ''}</div>
+        <div class="badge ${statusBadgeClass(o.status)}">${badgeLabel}</div>
+      </div>
+      <div class="order-name">${o.name}</div>
+      <div class="order-route">${NODES[o.from].label} → ${NODES[o.to].label}</div>
+      ${ isActive ? `<div class="progress-track"><div class="progress-fill" style="width:${orderProgressPercent(o)}%"></div></div>` : '' }
+    </div>`;
+}
+
+function carpoolGroupHTML(members) {
+  return `
+    <div class="carpool-box">
+      <div class="carpool-label"><span>🚗</span> 拼车同行 · ${members.length} 单共享路线</div>
+      ${members.map(m => `
+        <div class="order-card order-card-sub" data-order="${m.id}">
+          <div class="order-top">
+            <div class="order-id">#0${m.id} · ${tsLabel(m.ts)}</div>
+            <div class="badge ${statusBadgeClass(m.status)}">${m.statusLabel || m.status}</div>
+          </div>
+          <div class="order-name">${m.name}</div>
+          <div class="order-route">${NODES[m.from].label} → ${NODES[m.to].label}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function tsLabel(ts) {
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  return `${hh}:${mm}`;
+}
+
+function wireQueuePanel() {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => { state.tab = t.dataset.tab; renderPanel(); });
+  });
+}
+
+/* ---------- 9. Interaction ---------- */
+function onPinClick(nodeId) {
+  if (!state.selecting) {
+    state.selecting = { from: nodeId, to: null };
+  } else if (!state.selecting.from) {
+    state.selecting.from = nodeId;
+  } else if (!state.selecting.to && nodeId !== state.selecting.from) {
+    state.selecting.to = nodeId;
+  } else if (nodeId === state.selecting.from) {
+    // reselect from
+    state.selecting.from = nodeId; state.selecting.to = null;
+  } else if (state.selecting.to) {
+    // both already chosen — start a fresh selection from clicked pin
+    state.selecting = { from: nodeId, to: null };
+  }
+  refreshPinVisuals();
+  renderSvgOverlay();
+  renderPanel();
+}
+
+function refreshPinVisuals() {
+  clearPinStates();
+  if (state.selecting) {
+    if (state.selecting.from) setPinState(state.selecting.from, 'is-from');
+    if (state.selecting.to) setPinState(state.selecting.to, 'is-to');
+  }
+}
+
+function cancelSelection() {
+  state.selecting = null;
+  clearPinStates();
+  renderSvgOverlay();
+  renderPanel();
+}
+
+function confirmSelection() {
+  if (totalOpen() >= MAX_SLOTS) {
+    showToast(`🚫 机器人已满（${MAX_SLOTS}/${MAX_SLOTS}），请稍后再试`);
+    return;
+  }
+  const { from, to } = state.selecting;
+  const typed = (state.selecting.name || '').trim();
+  const name = typed || peekName();
+  nameCursor++;
+  const order = {
+    id: orderSeq++, name, from, to,
+    status: '排队中', phase: null,
+    color: ORDER_COLORS[orderSeq % ORDER_COLORS.length],
+    groupId: null, ts: Date.now(),
+  };
+  state.orders.push(order);
+  const pooled = tryPoolOrStartOrder(order);
+  state.selecting = null;
+  clearPinStates();
+  state.tab = 'active';
+  showToast(pooled ? `「${order.name}」路线重合，机器人顺路配送` : `订单 #0${order.id} 已加入配送队列`);
+  renderSvgOverlay();
+  renderPanel();
+}
+
+/* ---------- 11. Boot ---------- */
+// Panel reserves the left ~480px of the screen; the map lives in whatever's
+// left of the viewport, scaled down only if that space is smaller than its
+// native 1440x900 (never scaled up past native size).
+const MAP_LEFT_RESERVE = 480, MAP_MARGIN = 40;
+function layoutMap() {
+  const mapLayer = document.getElementById('mapLayer');
+  const availW = window.innerWidth - MAP_LEFT_RESERVE - MAP_MARGIN;
+  const availH = window.innerHeight - MAP_MARGIN * 2;
+  const scale = Math.min(availW / 1440, availH / 900, 1) * 0.8;
+  const cx = MAP_LEFT_RESERVE + availW / 2;
+  const cy = window.innerHeight / 2;
+  mapLayer.style.left = cx + 'px';
+  mapLayer.style.top = cy + 'px';
+  mapLayer.style.transform = `translate(-50%,-50%) scale(${scale})`;
+}
+
+function boot() {
+  seedOrders();
+  buildStaticRoads();
+  buildPins();
+  renderSvgOverlay();
+  renderPanel();
+  // The map/robot position update every animation frame via animateRun()
+  // (started by startNextRun()); the queue panel only needs a much slower
+  // refresh for things like live ETA text, matching UI/index.html's own
+  // 1s-interval renderLogs() decoupled from its 60fps run animation.
+  setInterval(() => { if (state.run && !state.selecting) updateQueuePanelLive(); }, 1000);
+  window.addEventListener('resize', layoutMap);
+  layoutMap();
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+
+</script>
+<script src="/backend-adapter.js"></script>
+</body>
+</html>

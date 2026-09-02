@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>智能外卖车电脑端</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      --bg: #f7f8f5;
+      --ink: #202623;
+      --muted: #68736e;
+      --line: #d8ded6;
+      --panel: #ffffff;
+      --accent: #167a68;
+      --warn: #b35c00;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+      background: #ffffff;
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .status {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--warn);
+    }
+    .dot.online { background: var(--accent); }
+    main {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) 1fr;
+      gap: 18px;
+      padding: 18px;
+    }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+    form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 9px;
+      font: inherit;
+      color: var(--ink);
+      background: #fff;
+    }
+    button {
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      padding: 9px 10px;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #fff;
+      color: var(--accent);
+    }
+    button.stop {
+      border-color: #9e2f2f;
+      background: #9e2f2f;
+    }
+    .full { grid-column: 1 / -1; }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .video {
+      min-height: 360px;
+      display: grid;
+      place-items: center;
+      background: #111;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .video img {
+      width: 100%;
+      height: auto;
+      image-rendering: auto;
+      display: block;
+    }
+    .empty {
+      color: #b8c0bc;
+      font-size: 14px;
+    }
+    pre {
+      margin: 0;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 12px;
+      line-height: 1.45;
+      color: #27302c;
+      background: #f1f4f0;
+      border-radius: 6px;
+      padding: 10px;
+    }
+    .right {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      padding: 0 18px 18px;
+    }
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+      .data-grid { grid-template-columns: 1fr; }
+      header { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>智能外卖车电脑端</h1>
+    <div class="status"><span id="dot" class="dot"></span><span id="statusText">连接中</span></div>
+  </header>
+
+  <main>
+    <div>
+      <section>
+        <h2>订单</h2>
+        <form id="orderForm">
+          <label>订单 ID<input name="order_id" type="number" value="1" min="1"></label>
+          <label>地图<select name="map_id"><option value="1">THU</option><option value="2">SUTD</option></select></label>
+          <label>起点节点<input name="pickup_node" type="number" value="3" min="1"></label>
+          <label>终点节点<input name="dropoff_node" type="number" value="9" min="1"></label>
+          <button class="full" type="submit">提交订单</button>
+        </form>
+        <div class="controls">
+          <button id="confirmBtn" class="secondary" type="button">确认</button>
+          <button id="queryBtn" class="secondary" type="button">查询</button>
+          <button id="stopBtn" class="stop" type="button">停止</button>
+        </div>
+      </section>
+
+      <section style="margin-top:18px">
+        <h2>边权</h2>
+        <form id="edgeForm">
+          <label>地图<select name="map_id"><option value="1">THU</option><option value="2">SUTD</option></select></label>
+          <label>起点<input name="from" type="number" value="3" min="1"></label>
+          <label>终点<input name="to" type="number" value="4" min="1"></label>
+          <label>人工权重<input name="manual_penalty" type="number" value="50"></label>
+          <label>动态权重<input name="dynamic_penalty" type="number" value="0"></label>
+          <label>封路<select name="blocked"><option value="false">false</option><option value="true">true</option></select></label>
+          <button class="full" type="submit">更新边权</button>
+        </form>
+        <button id="refreshWeightsBtn" class="secondary" type="button">刷新模拟动态路况</button>
+      </section>
+    </div>
+
+    <div class="right">
+      <section>
+        <h2>图像</h2>
+        <div class="video">
+          <img id="frame" alt="camera frame" hidden>
+          <div id="frameEmpty" class="empty">等待 UDP 8888 图像</div>
+        </div>
+      </section>
+      <section>
+        <h2>状态与语音</h2>
+        <pre id="log"></pre>
+      </section>
+    </div>
+  </main>
+
+  <div class="data-grid">
+    <section>
+      <h2>订单历史</h2>
+      <pre id="ordersLog"></pre>
+    </section>
+    <section>
+      <h2>边权配置</h2>
+      <pre id="edgesLog"></pre>
+    </section>
+    <section>
+      <h2>语音日志</h2>
+      <pre id="voiceLog"></pre>
+    </section>
+    <section>
+      <h2>小车状态快照</h2>
+      <pre id="statusLog"></pre>
+    </section>
+  </div>
+
+  <script>
+    const logEl = document.querySelector('#log');
+    const ordersLogEl = document.querySelector('#ordersLog');
+    const edgesLogEl = document.querySelector('#edgesLog');
+    const voiceLogEl = document.querySelector('#voiceLog');
+    const statusLogEl = document.querySelector('#statusLog');
+    const dotEl = document.querySelector('#dot');
+    const statusTextEl = document.querySelector('#statusText');
+    const frameEl = document.querySelector('#frame');
+    const frameEmptyEl = document.querySelector('#frameEmpty');
+
+    function log(message) {
+      const text = typeof message === 'string' ? message : JSON.stringify(message);
+      logEl.textContent = `${new Date().toLocaleTimeString()} ${text}\n${logEl.textContent}`.slice(0, 8000);
+    }
+
+    async function postJson(url, body = {}) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      log(data);
+      refreshPersistedData();
+      return data;
+    }
+
+    async function getJson(url) {
+      const res = await fetch(url);
+      return res.json();
+    }
+
+    function formJson(form) {
+      return Object.fromEntries(new FormData(form).entries());
+    }
+
+    document.querySelector('#orderForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      postJson('/api/orders', formJson(event.currentTarget));
+    });
+
+    document.querySelector('#edgeForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      postJson('/api/edges', formJson(event.currentTarget));
+    });
+
+    document.querySelector('#confirmBtn').addEventListener('click', () => postJson('/api/control/confirm'));
+    document.querySelector('#queryBtn').addEventListener('click', () => postJson('/api/control/query'));
+    document.querySelector('#stopBtn').addEventListener('click', () => postJson('/api/control/stop'));
+    document.querySelector('#refreshWeightsBtn').addEventListener('click', () => {
+      const mapId = document.querySelector('#edgeForm select[name="map_id"]').value;
+      postJson('/api/map/refresh-weights', { map_id: Number(mapId), context: { weather: 'normal' } });
+    });
+
+    async function refreshPersistedData() {
+      const mapId = document.querySelector('#edgeForm select[name="map_id"]').value;
+      const [orders, edges, voice, status] = await Promise.all([
+        getJson('/api/orders?limit=20'),
+        getJson(`/api/edges?map_id=${mapId}`),
+        getJson('/api/voice-logs?limit=20'),
+        getJson('/api/status/history?limit=20')
+      ]);
+      ordersLogEl.textContent = JSON.stringify(orders.orders || [], null, 2);
+      edgesLogEl.textContent = JSON.stringify(edges.edges || [], null, 2);
+      voiceLogEl.textContent = JSON.stringify(voice.logs || [], null, 2);
+      statusLogEl.textContent = JSON.stringify(status.history || [], null, 2);
+    }
+
+    const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}`);
+    ws.addEventListener('open', () => {
+      dotEl.classList.add('online');
+      statusTextEl.textContent = 'WebSocket 已连接';
+    });
+    ws.addEventListener('close', () => {
+      dotEl.classList.remove('online');
+      statusTextEl.textContent = 'WebSocket 已断开';
+    });
+    ws.addEventListener('message', (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'image_frame') {
+        frameEl.src = `data:image/jpeg;base64,${message.data}`;
+        frameEl.hidden = false;
+        frameEmptyEl.hidden = true;
+        return;
+      }
+      if (['status_response', 'voice_result', 'edge_update_result'].includes(message.type)) {
+        refreshPersistedData();
+      }
+      log(message);
+    });
+
+    refreshPersistedData();
+  </script>
+</body>
+</html>
