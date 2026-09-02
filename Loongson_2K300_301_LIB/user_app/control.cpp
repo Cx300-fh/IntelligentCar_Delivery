@@ -224,30 +224,32 @@ void dir_control()
         PID zero = {0};
         turn_pid = zero;
 
-        printf("[CTRL] UTURN stage1: rotate, speed<=%.1f\n",
-               UTURN_ROTATE_SPEED);
+        printf("[CTRL] UTURN stage1: 前进右弧(左轮正转)，speed<=%.1f mile_limit=%u\n",
+               UTURN_ROTATE_SPEED, (unsigned)UTURN_MILE_LIMIT_1);
     }
 
-    // stage1：达到旋转里程后进入stage2。
-    // 【临时调试】先原地停车UTURN_OBSERVE_MS毫秒，人工确认车位置后再进stage2。
+    // stage1：前进右弧完成 → 停车观察。
+    // 【标定轮】停UTURN_OBSERVE_MS毫秒确认实际转角；观察结束本轮直接结束掉头
+    // 恢复循迹（stage2倒车左弧待标定后实装：舵机+70、右轮倒转、里程1500）。
     if (g_uturn_stage == 1 && mile >= UTURN_MILE_LIMIT_1)
     {
         if (g_uturn_hold_ms == 0) {
             g_uturn_hold_ms = lq_get_tick_ms();
-            printf("[CTRL] UTURN stage1完成，停车%us观察位置\n",
-                   (unsigned)(UTURN_OBSERVE_MS / 1000));
+            printf("[CTRL] UTURN stage1前进右弧完成(mile=%u)，停车%us观察位置\n",
+                   (unsigned)mile, (unsigned)(UTURN_OBSERVE_MS / 1000));
         }
         if (lq_get_tick_ms() - g_uturn_hold_ms >= UTURN_OBSERVE_MS)
         {
             g_uturn_hold_ms = 0;
-            g_uturn_stage = 2;
+            mile = 0;                       // 清里程：stage2实装后独立计1500
+            g_uturn_stage = 0;
+            g_uturn_done_latched = true;
+            follow_left = 0;
 
-            // stage2不使用视觉PD，先清掉旧历史。
             PID zero = {0};
             turn_pid = zero;
 
-            printf("[CTRL] UTURN stage2: straight exit, speed<=%.1f, mile=%u\n",
-                   UTURN_EXIT_SPEED, (unsigned)mile);
+            printf("[CTRL] UTURN 观察期结束（本轮无stage2），恢复循迹\n");
         }
     }
 
@@ -422,10 +424,10 @@ void dir_control()
         right_speed = current_speed * (1 - diff_ratio);
     }
 
-    // stage1：保持当前机械掉头方式，但速度已经被限制到UTURN_ROTATE_SPEED。
+    // stage1：前进右弧——舵机右打(-70)，左轮正转、右轮抱死，车头顺时针前扫。
     if (g_uturn_stage == 1 && g_uturn_hold_ms == 0)
     {
-        left_speed  = -current_speed;
+        left_speed  = current_speed;
         right_speed = 0;
     }
 

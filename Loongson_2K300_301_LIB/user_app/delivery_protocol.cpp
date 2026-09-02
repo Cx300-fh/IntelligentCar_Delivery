@@ -326,7 +326,8 @@ ParseResult Delivery_Parse_Server_Message(const std::string& line, ServerMessage
     if (t == "state_sync") {
         out->type = SRV_MSG_STATE_SYNC;
         StateSync& m = out->state_sync;
-        if (!P_Str(j, "server_epoch", &m.server_epoch, kMaxServerEpochLen, true, &r)) return r;
+        // 真后端快照无server_epoch字段：可选（空=不启用纪元变化检测）
+        if (!P_Str(j, "server_epoch", &m.server_epoch, kMaxServerEpochLen, false, &r)) return r;
         if (!P_U64(j, "snapshot_version", &m.snapshot_version, true, &r)) return r;
         P_U64(j, "latest_command_version", &m.latest_command_version, false, &r);
         int phase = 0;
@@ -509,6 +510,12 @@ ParseResult Delivery_Parse_Server_Message(const std::string& line, ServerMessage
         }
         P_U64(j, "snapshot_version", &m.snapshot_version, false, &r);
         return Parse_Error_Obj(j, &m.error);
+    }
+
+    // 真后端会发但V1车端不处理的消息（edge_update/display_sync）：
+    // 解析通过、type保持UNKNOWN，主循环分发自然忽略，不按非法消息刷日志
+    if (t == "edge_update" || t == "display_sync") {
+        return r;
     }
 
     return ParseResult::Fail(ERR_INVALID_PROTOCOL, "unknown message type: " + t);

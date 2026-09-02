@@ -52,6 +52,7 @@ extern "C" {
 #include "Tag_Scan.hpp"
 #include "dijkstra.hpp"
 #include "screen.hpp"
+#include "screen_tts.hpp"    // 在线TTS，仅使用陶晶驰屏幕喇叭
 #include "voice.hpp"
 #include "navigation.hpp"
 #include "run_mode.hpp"       // 小车运行模式控制模块

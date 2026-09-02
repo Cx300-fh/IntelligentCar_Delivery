@@ -10,9 +10,9 @@
 
 #include "include.hpp"
 
-#define TURN_MILE_LIMIT     2500    // 转向状态维持的里程（编码器脉冲数）
-#define UTURN_MILE_LIMIT_1    2500    // 掉头状态维持的里程（编码器脉冲数）第一段
-#define UTURN_MILE_LIMIT_2    5000    // 掉头状态维持的里程（编码器脉冲数）第二段
+#define TURN_MILE_LIMIT     2500    // 转向状态维持的里程（编码器脉冲数
+#define UTURN_MILE_LIMIT_1    3000    // 掉头第一段（前进右弧）里程；单轮转动平均计数4/周期→1.875s
+#define UTURN_MILE_LIMIT_2    1500    // 掉头第二段（倒车左弧）里程；切换时清零后独立计程
 
 // 外部变量声明
 // is_uturning 已移入5ms控制线程私有状态，跨线程读取请使用 Control_Is_Uturning()

@@ -12,7 +12,7 @@
 /*============================================================================
  *                              串口配置
  *============================================================================*/
-// 陶晶驰串口屏: UART5, PIN64/PIN65, 波特率 115200
+// 陶晶驰串口屏: UART5, PIN64/PIN65, 波特率 230400
 #define SCREEN_UART_PIN     UART5_PIN64
 #define SCREEN_UART_BAUD    230400
 
@@ -35,6 +35,13 @@ void Screen_Send_Text(const char* name, const char* text);   // 发送文本到�
 void Screen_Send_Page(uint8_t page_id);                      // 切换屏幕页面
 void Screen_Send_All(void);                                  // 发送所有导航数据到屏幕
 void Screen_Send_Heartbeat(void);                            // 发送心跳包（保持屏幕在线状态）
+
+// 将WAV文件传入陶晶驰运行时RAM文件系统并由当前页的外部音频控件播放。
+// 上传期间普通页面刷新/心跳会被丢弃，防止字节插入twfile二进制数据流。
+bool Screen_Upload_Wav_And_Play(const uint8_t* wav_data, size_t wav_size,
+                                const char* remote_path = "ram/tts.wav",
+                                const char* component = "page_sys.wav_tts");
+bool Screen_Transfer_Active(void);
 
 // 接收屏幕指令
 void Screen_Rx_Process(const uint8_t* data, ssize_t len);    // 处理屏幕接收数据

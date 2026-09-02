@@ -59,6 +59,11 @@ int main()
     setvbuf(stdout, NULL, _IOLBF, 0);   // 行缓冲：重定向到文件时日志实时落盘
     All_Init(); // 初始化
 
+    // 屏幕在线TTS独立后台线程；不调用voice.cpp、不占用车载喇叭串口。
+    if (!ScreenTTS_Init()) {
+        printf("[ScreenTTS] 初始化失败，导航继续运行但屏幕在线语音不可用\n");
+    }
+
     // 导航状态机初始化
     nav_fsm.init();
 
@@ -206,6 +211,7 @@ int main()
     }
 
     delivery.Stop();   // 网关线程安全退出（shutdown+join）
+    ScreenTTS_Shutdown();
 
     return 0;
 }

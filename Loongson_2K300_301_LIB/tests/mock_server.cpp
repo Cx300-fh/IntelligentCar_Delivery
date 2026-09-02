@@ -160,6 +160,27 @@ static std::string Hb_Ack_Json(uint64_t& seq) {
         "\"latest_command_version\":0}";
 }
 
+// ---- 版本号持久化：mock重启后cmd_ver延续 ----
+// 车端的command_version存在store里跨重启保留；mock重启若归零，
+// 新命令(v1..)会被车端按STALE拒绝。落盘到/home/root/mock_ver保持一致。
+static const char* MOCK_VER_PATH = "/home/root/mock_ver";
+static uint64_t Load_Cmd_Ver(void)
+{
+    FILE* f = fopen(MOCK_VER_PATH, "r");
+    if (!f) return 0;
+    unsigned long long v = 0;
+    if (fscanf(f, "%llu", &v) != 1) v = 0;
+    fclose(f);
+    return (uint64_t)v;
+}
+static void Save_Cmd_Ver(uint64_t v)
+{
+    FILE* f = fopen(MOCK_VER_PATH, "w");
+    if (!f) return;
+    fprintf(f, "%llu\n", (unsigned long long)v);
+    fclose(f);
+}
+
 int main(int argc, char** argv)
 {
     bool smoke = false;
@@ -192,7 +213,10 @@ int main(int argc, char** argv)
            g_observe ? "观察模式" : smoke ? "冒烟模式" : "交互模式");
 
     // 状态跨连接保留（车端重连后版本号延续，模拟真服务器）
-    uint64_t seq = 0, cmd_ver = 0;
+    uint64_t seq = 0, cmd_ver = Load_Cmd_Ver();
+    uint64_t cmd_ver_saved = cmd_ver;
+    if (cmd_ver > 0) printf("[mock] 版本号从%s恢复: v%llu\n",
+                            MOCK_VER_PATH, (unsigned long long)cmd_ver);
 
     // 外层循环：接受多次连接（修复：车端每次重连都要能接入，否则mock退出）
     while (true) {
@@ -408,6 +432,12 @@ int main(int argc, char** argv)
             else if (!c.empty()) {
                 printf("命令: sync | phase N | goto N | goto2 N | stale | conflict\n");
                 printf("      hold | estop | resume | noack | ack | quit\n");
+            }
+
+            // 版本号有变动则落盘（mock重启后延续）
+            if (cmd_ver != cmd_ver_saved) {
+                Save_Cmd_Ver(cmd_ver);
+                cmd_ver_saved = cmd_ver;
             }
         }
     }

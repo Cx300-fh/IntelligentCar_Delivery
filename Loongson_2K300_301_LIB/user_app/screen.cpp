@@ -7,6 +7,18 @@
  */
 
 #include "screen.hpp"
+#include "screen_tts.hpp"
+
+#include <atomic>
+#include <algorithm>
+#include <cctype>
+#include <chrono>
+#include <condition_variable>
+#include <deque>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
 
 /*============================================================================
  *                              接收回调前向声明
@@ -16,7 +28,7 @@ static void screen_rx_callback(const uint8_t data);
 /*============================================================================
  *                              全局对象定义
  *============================================================================*/
-// 陶晶驰串口屏 UART 对象（UART5, PIN64/PIN65, 115200, 线程接收模式）
+// 陶晶驰串口屏 UART 对象（UART5, PIN64/PIN65, 230400, 线程接收模式）
 ls_uart screen_uart(SCREEN_UART_PIN, SCREEN_UART_BAUD,
                             LS_UART_DATA8, LS_UART_STOP1, LS_UART_PARITY_NONE,
                             UART_MODE_THREAD, screen_rx_callback);
@@ -38,8 +50,16 @@ bool screen_delivery_page_active = false;
  *============================================================================*/
 static uint8_t screen_rx_state = 0;       // 换行符检测状态（\r\n）
 static uint8_t screen_rx_ff_state = 0;    // 0xFF帧尾检测状态
-static uint8_t screen_rx_cmd[64];         // 串口屏指令缓冲区
-static uint8_t screen_rx_cmd_len = 0;     // 串口屏指令长度
+static uint8_t screen_rx_cmd[512];        // 串口屏指令缓冲区（兼容TTS UTF-8文本）
+static size_t screen_rx_cmd_len = 0;      // 串口屏指令长度
+
+// twfile透明传输与普通HMI指令必须严格隔离。普通发送只短暂持锁；上传期间直接
+// 丢弃周期刷新和心跳，避免阻塞主控制循环，也避免任何字节插入二进制包。
+static std::mutex g_screen_tx_mutex;
+static std::atomic<bool> g_screen_transfer_active(false);
+static std::mutex g_screen_ack_mutex;
+static std::condition_variable g_screen_ack_cv;
+static std::deque<uint8_t> g_screen_ack_bytes;
 
 /*============================================================================
  *                第4部分：发送数据给陶晶驰串口屏
@@ -48,10 +68,29 @@ static uint8_t screen_rx_cmd_len = 0;     // 串口屏指令长度
 /**
  * @brief   发送帧尾（0xFF 0xFF 0xFF）
  */
-static void screen_send_tail(void)
+static bool screen_write_command(const char* cmd)
 {
-    uint8_t tail[] = {0xFF, 0xFF, 0xFF};
-    screen_uart.uart_write(tail, 3, 10);
+    if (!cmd) return false;
+    std::lock_guard<std::mutex> lock(g_screen_tx_mutex);
+    if (g_screen_transfer_active.load()) return false;
+    const uint8_t tail[] = {0xFF, 0xFF, 0xFF};
+    size_t len = strlen(cmd);
+    return screen_uart.uart_write((const uint8_t*)cmd, (ssize_t)len, 100) == (ssize_t)len &&
+           screen_uart.uart_write(tail, 3, 100) == 3;
+}
+
+// 仅供已取得传输所有权的twfile实现调用。
+static bool screen_write_raw_locked(const uint8_t* data, size_t len)
+{
+    std::lock_guard<std::mutex> lock(g_screen_tx_mutex);
+    return screen_uart.uart_write(data, (ssize_t)len, 500) == (ssize_t)len;
+}
+
+static bool screen_write_transfer_command(const std::string& cmd)
+{
+    const uint8_t tail[] = {0xFF, 0xFF, 0xFF};
+    return screen_write_raw_locked((const uint8_t*)cmd.data(), cmd.size()) &&
+           screen_write_raw_locked(tail, sizeof(tail));
 }
 
 /**
@@ -63,9 +102,8 @@ static void screen_send_tail(void)
 void Screen_Send_Var(const char* name, int value)
 {
     char cmd[64];
-    int len = snprintf(cmd, sizeof(cmd), "%s.val=%d", name, value);
-    screen_uart.uart_write((uint8_t*)cmd, len, 10);
-    screen_send_tail();
+    snprintf(cmd, sizeof(cmd), "%s.val=%d", name, value);
+    screen_write_command(cmd);
 }
 
 /**
@@ -77,9 +115,8 @@ void Screen_Send_Var(const char* name, int value)
 void Screen_Send_Text(const char* name, const char* text)
 {
     char cmd[128];
-    int len = snprintf(cmd, sizeof(cmd), "%s.txt=\"%s\"", name, text);
-    screen_uart.uart_write((uint8_t*)cmd, len, 10);
-    screen_send_tail();
+    snprintf(cmd, sizeof(cmd), "%s.txt=\"%s\"", name, text);
+    screen_write_command(cmd);
 }
 
 /**
@@ -89,9 +126,8 @@ void Screen_Send_Text(const char* name, const char* text)
 void Screen_Send_Page(uint8_t page_id)
 {
     char cmd[32];
-    int len = snprintf(cmd, sizeof(cmd), "page %d", page_id);
-    screen_uart.uart_write((uint8_t*)cmd, len, 10);
-    screen_send_tail();
+    snprintf(cmd, sizeof(cmd), "page %d", page_id);
+    screen_write_command(cmd);
 }
 
 /**
@@ -107,15 +143,180 @@ void Screen_Send_Heartbeat(void)
 {
     // 发送在线状态
     char cmd1[32];
-    int len1 = snprintf(cmd1, sizeof(cmd1), "n_online.val=1");
-    screen_uart.uart_write((uint8_t*)cmd1, len1, 10);
-    screen_send_tail();
+    snprintf(cmd1, sizeof(cmd1), "n_online.val=1");
+    screen_write_command(cmd1);
 
     // 发送超时清零
     char cmd2[48];
-    int len2 = snprintf(cmd2, sizeof(cmd2), "page_sys.v_hb_timeout.val=0");
-    screen_uart.uart_write((uint8_t*)cmd2, len2, 10);
-    screen_send_tail();
+    snprintf(cmd2, sizeof(cmd2), "page_sys.v_hb_timeout.val=0");
+    screen_write_command(cmd2);
+}
+
+bool Screen_Transfer_Active(void)
+{
+    return g_screen_transfer_active.load();
+}
+
+static void screen_ack_clear(void)
+{
+    std::lock_guard<std::mutex> lock(g_screen_ack_mutex);
+    g_screen_ack_bytes.clear();
+}
+
+static bool screen_wait_sequence(const uint8_t* expected, size_t expected_len,
+                                 uint32_t timeout_ms)
+{
+    size_t matched = 0;
+    std::unique_lock<std::mutex> lock(g_screen_ack_mutex);
+    const std::chrono::steady_clock::time_point deadline =
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
+    while (std::chrono::steady_clock::now() < deadline) {
+        if (g_screen_ack_bytes.empty()) {
+            if (g_screen_ack_cv.wait_until(lock, deadline) == std::cv_status::timeout)
+                break;
+            continue;
+        }
+        uint8_t value = g_screen_ack_bytes.front();
+        g_screen_ack_bytes.pop_front();
+        if (value == expected[matched]) {
+            if (++matched == expected_len) return true;
+        } else {
+            matched = (value == expected[0]) ? 1 : 0;
+        }
+    }
+    return false;
+}
+
+static uint16_t screen_crc16_modbus(const uint8_t* data, size_t len)
+{
+    uint16_t crc = 0xFFFF;
+    for (size_t i = 0; i < len; ++i) {
+        crc ^= data[i];
+        for (int bit = 0; bit < 8; ++bit)
+            crc = (crc & 1) ? (uint16_t)((crc >> 1) ^ 0xA001) : (uint16_t)(crc >> 1);
+    }
+    return crc;
+}
+
+static bool screen_valid_file_name(const char* value)
+{
+    if (!value || !*value) return false;
+    for (const unsigned char* p = (const unsigned char*)value; *p; ++p) {
+        if (!(isalnum(*p) || *p == '/' || *p == '_' || *p == '-' || *p == '.'))
+            return false;
+    }
+    return true;
+}
+
+static void screen_abort_transfer(void)
+{
+    // 官方协议：停顿20ms后发送ID=65535、无校验、0数据长度的包可退出透传。
+    std::this_thread::sleep_for(std::chrono::milliseconds(25));
+    const uint8_t abort_packet[] = {
+        0x3A, 0xA1, 0xBB, 0x44, 0x7F, 0xFF, 0xFE, 0x00,
+        0xFF, 0xFF, 0x00, 0x00
+    };
+    screen_write_raw_locked(abort_packet, sizeof(abort_packet));
+    const uint8_t done[] = {0xFD, 0xFF, 0xFF, 0xFF};
+    screen_wait_sequence(done, sizeof(done), 1000);
+}
+
+bool Screen_Upload_Wav_And_Play(const uint8_t* wav_data, size_t wav_size,
+                                const char* remote_path, const char* component)
+{
+    if (!wav_data || wav_size < 44 || wav_size > 1024 * 1024 ||
+        !screen_valid_file_name(remote_path) || !screen_valid_file_name(component)) {
+        printf("[ScreenTTS] 非法WAV数据、路径或控件名\n");
+        return false;
+    }
+
+    // 取得独占传输权；若另一个TTS正在上传则立即返回，绝不阻塞控制主循环。
+    {
+        std::lock_guard<std::mutex> lock(g_screen_tx_mutex);
+        if (g_screen_transfer_active.load()) return false;
+        g_screen_transfer_active.store(true);
+    }
+    screen_rx_state = 0;
+    screen_rx_ff_state = 0;
+    screen_rx_cmd_len = 0;
+    screen_ack_clear();
+
+    bool ok = false;
+    do {
+        // HMI定时器据此暂停心跳超时判断。该变量必须在屏幕工程中设为全局。
+        if (!screen_write_transfer_command("page_sys.v_tts_upload.val=1")) break;
+        if (!screen_write_transfer_command(std::string(component) + ".en=0")) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        screen_ack_clear();
+
+        char twfile[128];
+        snprintf(twfile, sizeof(twfile), "twfile \"%s\",%zu", remote_path, wav_size);
+        if (!screen_write_transfer_command(twfile)) break;
+        const uint8_t ready[] = {0xFE, 0xFF, 0xFF, 0xFF};
+        if (!screen_wait_sequence(ready, sizeof(ready), 2000)) {
+            printf("[ScreenTTS] twfile未就绪，请检查RAM文件区和HMI配置\n");
+            break;
+        }
+
+        const size_t max_payload = 4094;  // dataSize含2字节CRC，X3上限4096
+        size_t offset = 0;
+        uint16_t packet_id = 0;
+        while (offset < wav_size) {
+            const size_t payload_len = std::min(max_payload, wav_size - offset);
+            const uint16_t data_size = (uint16_t)(payload_len + 2);
+            std::vector<uint8_t> packet(12 + payload_len + 2);
+            const uint8_t prefix[] = {0x3A, 0xA1, 0xBB, 0x44, 0x7F, 0xFF, 0xFE};
+            memcpy(&packet[0], prefix, sizeof(prefix));
+            packet[7] = 0x01;  // CRC16 MODBUS
+            packet[8] = (uint8_t)(packet_id & 0xFF);
+            packet[9] = (uint8_t)(packet_id >> 8);
+            packet[10] = (uint8_t)(data_size & 0xFF);
+            packet[11] = (uint8_t)(data_size >> 8);
+            memcpy(&packet[12], wav_data + offset, payload_len);
+            uint16_t crc = screen_crc16_modbus(wav_data + offset, payload_len);
+            packet[12 + payload_len] = (uint8_t)(crc & 0xFF);
+            packet[13 + payload_len] = (uint8_t)(crc >> 8);
+
+            bool packet_ok = false;
+            for (int retry = 0; retry < 3 && !packet_ok; ++retry) {
+                screen_ack_clear();
+                if (!screen_write_raw_locked(&packet[0], packet.size())) continue;
+                const uint8_t ack = 0x05;
+                packet_ok = screen_wait_sequence(&ack, 1, 700);
+            }
+            if (!packet_ok) {
+                printf("[ScreenTTS] 数据包%u传输失败\n", (unsigned)packet_id);
+                screen_abort_transfer();
+                offset = 0;
+                break;
+            }
+            offset += payload_len;
+            ++packet_id;
+        }
+        if (offset != wav_size) break;
+
+        const uint8_t done[] = {0xFD, 0xFF, 0xFF, 0xFF};
+        if (!screen_wait_sequence(done, sizeof(done), 1500)) {
+            printf("[ScreenTTS] 未收到文件传输完成应答\n");
+            break;
+        }
+
+        // page_sys中的全局外部音频组件：from=1、loop=0、path=ram/tts.wav。
+        if (!screen_write_transfer_command(std::string(component) + ".path=\"" + remote_path + "\"")) break;
+        if (!screen_write_transfer_command(std::string(component) + ".loop=0")) break;
+        if (!screen_write_transfer_command(std::string(component) + ".en=1")) break;
+        ok = true;
+    } while (false);
+
+    // 无论成功失败都恢复心跳状态；传输失败时先尝试协议退出包。
+    screen_write_transfer_command("page_sys.v_hb_timeout.val=0");
+    screen_write_transfer_command("page_sys.v_tts_upload.val=0");
+    screen_rx_state = 0;
+    screen_rx_ff_state = 0;
+    screen_rx_cmd_len = 0;
+    g_screen_transfer_active.store(false);
+    screen_ack_clear();
+    return ok;
 }
 
 /**
@@ -286,6 +487,16 @@ void Screen_Send_All(void)
  */
 static void screen_rx_callback(const uint8_t data)
 {
+    if (g_screen_transfer_active.load()) {
+        {
+            std::lock_guard<std::mutex> lock(g_screen_ack_mutex);
+            g_screen_ack_bytes.push_back(data);
+            if (g_screen_ack_bytes.size() > 64) g_screen_ack_bytes.pop_front();
+        }
+        g_screen_ack_cv.notify_one();
+        return;
+    }
+
     // 检测换行符 \r\n（printh 0D 0A）
     if (data == 0x0D)  // \r
     {
@@ -334,6 +545,7 @@ static void screen_rx_callback(const uint8_t data)
             screen_rx_cmd_len = 0;
             return;
         }
+        return;  // 帧尾候选字节不写入ASCII命令缓冲区
     }
     else
     {
@@ -383,7 +595,7 @@ void Screen_Rx_Process(const uint8_t* data, ssize_t len)
 
     // 回调缓冲区不是 C 字符串，这里复制一份并手动补 '\0'，
     // 后面才能安全使用 strcmp/strncmp/sscanf。
-    char cmd[64];
+    char cmd[512];
     int copy_len = (len < (ssize_t)(sizeof(cmd) - 1)) ? len : (ssize_t)(sizeof(cmd) - 1);
     memcpy(cmd, data, copy_len);
     cmd[copy_len] = '\0';
@@ -403,6 +615,15 @@ void Screen_Rx_Process(const uint8_t* data, ssize_t len)
 
     int map_id = 0;
     int target_id = 0;
+
+    // 在线TTS只进入屏幕喇叭队列，不调用voice.cpp、不触发车载喇叭。
+    // HMI可发送UTF-8文本：TTS,请取走您的物品
+    if (strncmp(cmd, "TTS,", 4) == 0)
+    {
+        if (!ScreenTTS_Speak(std::string(cmd + 4)))
+            printf("[ScreenTTS] 请求被拒绝（文本为空、队列满或模块未启动）\n");
+        return;
+    }
 
     // 1. AIM,map,target
     // 含义：用户在 THU/SUTD 地图页确认了目标，仅保存设定，不启动。
@@ -769,18 +990,16 @@ void Screen_Render_Delivery(void)
     bool enable_btn = (snap.screen_phase == SCREEN_PHASE_WAIT_PICKUP ||
                        snap.screen_phase == SCREEN_PHASE_WAIT_DROPOFF);
     char cmd[32];
-    int len = snprintf(cmd, sizeof(cmd), "tsw d_s_4,%d", enable_btn ? 1 : 0);
-    screen_uart.uart_write((uint8_t*)cmd, len, 10);
-    screen_send_tail();
+    snprintf(cmd, sizeof(cmd), "tsw d_s_4,%d", enable_btn ? 1 : 0);
+    screen_write_command(cmd);
 }
 
 void Screen_Enter_Delivery_Page(void)
 {
     // DConfirm页为配送模式常驻页（按页面名跳转，页面ID无关）
     char cmd[24];
-    int len = snprintf(cmd, sizeof(cmd), "page DConfirm");
-    screen_uart.uart_write((uint8_t*)cmd, len, 10);
-    screen_send_tail();
+    snprintf(cmd, sizeof(cmd), "page DConfirm");
+    screen_write_command(cmd);
     screen_delivery_page_active = true;
     printf("[Screen] 配送模式：切换到DConfirm页\n");
 }
