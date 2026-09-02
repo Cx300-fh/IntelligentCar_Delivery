@@ -347,6 +347,21 @@ void dir_control()
                  !g_watchdog_stale &&
                  g_uturn_hold_ms == 0;   // 【临时调试】观察期禁止驱动
 
+    // 导航已授权运动却驱动不起来时限频报警。这种组合最难查：车会照常接受命令、
+    // 心跳报 MOVING/FOLLOW、fault_code 为空，但轮子一动不动，日志里没有任何线索
+    // （曾因 LINK_LOSS 位卡住排查了很久）。正常行驶不会触发这条。
+    {
+        static int blocked_n = 0;
+        if (!drive && cmd.motion_permitted) {
+            if ((++blocked_n % 200) == 1)
+                printf("[DRIVE] 已授权但无法驱动: inhibit=0x%X watchdog=%d uturn_hold=%u\n",
+                       (unsigned)Safety_Inhibit_Reason(), (int)g_watchdog_stale,
+                       (unsigned)g_uturn_hold_ms);
+        } else {
+            blocked_n = 0;
+        }
+    }
+
     if (drive)
     {
         double effective_target_speed = cmd.target_speed;

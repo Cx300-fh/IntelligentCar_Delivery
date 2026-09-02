@@ -178,6 +178,19 @@ void DeliveryController::Process(void)
     // 6. 断线/手动安全禁止位的受控清除：
     //    READY+已停稳时清除LINK_LOSS和MANUAL位（清除许可≠允许运动——运动由
     //    协调器状态门控，清除后车不会自行恢复行驶）；EMERGENCY位仅resume可清
+    //    LINK_LOSS 的清除不能绑定 DELIVERY_READY：断线重连后服务器往往立刻重发
+    //    goto_stop，车端在下一个清除周期到来前就从 READY 转入 NAVIGATING，此后
+    //    state_ 再也不等于 READY，该位永久卡住。表现极具迷惑性——车接受命令、
+    //    导航授权 motion_permitted=1、心跳报 MOVING/FOLLOW、fault_code 为空，
+    //    但 control 的 drive 门控被 inhibit 压住，轮子一动不动且不报任何错。
+    //    这个位的成因是"链路断开"，链路恢复后成因即消失，与协调器处于哪个状态无关。
+    //    清除禁止位不等于允许运动：运动仍由 motion_permitted 门控（断线时已
+    //    pause_task，重连后要等服务器新命令，车不会自行恢复行驶）。
+    if (gw_->Is_Link_Up() && Control_Is_Stopped() &&
+        (Safety_Inhibit_Reason() & INHIBIT_REASON_LINK_LOSS)) {
+        Safety_Inhibit_Clear_Bits(INHIBIT_REASON_LINK_LOSS);
+        printf("[DLV] 链路恢复+停稳，清除LINK_LOSS安全禁止\n");
+    }
     if (state_ == DELIVERY_READY && Control_Is_Stopped()) {
         uint32_t reasons = Safety_Inhibit_Reason();
         if (reasons & (INHIBIT_REASON_LINK_LOSS | INHIBIT_REASON_MANUAL)) {
