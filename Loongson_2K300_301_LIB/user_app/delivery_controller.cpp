@@ -502,7 +502,10 @@ void DeliveryController::Handle_Resume(const ServerMessage& m)
         Send_Fault(ERR_VERSION_CONFLICT, FAULT_STOP_REQUIRED, "resume target mismatch");
         return;
     }
-    if (!store_.emergency_latched && state_ != DELIVERY_HOLDING) {
+    // 可恢复场景：急停锁存 / HOLDING暂停 / 导航中人工急停（MANUAL置位，state仍NAVIGATING）
+    bool manual_stopped_nav = (Safety_Inhibit_Reason() & INHIBIT_REASON_MANUAL) &&
+                              state_ == DELIVERY_NAVIGATING;
+    if (!store_.emergency_latched && state_ != DELIVERY_HOLDING && !manual_stopped_nav) {
         Send_Command_Ack(m.header.message_id, false, c.command_version,
                          std::vector<int>(), ERR_NOT_SYNCHRONIZED, "nothing to resume");
         return;
@@ -512,8 +515,9 @@ void DeliveryController::Handle_Resume(const ServerMessage& m)
                          std::vector<int>(), ERR_NAVIGATION_FAILED, "nav resume failed");
         return;
     }
-    // 解除急停锁（只清EMERGENCY位；LINK_LOSS/MANUAL位不受影响）
-    Safety_Inhibit_Clear_Bits(INHIBIT_REASON_EMERGENCY);
+    // 解除急停与人工禁止（resume=服务器权威恢复指令；MANUAL在导航中置位后
+    // 仅此路径可清——否则屏幕急停会死锁：车永停且无人能恢复）
+    Safety_Inhibit_Clear_Bits(INHIBIT_REASON_EMERGENCY | INHIBIT_REASON_MANUAL);
     store_.emergency_latched = false;
     store_.command_version = c.command_version;
     Store_Save();

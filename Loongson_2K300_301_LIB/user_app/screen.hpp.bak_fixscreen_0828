@@ -24,7 +24,6 @@
 extern int screen_selected_map;      // 屏幕选择的地图ID（0=未选择, 1=THU, 2=SUTD）
 extern int screen_selected_target;   // 屏幕选择的目标点ID（0=未选择）
 extern bool screen_target_ready;     // 是否已选择目标（用于判断能否启动）
-extern bool screen_delivery_page_active;  // 屏幕当前是否在DConfirm页（START/END事件维护）
 
 /*============================================================================
  *                              函数声明

@@ -191,13 +191,15 @@ int main(int argc, char** argv)
     printf("[mock] 监听8898（%s）...\n",
            g_observe ? "观察模式" : smoke ? "冒烟模式" : "交互模式");
 
+    // 状态跨连接保留（车端重连后版本号延续，模拟真服务器）
+    uint64_t seq = 0, cmd_ver = 0;
+
+    // 外层循环：接受多次连接（修复：车端每次重连都要能接入，否则mock退出）
+    while (true) {
     int cfd = accept(lfd, NULL, NULL);
     if (cfd < 0) { printf("[mock] accept失败\n"); return 1; }
-    close(lfd);
     printf("[mock] 车端已连接\n");
     uint64_t t_conn = Now_Ms();
-
-    uint64_t seq = 0, cmd_ver = 0;
     uint64_t t0 = Now_Ms();
     uint64_t t_hello_ack = 0, t_sync = 0, t_goto = 0, t_event_ack = 0;
     bool got_hello = false, got_arrived = false, got_ack = false;
@@ -349,11 +351,6 @@ int main(int argc, char** argv)
                 Send_Line(cfd, Sync_Json(seq, ph));
                 printf(">> state_sync phase=%d（带订单）\n", ph);
             }
-            else if (c.rfind("goto", 0) == 0) {
-                int node = c.size() > 5 ? atoi(c.substr(5).c_str()) : 13;
-                Send_Line(cfd, Goto_Json(seq, ++cmd_ver, node));
-                printf(">> goto_stop v%llu -> node%d\n", (unsigned long long)cmd_ver, node);
-            }
             // ===== 阶段7验收测试命令 =====
             else if (c.rfind("goto2", 0) == 0) {
                 // 幂等测试：同一version同一内容连发两次（第二次应返回缓存ACK不重启导航）
@@ -364,6 +361,11 @@ int main(int argc, char** argv)
                 Send_Line(cfd, Goto_Json(seq, v, node));
                 printf(">> goto_stop v%llu -> node%d 发送两次（幂等测试）\n",
                        (unsigned long long)v, node);
+            }
+            else if (c.rfind("goto", 0) == 0) {
+                int node = c.size() > 5 ? atoi(c.substr(5).c_str()) : 13;
+                Send_Line(cfd, Goto_Json(seq, ++cmd_ver, node));
+                printf(">> goto_stop v%llu -> node%d\n", (unsigned long long)cmd_ver, node);
             }
             else if (c == "stale") {
                 // 旧版本测试：发比当前低的version（应STALE_COMMAND拒绝）
@@ -411,6 +413,9 @@ int main(int argc, char** argv)
     }
 
     close(cfd);
+    printf("[mock] 连接结束，等待车端重连...\n");
+    }   // 外层accept循环：永不退出（除quit），车端重连自动接入
+    close(lfd);
     printf("[mock] 结束\n");
     return 0;
 }

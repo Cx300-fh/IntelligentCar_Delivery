@@ -50,6 +50,9 @@ ls_gtim_pwm servo_pwm(GTIM_PWM1_PIN88, 100, SERVO_MID);
 #define UTURN_ROTATE_SPEED    8.0    // stage 1：旋转
 #define UTURN_EXIT_SPEED     10.0    // stage 2：直行脱离转弯区
 
+// 【临时调试】stage1结束后停车观察时长（确认车位置用）
+#define UTURN_OBSERVE_MS      20000
+
 int follow_left = 0;  // 循迹左边界标志位（5ms线程按快照刷新，调试显示用）
 
 //================================================================================
@@ -67,6 +70,7 @@ static uint32_t g_mile_clear_done = 0;   // 已执行的清零序号（5ms）
 static ControlCommandSnapshot g_last_cmd;   // 本周期命令快照缓存
 static int32_t  g_uturn_stage = 0;          // 掉头阶段：0=无 1=旋转 2=直行
 static bool     g_uturn_done_latched = false; // 完成后锁存，等导航真正退出UTURN再允许下一次掉头
+static uint32_t g_uturn_hold_ms = 0;          // 【临时调试】stage1后停车观察的开始时刻（0=未观察）
 static uint32_t g_stop_ticks = 0;           // 连续低速计数（停稳判定）
 static bool     g_watchdog_stale = false;   // 主线程看门狗状态
 
@@ -225,19 +229,26 @@ void dir_control()
     }
 
     // stage1：达到旋转里程后进入stage2。
+    // 【临时调试】先原地停车UTURN_OBSERVE_MS毫秒，人工确认车位置后再进stage2。
     if (g_uturn_stage == 1 && mile >= UTURN_MILE_LIMIT_1)
     {
-        g_uturn_stage = 2;
+        if (g_uturn_hold_ms == 0) {
+            g_uturn_hold_ms = lq_get_tick_ms();
+            printf("[CTRL] UTURN stage1完成，停车%us观察位置\n",
+                   (unsigned)(UTURN_OBSERVE_MS / 1000));
+        }
+        if (lq_get_tick_ms() - g_uturn_hold_ms >= UTURN_OBSERVE_MS)
+        {
+            g_uturn_hold_ms = 0;
+            g_uturn_stage = 2;
 
-        //先停车看看位置在哪
+            // stage2不使用视觉PD，先清掉旧历史。
+            PID zero = {0};
+            turn_pid = zero;
 
-
-        // stage2不使用视觉PD，先清掉旧历史。
-        PID zero = {0};
-        turn_pid = zero;
-
-        printf("[CTRL] UTURN stage2: straight exit, speed<=%.1f, mile=%u\n",
-               UTURN_EXIT_SPEED, (unsigned)mile);
+            printf("[CTRL] UTURN stage2: straight exit, speed<=%.1f, mile=%u\n",
+                   UTURN_EXIT_SPEED, (unsigned)mile);
+        }
     }
 
     // stage2：达到总里程后结束掉头。
@@ -255,7 +266,11 @@ void dir_control()
     }
 
     // 内部掉头状态优先于导航瞬时action。
-    if (g_uturn_stage == 1)
+    if (g_uturn_hold_ms != 0)
+    {
+        action = ACTION_STRAIGHT;   // 【临时调试】观察期：舵机回中、不倒车
+    }
+    else if (g_uturn_stage == 1)
     {
         action = ACTION_UTURN;
     }
@@ -327,7 +342,8 @@ void dir_control()
     //========================================================================
     bool drive = cmd.motion_permitted &&
                  !Safety_Inhibit_Active() &&
-                 !g_watchdog_stale;
+                 !g_watchdog_stale &&
+                 g_uturn_hold_ms == 0;   // 【临时调试】观察期禁止驱动
 
     if (drive)
     {
@@ -407,7 +423,7 @@ void dir_control()
     }
 
     // stage1：保持当前机械掉头方式，但速度已经被限制到UTURN_ROTATE_SPEED。
-    if (g_uturn_stage == 1)
+    if (g_uturn_stage == 1 && g_uturn_hold_ms == 0)
     {
         left_speed  = -current_speed;
         right_speed = 0;

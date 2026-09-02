@@ -65,8 +65,9 @@ int main()
     // 配送协调器初始化（读配置文件决定配送/本地模式）并启动网关线程
     delivery.Init();
     delivery.Start();
-    // 配送模式开机不再强制切DConfirm页：保留原有页面交互
-    // （主页START进配送页/退出按钮回主页，页面切换由HMI按钮事件完成，见screen.cpp）
+    if (delivery.Enabled()) {
+        Screen_Enter_Delivery_Page();   // 配送模式：屏幕常驻DConfirm页（阶段6）
+    }
 
     // 定时器初始化（Ctrl+C退出时：先停定时器，再归零PWM安全停车）
     lq_signal_set_exit_cb([](){ timer_0.stop(); Control_Safe_Shutdown(); });
@@ -166,25 +167,13 @@ int main()
         // │ STOP/PAUSE  │ 急停/取消当前任务                       │
         // └─────────────┴─────────────────────────────────────────┘
 
-        // 屏幕数据：
-        // - 本地模式：每10圈发旧调试页数据（原行为不变）
-        // - 配送模式：DConfirm页由Screen_Render_Delivery负责（内部页面门控+节流）；
-        //   其余页面（主页/地图/WiFi页）仍要刷新基础数据——WiFi状态/IP等只在Screen_Send_All里发
+        // 屏幕数据：本地模式发旧调试页数据；配送模式渲染服务器订单快照（阶段6）
         static int screen_send_cnt = 0;
-        bool send_all_now = false;
         if (delivery.Enabled()) {
             Screen_Render_Delivery();
-            static uint32_t all_data_ms = 0;
-            if (!screen_delivery_page_active && lq_get_tick_ms() - all_data_ms >= 1000) {
-                all_data_ms = lq_get_tick_ms();
-                send_all_now = true;
-            }
         } else if (++screen_send_cnt >= 10) {
-            send_all_now = true;
-            screen_send_cnt = 0;
-        }
-        if (send_all_now) {
             Screen_Send_All();
+            screen_send_cnt = 0;
         }
 
         // 陶晶驰屏幕心跳包：每200ms发送一次，保持屏幕在线状态

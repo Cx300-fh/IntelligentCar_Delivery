@@ -28,11 +28,6 @@ int screen_selected_map = MAP_NONE;      // 屏幕选择的地图ID（0=未选�
 int screen_selected_target = 0;          // 屏幕选择的目标点ID（0=未选择）
 bool screen_target_ready = false;        // 是否已选择有效目标（用于判断能否启动）
 
-// 配送页显示状态：HMI的START按钮事件自带page DConfirm，退出按钮发"END"并page Main。
-// 车端据这两条指令跟踪当前页面：DConfirm页控件（b1~b5/d_s_*）与其他页同名控件冲突
-// （地图页b1=back/b2=clear），裸发指令会命中当前页同名控件，必须先确认页面再发。
-bool screen_delivery_page_active = false;
-
 /*============================================================================
  *                              接收缓冲区
  *============================================================================*/
@@ -435,15 +430,15 @@ void Screen_Rx_Process(const uint8_t* data, ssize_t len)
     }
 
     // 2. START
-    // 含义：屏幕首页启动按钮发来启动命令。HMI端事件自带page DConfirm切换。
+    // 含义：屏幕首页启动按钮发来启动命令，使用AIM指令已设定的地图和目标。
     if (strcmp(cmd, "START") == 0 || strcmp(cmd, "start") == 0)
     {
         printf("[Screen] RX: %s\n", cmd);  // 打印接收到的正确指令
         if (delivery.Enabled())
         {
-            // 配送模式：START=用户进入配送页（页面切换HMI已自行完成），导航仍由服务器驱动
-            screen_delivery_page_active = true;
-            printf("[Screen] 配送模式：进入配送页，等待服务器命令\n");
+            // 配送模式：导航只能由服务器goto_stop驱动（服务器权威）
+            printf("[Screen] 配送模式：本地START被忽略，等待服务器命令\n");
+            Screen_Send_Text("t_state", "WAIT SERVER");
         }
         else if (!screen_target_ready)
         {
@@ -478,15 +473,6 @@ void Screen_Rx_Process(const uint8_t* data, ssize_t len)
         }
         nav_fsm.cancel_task();
         printf("[Screen] 急停/取消任务（安全禁止已置位）\n");
-        return;
-    }
-
-    // 3.5 END
-    // 含义：DConfirm页退出按钮（HMI端事件自带page Main回主页），车端只记录页面状态
-    if (strcmp(cmd, "END") == 0 || strcmp(cmd, "end") == 0)
-    {
-        printf("[Screen] RX: %s（退出配送页）\n", cmd);
-        screen_delivery_page_active = false;
         return;
     }
 
@@ -677,48 +663,48 @@ static void render_delivery_texts(const StateSync& snap, int slot)
 
     switch (snap.screen_phase) {
         case SCREEN_PHASE_NONE: {
-            Screen_Send_Text("DConfirm.d_s_1", "暂无订单");
-            Screen_Send_Text("DConfirm.d_s_2", "等待服务器分配订单");
-            Screen_Send_Text("DConfirm.d_s_3", " ");
-            Screen_Send_Text("DConfirm.d_s_4", "待命");
+            Screen_Send_Text("d_s_1", "暂无订单");
+            Screen_Send_Text("d_s_2", "等待服务器分配订单");
+            Screen_Send_Text("d_s_3", " ");
+            Screen_Send_Text("d_s_4", "待命");
             break;
         }
         case SCREEN_PHASE_TO_PICKUP:
             screen_safe_text(s1, sizeof(s1), cur ? cur->nickname + " - 前往取件点"
                                                  : std::string("前往取件点"));
-            Screen_Send_Text("DConfirm.d_s_1", s1);
-            Screen_Send_Text("DConfirm.d_s_2", "车辆正在前往取件点");
-            Screen_Send_Text("DConfirm.d_s_3", "到点后等待装载确认");
-            Screen_Send_Text("DConfirm.d_s_4", "配送中");
+            Screen_Send_Text("d_s_1", s1);
+            Screen_Send_Text("d_s_2", "车辆正在前往取件点");
+            Screen_Send_Text("d_s_3", "到点后等待装载确认");
+            Screen_Send_Text("d_s_4", "配送中");
             break;
         case SCREEN_PHASE_WAIT_PICKUP:
             screen_safe_text(s1, sizeof(s1), cur ? "已到取件点 - " + cur->nickname : std::string("已到取件点"));
-            Screen_Send_Text("DConfirm.d_s_1", s1);
+            Screen_Send_Text("d_s_1", s1);
             screen_safe_text(s1, sizeof(s1), cur ? "物品：" + cur->item_summary : std::string(" "));
-            Screen_Send_Text("DConfirm.d_s_2", s1);
-            Screen_Send_Text("DConfirm.d_s_3", "装好后点击下方按钮");
-            Screen_Send_Text("DConfirm.d_s_4", cur && !cur->button_label.empty() ? cur->button_label.c_str() : "物品已装好");
+            Screen_Send_Text("d_s_2", s1);
+            Screen_Send_Text("d_s_3", "装好后点击下方按钮");
+            Screen_Send_Text("d_s_4", cur && !cur->button_label.empty() ? cur->button_label.c_str() : "物品已装好");
             break;
         case SCREEN_PHASE_DELIVERING:
             screen_safe_text(s1, sizeof(s1), cur ? cur->nickname + " - 配送中" : std::string("配送中"));
-            Screen_Send_Text("DConfirm.d_s_1", s1);
+            Screen_Send_Text("d_s_1", s1);
             screen_safe_text(s1, sizeof(s1), cur ? "送往：" + cur->dropoff_name : std::string(" "));
-            Screen_Send_Text("DConfirm.d_s_2", s1);
-            Screen_Send_Text("DConfirm.d_s_3", "到点后等待取件确认");
-            Screen_Send_Text("DConfirm.d_s_4", "配送中");
+            Screen_Send_Text("d_s_2", s1);
+            Screen_Send_Text("d_s_3", "到点后等待取件确认");
+            Screen_Send_Text("d_s_4", "配送中");
             break;
         case SCREEN_PHASE_WAIT_DROPOFF:
             screen_safe_text(s1, sizeof(s1), cur ? "已到目的地 - " + cur->nickname : std::string("已到目的地"));
-            Screen_Send_Text("DConfirm.d_s_1", s1);
-            Screen_Send_Text("DConfirm.d_s_2", "物品已送达，等待取件");
-            Screen_Send_Text("DConfirm.d_s_3", "取走后点击下方按钮");
-            Screen_Send_Text("DConfirm.d_s_4", cur && !cur->button_label.empty() ? cur->button_label.c_str() : "物品已取走");
+            Screen_Send_Text("d_s_1", s1);
+            Screen_Send_Text("d_s_2", "物品已送达，等待取件");
+            Screen_Send_Text("d_s_3", "取走后点击下方按钮");
+            Screen_Send_Text("d_s_4", cur && !cur->button_label.empty() ? cur->button_label.c_str() : "物品已取走");
             break;
         case SCREEN_PHASE_ALL_DONE:
-            Screen_Send_Text("DConfirm.d_s_1", "全部订单完成");
-            Screen_Send_Text("DConfirm.d_s_2", "等待服务器新任务");
-            Screen_Send_Text("DConfirm.d_s_3", " ");
-            Screen_Send_Text("DConfirm.d_s_4", "已完成");
+            Screen_Send_Text("d_s_1", "全部订单完成");
+            Screen_Send_Text("d_s_2", "等待服务器新任务");
+            Screen_Send_Text("d_s_3", " ");
+            Screen_Send_Text("d_s_4", "已完成");
             break;
         default:
             break;
@@ -728,10 +714,6 @@ static void render_delivery_texts(const StateSync& snap, int slot)
 
 void Screen_Render_Delivery(void)
 {
-    // 页面门控：屏幕不在DConfirm页时一个字节都不发——b1~b5/d_s_*与其他页同名控件冲突
-    // （地图页b1=back/b2=clear会被裸发指令覆盖成"--"）。tsw指令不支持页面前缀，全靠此门控。
-    if (!screen_delivery_page_active) return;
-
     // 快照版本变化立即刷新；未变化每1秒兜底刷新（覆盖屏幕按钮点击扰动的文案）
     static uint64_t last_ver = (uint64_t)-1;
     static uint32_t last_ms = 0;
@@ -743,12 +725,11 @@ void Screen_Render_Delivery(void)
 
     int slot = delivery_active_slot(snap);
 
-    // 订单号：b1~b5显示display_no（无订单的槽清空）。
-    // 带DConfirm页面前缀：即使门控失效（END在途竞态）也不会污染其他页同名控件
+    // 订单号：b1~b5显示display_no（无订单的槽清空）
     char txt[16];
     for (int i = 0; i < 5; i++) {
-        char name[16];
-        snprintf(name, sizeof(name), "DConfirm.b%d", i + 1);
+        char name[8];
+        snprintf(name, sizeof(name), "b%d", i + 1);
         if ((size_t)i < snap.orders.size() && !snap.orders[i].display_no.empty()) {
             screen_safe_text(txt, sizeof(txt), snap.orders[i].display_no);
         } else {
@@ -781,6 +762,5 @@ void Screen_Enter_Delivery_Page(void)
     int len = snprintf(cmd, sizeof(cmd), "page DConfirm");
     screen_uart.uart_write((uint8_t*)cmd, len, 10);
     screen_send_tail();
-    screen_delivery_page_active = true;
     printf("[Screen] 配送模式：切换到DConfirm页\n");
 }
