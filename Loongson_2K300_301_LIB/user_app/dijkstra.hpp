@@ -175,10 +175,11 @@ struct NavResult {
  *   会同时写入 from->to 和 to->from 两条 Edge。
  */
 struct Edge {
-    int to;      // 这条边连接到的目标节点 ID
-    int weight;  // 边权重，可理解为两点间距离；当前按地图坐标距离近似缩放得到
+    int to;         // 这条边连接到的目标节点 ID
+    int weight;     // 边权重，可理解为两点间距离；当前按地图坐标距离近似缩放得到
+    bool blocked;   // 是否被临时阻塞（避障用）：true时Dijkstra跳过此边，不参与路径规划
 
-    Edge(int t, int w) : to(t), weight(w) {}  // 构造函数，支持 emplace_back
+    Edge(int t, int w) : to(t), weight(w), blocked(false) {}  // 构造函数，支持 emplace_back
 };
 
 class Dijkstra {
@@ -242,6 +243,17 @@ public:
     const char* get_turn_name(int turn);
 
     void add_undirected_edge(int from, int to, int weight); // 添加双向边
+
+    /**
+     * @brief 临时阻塞一条边（避障用：检测到障碍物挡住某条道路时调用）
+     * @details 标记双向不可通行（道路无向）；不删除边，可用 unblock_edge() 恢复。
+     *          调用方（NavigationFSM::reroute_blocked_edge）随后应重新规划路径，
+     *          不得直接 cancel_task()。
+     */
+    void block_edge(int from, int to);
+    void unblock_edge(int from, int to);   // 解除阻塞（例如人工确认障碍物已清除）
+    bool is_edge_blocked(int from, int to);
+
     void get_node_coord(int id, int* x, int* y);            // 获取节点坐标，用于路口转向判断
     int find_shortest_path(int start, int end);             // 计算最短距离，结果写入 dist[] 和 prev[]
     int get_path(int start, int end, int* path);            // 获取最短路径节点序列

@@ -284,6 +284,34 @@ void NavigationFSM::cancel_task(void) {
     status.current_action = ACTION_STOP;
 }
 
+/**
+ * @brief 避障绕行：标记 from-to 边阻塞并重新规划
+ * @details 与 cancel_task() 的区别：不清空任务，保留目标，只是换一条路走。
+ *   任务未激活（task.active==false）时只标记阻塞，供以后规划参考，返回true。
+ *   任务激活时立即从当前位置重新规划；若无其他可达路径，停车（保留任务，
+ *   等待边解除阻塞或障碍物消失后由调用方重试）。
+ */
+bool NavigationFSM::reroute_blocked_edge(int from, int to) {
+    if (!dijkstra) return false;
+    dijkstra->block_edge(from, to);
+    printf("[Nav] 道路阻塞：%s-%s 已标记不可通行\n",
+           dijkstra->get_node_name(from), dijkstra->get_node_name(to));
+
+    if (!task.active) return true;
+
+    if (!replan_path()) {
+        printf("[Nav] 绕行失败：无其他可达路径，停车等待\n");
+        status.current_action = ACTION_STOP;
+        return false;
+    }
+
+    status.current_action = ACTION_FOLLOW;
+    status.state = NAV_STATE_EXECUTING;
+    printf("[Nav] 绕行：已重新规划路径，继续前往%s\n",
+           dijkstra->get_node_name(task.target_id));
+    return true;
+}
+
 /*============================================================================
  *                    配送模式分段导航接口（阶段5新增）
  *============================================================================*/
