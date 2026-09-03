@@ -5144,7 +5144,7 @@
 <div class="system-story-head">
         <p class="eyebrow">Designed for the real world</p>
         <h2>Every module answers a real delivery problem.</h2>
-        <p class="system-story-lead">Start with the situation, then reveal the engineering response. Switch between six views without turning the homepage into a long technical report.</p>
+        <p class="system-story-lead">Start with the situation, then reveal the engineering response. Scroll through six linked scenes while the left rail always shows where you are.</p>
       </div>
 
       <div class="system-workspace">
@@ -6995,7 +6995,8 @@
         tab.addEventListener('click', () => {
           const target = panels.find((panel) => panel.dataset.panel === tab.dataset.story);
           if (!target) return;
-          scroll.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+          const targetTop = target.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop;
+          scroll.scrollTo({ top: targetTop, behavior: 'smooth' });
           setActive(tab.dataset.story || '');
         });
       });
