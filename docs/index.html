@@ -4782,6 +4782,263 @@
       .story-feature, .story-tab { transition: none; }
     }
 
+
+    /* ============================================================
+       App view shell v1
+       Four isolated views; vertical scroll is contained by the active view.
+       ============================================================ */
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    body {
+      min-height: 100svh;
+    }
+
+    .scroll-progress { display: none !important; }
+
+    .app-shell-main {
+      height: 100svh;
+      padding-top: 64px;
+      overflow: hidden;
+    }
+
+    .app-view {
+      display: none;
+      height: calc(100svh - 64px);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .app-view.is-active { display: block; }
+
+    .app-view-scroll {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+    }
+
+    .app-view-scroll-overview { overflow: hidden; }
+
+    .app-nav a {
+      position: relative;
+      padding: 22px 0 20px;
+      color: rgba(225,231,226,.58);
+    }
+
+    .app-nav a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 13px;
+      height: 1px;
+      background: var(--green);
+      box-shadow: 0 0 10px rgba(118,185,0,.22);
+      transform: scaleX(0);
+      transition: transform .22s ease;
+    }
+
+    .app-nav a.is-active { color: rgba(245,248,246,.96); }
+    .app-nav a.is-active::after { transform: scaleX(1); }
+
+    .app-view-overview .hero {
+      min-height: calc(100svh - 64px);
+      height: calc(100svh - 64px);
+      padding-top: 24px;
+      padding-bottom: 24px;
+    }
+
+    .app-view-overview .hero-grid {
+      min-height: min(640px, calc(100svh - 112px));
+    }
+
+    .app-view-demo .demo-video-section {
+      min-height: calc(100svh - 64px);
+      display: grid;
+      align-content: center;
+      padding-top: 44px;
+      padding-bottom: 44px;
+    }
+
+    .app-view-contact .contact-section {
+      min-height: calc(100svh - 64px);
+      padding-top: 72px;
+      padding-bottom: 56px;
+    }
+
+    /* System is a workspace: fixed story navigation on the left, scroll rail on the right. */
+    .app-view-system {
+      background:
+        radial-gradient(ellipse at 70% 30%, rgba(118,185,0,.055), transparent 48%),
+        linear-gradient(180deg, rgba(13,18,15,.98), rgba(8,11,9,.99));
+    }
+
+    .system-view-frame {
+      height: 100%;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 22px;
+      padding-top: 28px;
+      padding-bottom: 22px;
+    }
+
+    .system-view-frame > .system-story-head {
+      display: grid;
+      grid-template-columns: minmax(0, 760px) minmax(260px, 1fr);
+      align-items: end;
+      gap: 36px;
+      margin: 0;
+    }
+
+    .system-view-frame > .system-story-head .eyebrow {
+      grid-column: 1 / -1;
+      margin: 0 0 -12px;
+    }
+
+    .system-view-frame > .system-story-head h2 {
+      font-size: clamp(38px, 4.2vw, 58px);
+    }
+
+    .system-workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 168px minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .system-story-nav {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-self: stretch;
+      padding: 10px;
+      border: 1px solid rgba(241,243,240,.095);
+      border-radius: 14px;
+      background: rgba(14,20,16,.58);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .system-story-nav .story-tab {
+      position: relative;
+      width: 100%;
+      min-height: 62px;
+      padding: 0 12px 0 15px;
+      border: 0;
+      border-bottom: 1px solid rgba(241,243,240,.065);
+      background: transparent;
+      color: rgba(195,207,198,.46);
+      text-align: left;
+      font-family: "Prism", "Arial Narrow", sans-serif;
+      font-size: 14px;
+      letter-spacing: .035em;
+      transition: color .2s ease, background .2s ease;
+    }
+
+    .system-story-nav .story-tab:last-child { border-bottom: 0; }
+    .system-story-nav .story-tab span {
+      display: block;
+      margin: 0 0 4px;
+      color: rgba(118,185,0,.44);
+      font-size: 8px;
+      letter-spacing: .12em;
+    }
+
+    .system-story-nav .story-tab::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 14px;
+      bottom: 14px;
+      width: 2px;
+      border-radius: 2px;
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(118,185,0,.24);
+      transform: scaleY(0);
+      transition: transform .22s ease;
+    }
+
+    .system-story-nav .story-tab::after { display: none; }
+    .system-story-nav .story-tab:hover { color: rgba(234,240,236,.78); background: rgba(255,255,255,.018); }
+    .system-story-nav .story-tab.is-active { color: rgba(246,249,247,.96); background: rgba(118,185,0,.045); }
+    .system-story-nav .story-tab.is-active::before { transform: scaleY(1); }
+
+    .system-story-scroll {
+      min-height: 0;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scroll-snap-type: y proximity;
+      scroll-behavior: smooth;
+      overscroll-behavior: contain;
+      border: 1px solid rgba(241,243,240,.095);
+      border-radius: 16px;
+      background:
+        linear-gradient(145deg, rgba(20,30,25,.70), rgba(8,13,10,.72));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 24px 64px rgba(0,0,0,.16);
+    }
+
+    .system-story-scroll > .story-panel {
+      min-height: calc(100svh - 248px);
+      height: auto;
+      scroll-snap-align: start;
+      scroll-margin-top: 0;
+      border-bottom: 1px solid rgba(241,243,240,.075);
+      background: transparent;
+      animation: none;
+    }
+
+    .system-story-scroll > .story-panel:last-child { border-bottom: 0; }
+
+    .system-story-scroll > .story-panel[hidden] {
+      display: grid !important;
+    }
+
+    .move-route-lab {
+      grid-column: 1 / -1;
+      margin-top: 18px;
+      padding-top: 28px;
+      border-top: 1px solid rgba(241,243,240,.08);
+    }
+
+    .move-route-lab > .story-label { margin: 0 0 10px; }
+    .move-route-lab .section-head { margin-bottom: 20px; }
+    .move-route-lab .section-head h2 { font-size: clamp(30px, 3.5vw, 46px); }
+    .move-route-lab .map-lab { margin-bottom: 6px; }
+    .move-route-lab .map-stage { min-height: 460px; }
+
+    @media (max-width: 900px) {
+      .app-view-scroll-overview { overflow-y: auto; }
+      .app-view-overview .hero { height: auto; min-height: calc(100svh - 64px); }
+      .system-view-frame { padding-top: 18px; gap: 14px; }
+      .system-view-frame > .system-story-head { grid-template-columns: 1fr; gap: 8px; }
+      .system-view-frame > .system-story-head .eyebrow { margin-bottom: 0; }
+      .system-story-lead { display: none; }
+      .system-workspace { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+      .system-story-nav { flex-direction: row; overflow-x: auto; padding: 6px; }
+      .system-story-nav .story-tab { flex: 0 0 112px; min-height: 52px; border-bottom: 0; border-right: 1px solid rgba(241,243,240,.065); }
+      .system-story-nav .story-tab::before { left: 12px; right: 12px; top: auto; bottom: 0; width: auto; height: 2px; transform: scaleX(0); }
+      .system-story-nav .story-tab.is-active::before { transform: scaleX(1); }
+      .system-story-scroll > .story-panel { min-height: calc(100svh - 270px); }
+    }
+
+    @media (max-width: 620px) {
+      .app-shell-main { padding-top: 58px; }
+      .app-view { height: calc(100svh - 58px); }
+      .system-view-frame { width: min(100% - 20px, 1180px); }
+      .system-view-frame > .system-story-head h2 { font-size: 34px; }
+      .move-route-lab .map-stage { min-height: 360px; }
+      .app-nav { gap: 14px; font-size: 12px; }
+    }
+
   </style>
 </head>
 <body>
@@ -4793,19 +5050,22 @@
   <div class="fx-cursor-dot" aria-hidden="true"></div>
   <div class="topbar">
     <div class="shell nav">
-      <a class="brand" href="#top" aria-label="THU Delivery home">
+      <a class="brand" href="#overview" data-app-view="overview" aria-label="THU Delivery home">
         <img class="brand-logo" src="./assets/brand/logo.svg?v=20260827-1" alt="" aria-hidden="true">
         THU Delivery
       </a>
-      <div class="nav-links" aria-label="Page navigation">
-        <a href="#top">Overview</a>
-        <a href="#video-demo">Demo</a>
-        <a href="#system">System</a>
-        <a href="#contact">Contact Us</a>
+      <div class="nav-links app-nav" aria-label="Page navigation">
+        <a class="is-active" href="#overview" data-app-view="overview">Overview</a>
+        <a href="#demo" data-app-view="demo">Demo</a>
+        <a href="#system" data-app-view="system">System</a>
+        <a href="#contact" data-app-view="contact">Contact Us</a>
       </div>
     </div>
   </div>
 
+  <main class="app-shell-main" id="appShell">
+    <section class="app-view app-view-overview is-active" id="overview" data-app-view-panel="overview" aria-hidden="false">
+      <div class="app-view-scroll app-view-scroll-overview">
   <header id="top" class="hero">
     <div class="hero-morph-shape" aria-hidden="true">
       <span class="hero-morph-ring"></span>
@@ -4825,8 +5085,8 @@
         </h1>
         <p class="hero-tagline">用清送，更轻松</p>
         <div class="hero-actions hero-cta">
-          <a class="btn primary" href="#map">进入实时 Demo →</a>
-          <a class="btn" href="#system">查看系统设计</a>
+          <a class="btn primary" href="#demo" data-app-view="demo">进入实时 Demo →</a>
+          <a class="btn" href="#system" data-app-view="system">查看系统设计</a>
         </div>
       </div>
       <aside class="mission-card" aria-label="Route progress preview">
@@ -4838,11 +5098,13 @@
         </div>
       </aside>
     </div>
-    <div class="hero-scroll-hint" aria-hidden="true">SCROLL TO MORPH</div>
+    <div class="hero-scroll-hint" aria-hidden="true">CHOOSE A VIEW ABOVE</div>
   </header>
+      </div>
+    </section>
 
-  <main>
-
+    <section class="app-view app-view-demo" id="demo" data-app-view-panel="demo" aria-hidden="true">
+      <div class="app-view-scroll">
     <section id="video-demo" class="shell demo-video-section">
       <div class="demo-video-head">
         <div>
@@ -4874,11 +5136,83 @@
         </div>
       </div>
     </section>
+      </div>
+    </section>
 
-    <section id="map" class="shell">
-      <div class="section-head">
+    <section class="app-view app-view-system" id="system" data-app-view-panel="system" aria-hidden="true">
+      <div class="system-view-frame shell">
+<div class="system-story-head">
+        <p class="eyebrow">Designed for the real world</p>
+        <h2>Every module answers a real delivery problem.</h2>
+        <p class="system-story-lead">Start with the situation, then reveal the engineering response. Switch between six views without turning the homepage into a long technical report.</p>
+      </div>
+
+      <div class="system-workspace">
+      <aside class="system-story-nav" aria-label="System design stories">
+        <button class="story-tab is-active" id="storyTabOrder" role="tab" aria-selected="true" aria-controls="storyPanelOrder" data-story="order" type="button"><span>01</span>Order</button>
+        <button class="story-tab" id="storyTabCargo" role="tab" aria-selected="false" aria-controls="storyPanelCargo" data-story="cargo" type="button"><span>02</span>Cargo</button>
+        <button class="story-tab" id="storyTabMove" role="tab" aria-selected="false" aria-controls="storyPanelMove" data-story="move" type="button"><span>03</span>Move</button>
+        <button class="story-tab" id="storyTabScale" role="tab" aria-selected="false" aria-controls="storyPanelScale" data-story="scale" type="button"><span>04</span>Scale</button>
+        <button class="story-tab" id="storyTabTrust" role="tab" aria-selected="false" aria-controls="storyPanelTrust" data-story="trust" type="button"><span>05</span>Trust</button>
+        <button class="story-tab" id="storyTabSystem" role="tab" aria-selected="false" aria-controls="storyPanelSystem" data-story="system" type="button"><span>06</span>System</button>
+      </aside>
+
+      <div class="system-story-scroll" id="systemStoryScroll">
+        <article class="story-panel is-active" id="storyPanelOrder" role="tabpanel" aria-labelledby="storyTabOrder" data-panel="order">
+          <div class="story-problem">
+            <span class="story-label">REAL SCENE / ORDER</span>
+            <h3>What if ordering is harder than the delivery itself?</h3>
+            <p>Campus users may be walking, carrying items, or simply unwilling to operate a complicated console. The interaction has to disappear into the task.</p>
+            <div class="story-flow" aria-label="Order flow"><span>Speak or tap</span><i></i><span>Choose pickup</span><i></i><span>Preview route</span><i></i><span>Dispatch</span></div>
+          </div>
+          <div class="story-feature-grid cols-2">
+            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-voice.mp4" data-title="Voice ordering" data-copy="Show a user speaking a delivery request and the system turning it into a structured task.">Demo ↗</button></div><h4>Voice ordering</h4><p>Let users express intent naturally instead of navigating a dense control interface.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-web.mp4" data-title="Web ordering" data-copy="Show pickup, destination and order creation in the web interface.">Demo ↗</button></div><h4>Web order UI</h4><p>A lightweight browser flow for pickup, destination, order state and control.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-route-preview.mp4" data-title="Route preview" data-copy="Show the campus route preview before the user confirms the mission.">Demo ↗</button></div><h4>Route preview</h4><p>Expose the planned path and estimated delivery time before the mission starts.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-live-status.mp4" data-title="Live status" data-copy="Show the live map, robot position and order state updating while the car is moving.">Demo ↗</button></div><h4>Live feedback</h4><p>Real-time state keeps the user aware of pickup, navigation and handoff progress.</p></article>
+          </div>
+        </article>
+
+        <article class="story-panel" id="storyPanelCargo" role="tabpanel" aria-labelledby="storyTabCargo" data-panel="cargo">
+          <div class="story-problem">
+            <span class="story-label">REAL SCENE / CARGO</span>
+            <h3>Reaching a place does not prove the package is there.</h3>
+            <p>Pickup and handoff need physical evidence and clear interaction. Cargo state, user prompts and the compartment itself all become part of the delivery loop.</p>
+            <div class="story-flow" aria-label="Cargo flow"><span>Open</span><i></i><span>Load</span><i></i><span>Verify</span><i></i><span>Handoff</span></div>
+          </div>
+          <div class="story-feature-grid cols-2">
+            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-weight.mp4" data-title="Weight sensing" data-copy="Show the load cell responding when an item is placed into or removed from the cargo area.">Demo ↗</button></div><h4>Weight sensing</h4><p>Track cargo changes physically instead of trusting location alone.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-bay.mp4" data-title="Cargo compartment" data-copy="Show how an item is placed into the compartment and kept stable during motion.">Demo ↗</button></div><h4>Cargo bay</h4><p>A dedicated carrying space keeps loading, transport and pickup visually understandable.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-display.mp4" data-title="On-car display" data-copy="Show the display guiding a user through loading or pickup without requiring a phone.">Demo ↗</button></div><h4>On-car display</h4><p>Pickup and drop-off instructions remain visible directly on the vehicle.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-voice.mp4" data-title="Voice prompts" data-copy="Show the car speaking concise pickup and handoff prompts at the correct stage.">Demo ↗</button></div><h4>Voice prompts</h4><p>Audio cues make loading and handoff understandable even when users are not looking at the screen.</p></article>
+          </div>
+        </article>
+
+        <article class="story-panel story-panel-move" id="storyPanelMove" role="tabpanel" aria-labelledby="storyTabMove" data-panel="move">
+          <div class="story-problem">
+            <span class="story-label">REAL SCENE / MOVE</span>
+            <h3>The road changes. The payload changes. Motion has to adapt.</h3>
+            <p>Real delivery is not one fixed controller on one clean route. The car has to perceive the road, localize itself, estimate cargo load, change turning behavior, avoid blocked edges and still execute safely.</p>
+            <div class="story-flow story-flow-move" aria-label="Motion flow"><span>Perceive</span><i></i><span>Weigh</span><i></i><span>Localize</span><i></i><span>Re-plan</span><i></i><span>Tune</span><i></i><span>Control</span></div>
+          </div>
+          <div class="story-feature-grid cols-3 move-grid">
+            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-camera.mp4" data-title="Camera perception" data-copy="Show the live camera view and lane or boundary extraction while the car is driving.">Demo ↗</button></div><h4>Camera perception</h4><p>Road boundaries and scene information enter the navigation loop continuously.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-apriltag.mp4" data-title="AprilTag localization" data-copy="Show the car recognizing a campus node and updating its current position.">Demo ↗</button></div><h4>AprilTag localization</h4><p>Physical tags anchor the vehicle to real campus graph nodes.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-weight.mp4" data-title="Payload measurement" data-copy="Show different payloads on the load cell and the measured weight changing.">Demo ↗</button></div><h4>Payload measurement</h4><p>The vehicle knows when its mass condition changes instead of assuming an empty-car model.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-weight-turn.mp4" data-title="Weight-adaptive turning" data-copy="Compare the same corner under different loads and show the controller selecting different turning parameters.">Demo ↗</button></div><h4>Weight-adaptive turns</h4><p>Different payload ranges select different turning parameters so cornering remains stable.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>05</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-obstacle.mp4" data-title="Obstacle detection" data-copy="Show a red obstacle entering the camera view and being detected as a blocked road condition.">Demo ↗</button></div><h4>Obstacle detection</h4><p>Visual obstacles become road-level information rather than a purely local reaction.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>06</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-reroute.mp4" data-title="Dynamic rerouting" data-copy="Show the original path becoming blocked and the route changing from the current node.">Demo ↗</button></div><h4>Dynamic rerouting</h4><p>Blocked edges and changing route costs trigger a new path from the current position.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>07</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-navigation.mp4" data-title="Navigation FSM" data-copy="Show the car moving through FOLLOW, TURN, STRAIGHT and ARRIVED navigation states.">Demo ↗</button></div><h4>Navigation FSM</h4><p>Route decisions become explicit follow, turn, straight, U-turn and stop actions.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>08</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-control.mp4" data-title="5 ms motion control" data-copy="Show steering and motor control responding in real time while the car follows the path.">Demo ↗</button></div><h4>5 ms control loop</h4><p>Steering, speed feedback and safety gating execute below the navigation layer.</p></article>
+            <article class="story-feature story-feature-shell"><div class="story-feature-top"><span>09</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-shell.mp4" data-title="Frame and shell" data-copy="Show the final shell, internal frame, cargo placement and protected electronics in a slow product walkaround.">Demo ↗</button></div><h4>Frame & shell</h4><p>The enclosure protects electronics, stabilizes the cargo layout and turns the prototype into a usable product.</p></article>
+          </div>
+
+
+          <div class="move-route-lab">
+            <span class="story-label">DYNAMIC ROUTING ALGORITHM</span>
+<div class="section-head">
         <h2>The campus is not static.</h2>
-        
+
       </div>
 
       <div class="map-lab">
@@ -4934,76 +5268,10 @@
           </div>
         </aside>
       </div>
-    </section>
-
-    <section id="system" class="shell system-story">
-      <div class="system-story-head">
-        <p class="eyebrow">Designed for the real world</p>
-        <h2>Every module answers a real delivery problem.</h2>
-        <p class="system-story-lead">Start with the situation, then reveal the engineering response. Switch between six views without turning the homepage into a long technical report.</p>
-      </div>
-
-      <div class="story-tabs" role="tablist" aria-label="System design stories">
-        <button class="story-tab is-active" id="storyTabOrder" role="tab" aria-selected="true" aria-controls="storyPanelOrder" data-story="order" type="button"><span>01</span>Order</button>
-        <button class="story-tab" id="storyTabCargo" role="tab" aria-selected="false" aria-controls="storyPanelCargo" data-story="cargo" type="button"><span>02</span>Cargo</button>
-        <button class="story-tab" id="storyTabMove" role="tab" aria-selected="false" aria-controls="storyPanelMove" data-story="move" type="button"><span>03</span>Move</button>
-        <button class="story-tab" id="storyTabScale" role="tab" aria-selected="false" aria-controls="storyPanelScale" data-story="scale" type="button"><span>04</span>Scale</button>
-        <button class="story-tab" id="storyTabTrust" role="tab" aria-selected="false" aria-controls="storyPanelTrust" data-story="trust" type="button"><span>05</span>Trust</button>
-        <button class="story-tab" id="storyTabSystem" role="tab" aria-selected="false" aria-controls="storyPanelSystem" data-story="system" type="button"><span>06</span>System</button>
-      </div>
-
-      <div class="story-stage">
-        <article class="story-panel is-active" id="storyPanelOrder" role="tabpanel" aria-labelledby="storyTabOrder" data-panel="order">
-          <div class="story-problem">
-            <span class="story-label">REAL SCENE / ORDER</span>
-            <h3>What if ordering is harder than the delivery itself?</h3>
-            <p>Campus users may be walking, carrying items, or simply unwilling to operate a complicated console. The interaction has to disappear into the task.</p>
-            <div class="story-flow" aria-label="Order flow"><span>Speak or tap</span><i></i><span>Choose pickup</span><i></i><span>Preview route</span><i></i><span>Dispatch</span></div>
           </div>
-          <div class="story-feature-grid cols-2">
-            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-voice.mp4" data-title="Voice ordering" data-copy="Show a user speaking a delivery request and the system turning it into a structured task.">Demo ↗</button></div><h4>Voice ordering</h4><p>Let users express intent naturally instead of navigating a dense control interface.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-web.mp4" data-title="Web ordering" data-copy="Show pickup, destination and order creation in the web interface.">Demo ↗</button></div><h4>Web order UI</h4><p>A lightweight browser flow for pickup, destination, order state and control.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-route-preview.mp4" data-title="Route preview" data-copy="Show the campus route preview before the user confirms the mission.">Demo ↗</button></div><h4>Route preview</h4><p>Expose the planned path and estimated delivery time before the mission starts.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-live-status.mp4" data-title="Live status" data-copy="Show the live map, robot position and order state updating while the car is moving.">Demo ↗</button></div><h4>Live feedback</h4><p>Real-time state keeps the user aware of pickup, navigation and handoff progress.</p></article>
-          </div>
-        </article>
+</article>
 
-        <article class="story-panel" id="storyPanelCargo" role="tabpanel" aria-labelledby="storyTabCargo" data-panel="cargo" hidden>
-          <div class="story-problem">
-            <span class="story-label">REAL SCENE / CARGO</span>
-            <h3>Reaching a place does not prove the package is there.</h3>
-            <p>Pickup and handoff need physical evidence and clear interaction. Cargo state, user prompts and the compartment itself all become part of the delivery loop.</p>
-            <div class="story-flow" aria-label="Cargo flow"><span>Open</span><i></i><span>Load</span><i></i><span>Verify</span><i></i><span>Handoff</span></div>
-          </div>
-          <div class="story-feature-grid cols-2">
-            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-weight.mp4" data-title="Weight sensing" data-copy="Show the load cell responding when an item is placed into or removed from the cargo area.">Demo ↗</button></div><h4>Weight sensing</h4><p>Track cargo changes physically instead of trusting location alone.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-bay.mp4" data-title="Cargo compartment" data-copy="Show how an item is placed into the compartment and kept stable during motion.">Demo ↗</button></div><h4>Cargo bay</h4><p>A dedicated carrying space keeps loading, transport and pickup visually understandable.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-display.mp4" data-title="On-car display" data-copy="Show the display guiding a user through loading or pickup without requiring a phone.">Demo ↗</button></div><h4>On-car display</h4><p>Pickup and drop-off instructions remain visible directly on the vehicle.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-voice.mp4" data-title="Voice prompts" data-copy="Show the car speaking concise pickup and handoff prompts at the correct stage.">Demo ↗</button></div><h4>Voice prompts</h4><p>Audio cues make loading and handoff understandable even when users are not looking at the screen.</p></article>
-          </div>
-        </article>
-
-        <article class="story-panel story-panel-move" id="storyPanelMove" role="tabpanel" aria-labelledby="storyTabMove" data-panel="move" hidden>
-          <div class="story-problem">
-            <span class="story-label">REAL SCENE / MOVE</span>
-            <h3>The road changes. The payload changes. Motion has to adapt.</h3>
-            <p>Real delivery is not one fixed controller on one clean route. The car has to perceive the road, localize itself, estimate cargo load, change turning behavior, avoid blocked edges and still execute safely.</p>
-            <div class="story-flow story-flow-move" aria-label="Motion flow"><span>Perceive</span><i></i><span>Weigh</span><i></i><span>Localize</span><i></i><span>Re-plan</span><i></i><span>Tune</span><i></i><span>Control</span></div>
-          </div>
-          <div class="story-feature-grid cols-3 move-grid">
-            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-camera.mp4" data-title="Camera perception" data-copy="Show the live camera view and lane or boundary extraction while the car is driving.">Demo ↗</button></div><h4>Camera perception</h4><p>Road boundaries and scene information enter the navigation loop continuously.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-apriltag.mp4" data-title="AprilTag localization" data-copy="Show the car recognizing a campus node and updating its current position.">Demo ↗</button></div><h4>AprilTag localization</h4><p>Physical tags anchor the vehicle to real campus graph nodes.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-weight.mp4" data-title="Payload measurement" data-copy="Show different payloads on the load cell and the measured weight changing.">Demo ↗</button></div><h4>Payload measurement</h4><p>The vehicle knows when its mass condition changes instead of assuming an empty-car model.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-weight-turn.mp4" data-title="Weight-adaptive turning" data-copy="Compare the same corner under different loads and show the controller selecting different turning parameters.">Demo ↗</button></div><h4>Weight-adaptive turns</h4><p>Different payload ranges select different turning parameters so cornering remains stable.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>05</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-obstacle.mp4" data-title="Obstacle detection" data-copy="Show a red obstacle entering the camera view and being detected as a blocked road condition.">Demo ↗</button></div><h4>Obstacle detection</h4><p>Visual obstacles become road-level information rather than a purely local reaction.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>06</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-reroute.mp4" data-title="Dynamic rerouting" data-copy="Show the original path becoming blocked and the route changing from the current node.">Demo ↗</button></div><h4>Dynamic rerouting</h4><p>Blocked edges and changing route costs trigger a new path from the current position.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>07</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-navigation.mp4" data-title="Navigation FSM" data-copy="Show the car moving through FOLLOW, TURN, STRAIGHT and ARRIVED navigation states.">Demo ↗</button></div><h4>Navigation FSM</h4><p>Route decisions become explicit follow, turn, straight, U-turn and stop actions.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>08</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-control.mp4" data-title="5 ms motion control" data-copy="Show steering and motor control responding in real time while the car follows the path.">Demo ↗</button></div><h4>5 ms control loop</h4><p>Steering, speed feedback and safety gating execute below the navigation layer.</p></article>
-            <article class="story-feature story-feature-shell"><div class="story-feature-top"><span>09</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-shell.mp4" data-title="Frame and shell" data-copy="Show the final shell, internal frame, cargo placement and protected electronics in a slow product walkaround.">Demo ↗</button></div><h4>Frame & shell</h4><p>The enclosure protects electronics, stabilizes the cargo layout and turns the prototype into a usable product.</p></article>
-          </div>
-        </article>
-
-        <article class="story-panel" id="storyPanelScale" role="tabpanel" aria-labelledby="storyTabScale" data-panel="scale" hidden>
+        <article class="story-panel" id="storyPanelScale" role="tabpanel" aria-labelledby="storyTabScale" data-panel="scale">
           <div class="story-problem">
             <span class="story-label">REAL SCENE / SCALE</span>
             <h3>What happens when several users need one robot?</h3>
@@ -5018,7 +5286,7 @@
           </div>
         </article>
 
-        <article class="story-panel" id="storyPanelTrust" role="tabpanel" aria-labelledby="storyTabTrust" data-panel="trust" hidden>
+        <article class="story-panel" id="storyPanelTrust" role="tabpanel" aria-labelledby="storyTabTrust" data-panel="trust">
           <div class="story-problem">
             <span class="story-label">REAL SCENE / TRUST</span>
             <h3>Autonomy also means knowing when not to move.</h3>
@@ -5033,7 +5301,7 @@
           </div>
         </article>
 
-        <article class="story-panel story-panel-system" id="storyPanelSystem" role="tabpanel" aria-labelledby="storyTabSystem" data-panel="system" hidden>
+        <article class="story-panel story-panel-system" id="storyPanelSystem" role="tabpanel" aria-labelledby="storyTabSystem" data-panel="system">
           <div class="system-final-copy">
             <span class="story-label">EVERYTHING TOGETHER</span>
             <h3>One closed loop from intent to physical delivery.</h3>
@@ -5050,6 +5318,8 @@
           <div class="system-feedback-line"><span>heartbeat · arrived · user action · state sync · image</span></div>
         </article>
       </div>
+
+            </div>
 
       <div class="feature-video-modal" id="featureVideoModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="featureVideoTitle">
         <button class="feature-video-backdrop" type="button" aria-label="Close video"></button>
@@ -5069,9 +5339,12 @@
           </div>
         </div>
       </div>
+      </div>
     </section>
 
-    <section id="contact" class="shell open-source contact-section">
+    <section class="app-view app-view-contact" id="contact" data-app-view-panel="contact" aria-hidden="true">
+      <div class="app-view-scroll">
+    <section id="contact-content" class="shell open-source contact-section">
       <div class="contact-head">
         <p class="eyebrow">Contact Us</p>
         <h2>Built by five people, connected by one system.</h2>
@@ -5144,6 +5417,8 @@
           <a class="btn primary" href="https://github.com/Cx300-fh/IntelligentCar_Delivery">Source Code</a>
           <a class="btn" href="https://github.com/Cx300-fh/IntelligentCar_Delivery#readme">README</a>
         </div>
+      </div>
+    </section>
       </div>
     </section>
   </main>
@@ -5990,7 +6265,7 @@
 
     populateSelectors();
     renderMap();
-  
+
     (() => {
       const hero = document.querySelector(".hero");
       if (!hero) return;
@@ -6640,42 +6915,104 @@
       window.addEventListener('resize', hide);
     })();
 
-    // system story tab controller v1
+    // top-level app view controller v1
     (() => {
-      const tabs = [...document.querySelectorAll('.story-tab')];
-      const panels = [...document.querySelectorAll('.story-panel')];
-      if (!tabs.length || !panels.length) return;
+      const links = [...document.querySelectorAll('[data-app-view]')];
+      const panels = [...document.querySelectorAll('[data-app-view-panel]')];
+      const allowed = new Set(['overview', 'demo', 'system', 'contact']);
 
-      const activate = (tab) => {
-        const key = tab.dataset.story;
-        tabs.forEach((item) => {
-          const active = item === tab;
-          item.classList.toggle('is-active', active);
-          item.setAttribute('aria-selected', active ? 'true' : 'false');
-          item.tabIndex = active ? 0 : -1;
-        });
+      const setView = (key, updateHash = true) => {
+        if (!allowed.has(key)) key = 'overview';
         panels.forEach((panel) => {
-          const active = panel.dataset.panel === key;
-          panel.hidden = !active;
+          const active = panel.dataset.appViewPanel === key;
           panel.classList.toggle('is-active', active);
+          panel.setAttribute('aria-hidden', active ? 'false' : 'true');
+        });
+        links.forEach((link) => {
+          link.classList.toggle('is-active', link.dataset.appView === key);
+        });
+        if (updateHash && location.hash !== `#${key}`) {
+          history.pushState(null, '', `#${key}`);
+        }
+        window.dispatchEvent(new CustomEvent('appviewchange', { detail: { key } }));
+      };
+
+      links.forEach((link) => {
+        link.addEventListener('click', (event) => {
+          event.preventDefault();
+          setView(link.dataset.appView || 'overview');
+        });
+      });
+
+      const fromHash = () => {
+        const key = location.hash.replace('#', '');
+        setView(allowed.has(key) ? key : 'overview', false);
+      };
+      window.addEventListener('hashchange', fromHash);
+      fromHash();
+    })();
+
+    // System story scroll controller v2
+    (() => {
+      const nav = document.querySelector('.system-story-nav');
+      const scroll = document.getElementById('systemStoryScroll');
+      const tabs = nav ? [...nav.querySelectorAll('.story-tab')] : [];
+      const panels = scroll ? [...scroll.querySelectorAll(':scope > .story-panel')] : [];
+      if (!nav || !scroll || !tabs.length || !panels.length) return;
+
+      let activeKey = '';
+      let ticking = false;
+
+      const setActive = (key) => {
+        if (!key || key === activeKey) return;
+        activeKey = key;
+        tabs.forEach((tab) => {
+          const active = tab.dataset.story === key;
+          tab.classList.toggle('is-active', active);
+          tab.setAttribute('aria-selected', active ? 'true' : 'false');
         });
       };
 
-      tabs.forEach((tab, index) => {
-        tab.tabIndex = tab.classList.contains('is-active') ? 0 : -1;
-        tab.addEventListener('click', () => activate(tab));
-        tab.addEventListener('keydown', (event) => {
-          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-          event.preventDefault();
-          let next = index;
-          if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
-          if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
-          if (event.key === 'Home') next = 0;
-          if (event.key === 'End') next = tabs.length - 1;
-          tabs[next].focus();
-          activate(tabs[next]);
+      const updateFromScroll = () => {
+        ticking = false;
+        const rootRect = scroll.getBoundingClientRect();
+        const anchor = rootRect.top + Math.min(190, rootRect.height * .28);
+        let current = panels[0];
+        for (const panel of panels) {
+          const rect = panel.getBoundingClientRect();
+          if (rect.top <= anchor && rect.bottom > rootRect.top + 60) current = panel;
+        }
+        setActive(current.dataset.panel || '');
+      };
+
+      const requestUpdate = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(updateFromScroll);
+      };
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const target = panels.find((panel) => panel.dataset.panel === tab.dataset.story);
+          if (!target) return;
+          scroll.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+          setActive(tab.dataset.story || '');
         });
       });
+
+      // Wheel over the left rail still advances the right System story rail.
+      nav.addEventListener('wheel', (event) => {
+        if (Math.abs(event.deltaY) < 1) return;
+        event.preventDefault();
+        scroll.scrollBy({ top: event.deltaY, behavior: 'auto' });
+      }, { passive: false });
+
+      scroll.addEventListener('scroll', requestUpdate, { passive: true });
+      window.addEventListener('resize', requestUpdate);
+      window.addEventListener('appviewchange', (event) => {
+        if (event.detail?.key === 'system') requestAnimationFrame(updateFromScroll);
+      });
+      updateFromScroll();
 
       const modal = document.getElementById('featureVideoModal');
       const video = document.getElementById('featureVideo');
