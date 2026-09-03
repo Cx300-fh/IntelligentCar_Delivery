@@ -24,7 +24,7 @@ jobs:
         run: |
           set -e
           grep -q 'Division work cards v2' docs/index.html
-          grep -q 'class="member-bio-tooltip"' docs/index.html
+          grep -q "tooltip.className = 'member-bio-tooltip'" docs/index.html
           grep -q 'data-name="Gan Hongwen"' docs/index.html
           grep -q 'data-name="Li Yuxin"' docs/index.html
           grep -q 'data-name="Pu Renzhi"' docs/index.html
