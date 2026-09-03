@@ -1,0 +1,33 @@
+name: Apply Contact Us redesign v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-contact-redesign-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  redesign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Apply Contact Us redesign
+        run: python3 .github/scripts/apply_contact_redesign.py
+
+      - name: Validate and commit
+        run: |
+          grep -q 'id="contact"' docs/index.html
+          grep -q '>Contact Us</a>' docs/index.html
+          test "$(grep -o 'class="team-card"' docs/index.html | wc -l)" -eq 5
+          test "$(grep -o 'class="responsibility-item"' docs/index.html | wc -l)" -eq 10
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html
+          git diff --cached --check
+          git commit -m "Redesign Open Source as Contact Us"
+          git push origin main
