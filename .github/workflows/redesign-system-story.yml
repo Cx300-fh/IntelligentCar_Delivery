@@ -1,0 +1,39 @@
+name: Redesign System Story
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/redesign-system-story.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  redesign-system:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Apply System redesign
+        run: python .github/scripts/redesign_system_story.py
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          set -e
+          grep -q 'System story tabs v1' docs/index.html
+          grep -q 'Every module answers a real delivery problem.' docs/index.html
+          grep -q 'Weight-adaptive turns' docs/index.html
+          grep -q 'Frame & shell' docs/index.html
+          grep -q 'feature-video-modal' docs/index.html
+          grep -q 'assets/media/system/move-obstacle.mp4' docs/index.html
+          ! grep -q 'From order to arrival.' docs/index.html
+          ! grep -q 'Talk to the car.' docs/index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html
+          git diff --cached --check
+          git commit -m "Redesign System as real-world problem stories"
+          git push origin main
