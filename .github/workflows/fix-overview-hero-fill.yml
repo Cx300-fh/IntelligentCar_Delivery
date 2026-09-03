@@ -1,0 +1,33 @@
+name: Fix Overview Hero Fill
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-overview-hero-fill.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-overview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Apply Overview hero fill fix
+        run: python .github/scripts/fix_overview_hero_fill.py
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          set -e
+          grep -q 'Overview hero viewport fill fix v1' docs/index.html
+          grep -q '.app-view-overview .hero-visuals' docs/index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html
+          git diff --cached --check
+          git commit -m "Make Overview hero fill the active viewport"
+          git push origin main
