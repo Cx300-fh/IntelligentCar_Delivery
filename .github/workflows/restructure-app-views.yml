@@ -34,6 +34,7 @@ jobs:
           grep -q 'System story scroll controller v2' docs/index.html
           ! grep -q '<section id="map" class="shell">' docs/index.html
           test "$(grep -o 'id="mapStage"' docs/index.html | wc -l)" -eq 1
+          sed -i 's/[[:space:]]\+$//' docs/index.html
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/index.html
