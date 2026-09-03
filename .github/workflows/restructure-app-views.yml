@@ -1,0 +1,42 @@
+name: Restructure App Views
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/restructure-app-views.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  restructure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Apply app-view restructuring
+        run: python .github/scripts/restructure_app_views.py
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          set -e
+          grep -q 'App view shell v1' docs/index.html
+          grep -q 'data-app-view-panel="overview"' docs/index.html
+          grep -q 'data-app-view-panel="demo"' docs/index.html
+          grep -q 'data-app-view-panel="system"' docs/index.html
+          grep -q 'data-app-view-panel="contact"' docs/index.html
+          grep -q 'class="system-story-nav"' docs/index.html
+          grep -q 'id="systemStoryScroll"' docs/index.html
+          grep -q 'move-route-lab' docs/index.html
+          grep -q 'System story scroll controller v2' docs/index.html
+          ! grep -q '<section id="map" class="shell">' docs/index.html
+          test "$(grep -o 'id="mapStage"' docs/index.html | wc -l)" -eq 1
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html
+          git diff --cached --check
+          git commit -m "Restructure site into isolated views and scroll System stories"
+          git push origin main
