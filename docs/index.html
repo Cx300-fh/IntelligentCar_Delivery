@@ -3677,10 +3677,7 @@
     .responsibility-head {
       position: relative;
       z-index: 1;
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 18px;
+      display: block;
       padding: 24px 25px 21px;
       border-bottom: 1px solid rgba(215,235,223,.09);
     }
@@ -3745,9 +3742,46 @@
 
     .role-members {
       margin: 0;
-      color: rgba(235,241,237,.82);
-      font-size: 13px;
-      line-height: 1.55;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .member-avatar {
+      position: relative;
+      display: inline-flex;
+      width: 38px;
+      height: 38px;
+      flex: 0 0 38px;
+      overflow: hidden;
+      border: 1px solid rgba(154,214,58,.34);
+      border-radius: 50%;
+      background: rgba(9,17,13,.9);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.06),
+        0 0 0 2px rgba(118,185,0,.025),
+        0 0 16px rgba(118,185,0,.055);
+      transition:
+        transform .24s cubic-bezier(.2,.75,.2,1),
+        border-color .24s ease,
+        box-shadow .24s ease;
+    }
+
+    .member-avatar img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 50% 30%;
+      filter: saturate(.92) brightness(.96);
+    }
+
+    .member-avatar:hover {
+      z-index: 2;
+      transform: translateY(-2px) scale(1.08);
+      border-color: rgba(166,229,65,.72);
+      box-shadow: 0 0 20px rgba(118,185,0,.14);
     }
 
     .contact-links {
@@ -4169,15 +4203,13 @@
       <div class="contact-head">
         <p class="eyebrow">Contact Us</p>
         <h2>Built by five people, connected by one system.</h2>
-        <p class="contact-lead">From motion and control to voice, perception, networking, and interface design, each part of THU Delivery is owned end to end by the team.</p>
       </div>
 
       <div class="team-grid" aria-label="THU Delivery team">
         <article class="team-card">
-          <div class="team-photo"><img src="assets/team/gan-hongwen.png" alt="甘闳文" loading="lazy"></div>
+          <div class="team-photo"><img src="assets/team/gan-hongwen.png" alt="Gan Hongwen" loading="lazy"></div>
           <div class="team-card-body">
-            <span class="team-index">01 / MOTION · CONTROL · NET · CAMERA</span>
-            <h3 class="team-name zh-name">甘闳文</h3>
+            <h3 class="team-name">Gan Hongwen</h3>
             <p class="team-bio">I make the car move reliably and keep its networked sensing connected.</p>
           </div>
         </article>
@@ -4185,17 +4217,15 @@
         <article class="team-card">
           <div class="team-photo"><img src="assets/team/zhi-tong.png" alt="Lim Zhitong" loading="lazy"></div>
           <div class="team-card-body">
-            <span class="team-index">02 / FRAME · WEIGHT · UI</span>
             <h3 class="team-name">Lim Zhitong</h3>
             <p class="team-bio">I shape the frame and turn system logic into a clear interface.</p>
           </div>
         </article>
 
         <article class="team-card">
-          <div class="team-photo"><img src="assets/team/li-yuxin.png" alt="李雨欣" loading="lazy"></div>
+          <div class="team-photo"><img src="assets/team/li-yuxin.png" alt="Li Yuxin" loading="lazy"></div>
           <div class="team-card-body">
-            <span class="team-index">03 / CONTROL · UI · PRESENTATION · NET</span>
-            <h3 class="team-name zh-name">李雨欣</h3>
+            <h3 class="team-name">Li Yuxin</h3>
             <p class="team-bio">I connect control, networking, UI, and presentation into one coherent system.</p>
           </div>
         </article>
@@ -4203,17 +4233,15 @@
         <article class="team-card">
           <div class="team-photo"><img src="assets/team/su-liyun.png" alt="Saw Liyun" loading="lazy"></div>
           <div class="team-card-body">
-            <span class="team-index">04 / WEIGHT · UI · OBSTACLE</span>
             <h3 class="team-name">Saw Liyun</h3>
             <p class="team-bio">I focus on route weighting, obstacle handling, and interaction details.</p>
           </div>
         </article>
 
         <article class="team-card">
-          <div class="team-photo"><img src="assets/team/pu-renzhi.png" alt="蒲仁智" loading="lazy"></div>
+          <div class="team-photo"><img src="assets/team/pu-renzhi.png" alt="Pu Renzhi" loading="lazy"></div>
           <div class="team-card-body">
-            <span class="team-index">05 / VOICE · CAMERA</span>
-            <h3 class="team-name zh-name">蒲仁智</h3>
+            <h3 class="team-name">Pu Renzhi</h3>
             <p class="team-bio">I build voice interaction and camera perception for a more natural delivery experience.</p>
           </div>
         </article>
@@ -4221,23 +4249,19 @@
 
       <div class="responsibility-panel" aria-label="Division of work">
         <div class="responsibility-head">
-          <div>
-            <p class="responsibility-kicker">Division of Work</p>
-            <h3>Clear ownership across the stack.</h3>
-          </div>
-          <span class="workstream-count">10 WORKSTREAMS</span>
+          <h3>Division of Work</h3>
         </div>
         <div class="responsibility-grid">
-          <div class="responsibility-item"><span class="role-title">Motion</span><p class="role-members">甘闳文</p></div>
-          <div class="responsibility-item"><span class="role-title">Control</span><p class="role-members">李雨欣 · 甘闳文</p></div>
-          <div class="responsibility-item"><span class="role-title">Voice</span><p class="role-members">蒲仁智</p></div>
-          <div class="responsibility-item"><span class="role-title">Weight</span><p class="role-members">Saw Liyun · Lim Zhitong</p></div>
-          <div class="responsibility-item"><span class="role-title">UI Design</span><p class="role-members">Lim Zhitong · Saw Liyun · 李雨欣</p></div>
-          <div class="responsibility-item"><span class="role-title">Presentation</span><p class="role-members">李雨欣</p></div>
-          <div class="responsibility-item"><span class="role-title">Net</span><p class="role-members">李雨欣 · 甘闳文</p></div>
-          <div class="responsibility-item"><span class="role-title">Camera</span><p class="role-members">蒲仁智 · 甘闳文</p></div>
-          <div class="responsibility-item"><span class="role-title">Frame</span><p class="role-members">Lim Zhitong</p></div>
-          <div class="responsibility-item"><span class="role-title">Obstacle</span><p class="role-members">Saw Liyun</p></div>
+          <div class="responsibility-item"><span class="role-title">Motion</span><div class="role-members"><span class="member-avatar" title="Gan Hongwen" aria-label="Gan Hongwen"><img src="assets/team/gan-hongwen.png" alt=""></span></div></div>
+          <div class="responsibility-item"><span class="role-title">Control</span><div class="role-members"><span class="member-avatar" title="Li Yuxin" aria-label="Li Yuxin"><img src="assets/team/li-yuxin.png" alt=""></span><span class="member-avatar" title="Gan Hongwen" aria-label="Gan Hongwen"><img src="assets/team/gan-hongwen.png" alt=""></span></div></div>
+          <div class="responsibility-item"><span class="role-title">Voice</span><div class="role-members"><span class="member-avatar" title="Pu Renzhi" aria-label="Pu Renzhi"><img src="assets/team/pu-renzhi.png" alt=""></span></div></div>
+          <div class="responsibility-item"><span class="role-title">Weight</span><div class="role-members"><span class="member-avatar" title="Saw Liyun" aria-label="Saw Liyun"><img src="assets/team/su-liyun.png" alt=""></span><span class="member-avatar" title="Lim Zhitong" aria-label="Lim Zhitong"><img src="assets/team/zhi-tong.png" alt=""></span></div></div>
+          <div class="responsibility-item"><span class="role-title">UI Design</span><div class="role-members"><span class="member-avatar" title="Lim Zhitong" aria-label="Lim Zhitong"><img src="assets/team/zhi-tong.png" alt=""></span><span class="member-avatar" title="Saw Liyun" aria-label="Saw Liyun"><img src="assets/team/su-liyun.png" alt=""></span><span class="member-avatar" title="Li Yuxin" aria-label="Li Yuxin"><img src="assets/team/li-yuxin.png" alt=""></span></div></div>
+          <div class="responsibility-item"><span class="role-title">Presentation</span><div class="role-members"><span class="member-avatar" title="Li Yuxin" aria-label="Li Yuxin"><img src="assets/team/li-yuxin.png" alt=""></span></div></div>
+          <div class="responsibility-item"><span class="role-title">Net</span><div class="role-members"><span class="member-avatar" title="Li Yuxin" aria-label="Li Yuxin"><img src="assets/team/li-yuxin.png" alt=""></span><span class="member-avatar" title="Gan Hongwen" aria-label="Gan Hongwen"><img src="assets/team/gan-hongwen.png" alt=""></span></div></div>
+          <div class="responsibility-item"><span class="role-title">Camera</span><div class="role-members"><span class="member-avatar" title="Pu Renzhi" aria-label="Pu Renzhi"><img src="assets/team/pu-renzhi.png" alt=""></span><span class="member-avatar" title="Gan Hongwen" aria-label="Gan Hongwen"><img src="assets/team/gan-hongwen.png" alt=""></span></div></div>
+          <div class="responsibility-item"><span class="role-title">Frame</span><div class="role-members"><span class="member-avatar" title="Lim Zhitong" aria-label="Lim Zhitong"><img src="assets/team/zhi-tong.png" alt=""></span></div></div>
+          <div class="responsibility-item"><span class="role-title">Obstacle</span><div class="role-members"><span class="member-avatar" title="Saw Liyun" aria-label="Saw Liyun"><img src="assets/team/su-liyun.png" alt=""></span></div></div>
         </div>
       </div>
 
