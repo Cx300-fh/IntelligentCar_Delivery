@@ -28,7 +28,8 @@ test('pathCost evaluates the exact supplied path without choosing another route'
   const path = [9, 10, 11, 12];
   const cost = planner.pathCost(1, path);
   assert.equal(cost.reachable, true);
-  const expected = Math.hypot(555 - 801, 0) + Math.hypot(801 - 1064, 0) + Math.hypot(1064 - 1269, 0);
+  // 9-10, 10-11, 11-12 在 dijkstra.cpp init_thu() 里的车端权重
+  const expected = 85 + 85 + 75;
   assert.equal(cost.distance, expected);
   weights.setEdgeCondition(1, { from: 10, to: 11, blocked: true });
   assert.equal(planner.pathCost(1, path).reachable, false);

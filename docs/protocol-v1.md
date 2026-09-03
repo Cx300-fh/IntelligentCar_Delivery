@@ -86,6 +86,30 @@ For smooth browser map rendering it may also carry `prev_node`, `next_node`,
 `segment_progress` (`0..1`) and `path_index`. These fields are optional; without
 them the browser displays the last confirmed `current_node`.
 
+### `sync_ack`
+
+Sent by the car after every `state_sync`, acknowledging the snapshot it just applied.
+
+```json
+{
+  "protocol_version": 1,
+  "type": "sync_ack",
+  "message_id": "ack-sync-12",
+  "vehicle_id": 0,
+  "sent_at": "2026-08-27T14:20:31.000Z",
+  "reply_to": "<message_id of the state_sync>",
+  "server_epoch": "",
+  "snapshot_version": 166,
+  "accepted": true,
+  "error": null
+}
+```
+
+`accepted: false` means the car refused the snapshot (for example an invalid
+capacity state) and has entered FAULT with the motors stopped. The server must
+surface this, not drop it: the only other symptom is a car that stops moving.
+The car does not wait for a reply to `sync_ack`.
+
 ### `command_ack`
 
 ```json
@@ -147,6 +171,33 @@ Valid actions are `CONFIRM_PICKUP_LOADED` and `CONFIRM_DROPOFF_TAKEN`.
 
 ## Server to car
 
+### `heartbeat_ack`
+
+Sent in reply to every `heartbeat`. Keep-alive only - the car performs no business
+action on it.
+
+```json
+{
+  "protocol_version": 1,
+  "type": "heartbeat_ack",
+  "message_id": "uuid",
+  "vehicle_id": 0,
+  "sent_at": "2026-08-27T14:20:31.000Z",
+  "server_epoch": "",
+  "snapshot_version": 166,
+  "latest_command_version": 12
+}
+```
+
+All three payload fields are required by the car parser. `server_epoch` may be an
+empty string, which disables the car-side epoch-change check.
+
+This message is mandatory. The 6-second rule is symmetric: the car also marks the
+link down after 6 seconds without **any** server message, then stops and reconnects
+with exponential backoff (`connection_timeout_ms` in `car_gateway.hpp`). That check
+exists to catch half-open TCP connections. Without a reply to each heartbeat the
+link drops every 6 seconds even though the socket is healthy.
+
 ### `state_sync`
 
 Contains `screen_phase`, `current_order_id`, the display order list, vehicle state,
@@ -181,6 +232,13 @@ The server chooses both the next physical stop and its road-node path. The car m
 execute `server_suggested_path` in order using its existing navigation/control state
 machine. Local Dijkstra may validate reachability but may not replace the server path.
 The `path` echoed in `command_ack` must therefore equal `server_suggested_path`.
+
+`required_map_version` is optional and omitted by this server. The car treats a missing
+or zero value as "the server states no map-version requirement" and skips the check; any
+non-zero value must equal the car's configured `map_version` (`delivery_config.txt`) or
+the car rejects the command with `MAP_VERSION_MISMATCH`. A car that rejects on a missing
+field looks identical to a car that never got the command: it acks negatively and stays
+put, with no fault raised.
 
 `estimated_duration_ms` is the server's own distance / ROBOT_SPEED_UNITS_PER_SEC estimate
 for this leg — informational only (e.g. for a simulator to time its playback); the car's

@@ -59,6 +59,11 @@ function decorateOrder(order, locationsById) {
     status_code: statusCode(phase),
     dispatch_state: order.dispatch_state,
     version: Number(order.version),
+    // 车端按协议里 user_action 的字段名读 order_version（delivery_protocol.cpp 解析
+    // 快照订单时找的就是这个键，且是可选字段）。只给 version 的话车端读不到、保持
+    // 默认 0，回传时被 VERSION_CONFLICT 拒收，装/卸货确认永远无法完成。
+    // 网页仍用 version，这里同值并存。
+    order_version: Number(order.version),
     map_id: Number(order.map_id),
     pickup: pickup ? {
       location_id: pickup.location_id,
@@ -115,7 +120,9 @@ class SnapshotBuilder {
       current_order_id: current?.order_id || null,
       vehicle,
       orders,
-      active_trip: activeTrip,
+      // 车端重启恢复：cur_stop_ 只能从快照拿。车端解析器读 active_trip.current_stop_id
+      // （选填），frozen_stop_id 为空时输出空串而非 null（P_Str 对空串安全）。
+      active_trip: activeTrip ? { ...activeTrip, current_stop_id: activeTrip.frozen_stop_id || '' } : null,
       route_plan: routePlan,
       navigation_progress: this.buildNavigationProgress(activeTrip, vehicle, routePlan),
       locations

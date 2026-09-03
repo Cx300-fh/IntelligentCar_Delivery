@@ -28,15 +28,20 @@ const MAPS = {
       10: { x: 801, y: 662 }, 11: { x: 1064, y: 662 }, 12: { x: 1269, y: 662 },
       13: { x: 740, y: 870 }, 14: { x: 1004, y: 870 }
     },
+    // 边权重直接抄自车端 dijkstra.cpp init_thu()，是实测的道路长度。
+    // 车端跑自己的 Dijkstra、不执行 server_suggested_path，所以后端必须用同一张图，
+    // 否则网页上画出来的路线就不是小车实际会走的路线。
+    // 不要改回用 coords 算欧氏距离：真实道路要绕 UI 里的隐藏路口（jBumpL/jBumpTL 等）
+    // 拐直角，直线距离会把这些 L 型边低估最多 4 倍。
+    // 1-4 是故意不加的：它在 UI 里的几何是 zijing -> jBumpTL -> jBumpL -> sushimin，
+    // 而 jBumpL 就是图书馆路口，所以这条“路”其实就是 1-3-4，
+    // 单独加一条边等于凭空造出一条小车永远不会走的捷径。
     edges: [
-      [1, 3], [1, 5], [2, 3], [2, 6],
-      [4, 5], [4, 7], [5, 8], [6, 9],
-      [9, 10], [9, 13], [7, 10], [10, 11],
-      [11, 12], [8, 12], [12, 14], [13, 14],
-      // These two roads are real on the campus map (through jBumpL /
-      // jBumpTL — see UI.html's EDGES) but were missing here, which forced
-      // every route near SSM through DDCC instead of the actual short way.
-      [3, 4], [1, 4]
+      [1, 3, 150], [1, 5, 150], [2, 3, 75], [2, 6, 130],
+      [3, 4, 85], [4, 5, 85], [4, 7, 65], [5, 8, 140],
+      [6, 9, 205], [7, 10, 65], [8, 12, 65], [9, 10, 85],
+      [9, 13, 150], [10, 11, 85], [11, 12, 75], [12, 14, 140],
+      [13, 14, 85]
     ]
   },
   2: {
@@ -98,16 +103,18 @@ class MapWeights {
     return MAPS;
   }
 
-  // Euclidean distance between the two nodes' mapped coordinates when
-  // available (currently THU / map 1); otherwise falls back to the
-  // edge's own stored constant (older maps that carry no coordinates).
+  // 边自带权重时一律优先用它：那是车端实测的道路长度，小车就是按这个规划的。
+  // 只有当某条边没带权重时，才退回用 coords 算欧氏距离——那种算法会把绕隐藏路口
+  // 的 L 型道路当成直线，是不准的，仅作兜底。
   baseDistance(mapId, from, to, storedDistance) {
+    const stored = Number(storedDistance);
+    if (Number.isFinite(stored) && stored > 0) return stored;
     const map = MAPS[Number(mapId)];
     const coords = map && map.coords;
     const a = coords && coords[Number(from)];
     const b = coords && coords[Number(to)];
     if (a && b) return Math.hypot(a.x - b.x, a.y - b.y);
-    return Math.max(0, Number(storedDistance || 0));
+    return 0;
   }
 
   validateEdge(mapId, from, to) {

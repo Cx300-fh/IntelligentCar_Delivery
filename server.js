@@ -249,6 +249,13 @@ async function handleApi(req, res) {
       const command = scheduler.resume();
       return sendJson(res, 202, { ok: true, command, sent: carGateway.getStatus().connected });
     }
+    if (req.method === 'POST' && url.pathname.startsWith('/api/admin/orders/') && url.pathname.endsWith('/force-complete')) {
+      const orderId = decodeURIComponent(url.pathname.slice('/api/admin/orders/'.length, -'/force-complete'.length));
+      const result = scheduler.forceCompleteOrder(orderId);
+      const locations = new Map(database.listLocations().map((item) => [item.location_id, item]));
+      console.log(`[admin] force-complete ${orderId} -> status=${result.order.status} changed=${result.changed}`);
+      return sendJson(res, 200, { ok: true, changed: result.changed, order: decorateOrder(result.order, locations), stop_completed: result.stop_completed || null });
+    }
     if (req.method === 'POST' && url.pathname === '/api/control/query') {
       return sendJson(res, 200, { ok: true, snapshot: snapshotBuilder.build() });
     }

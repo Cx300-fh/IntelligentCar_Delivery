@@ -302,6 +302,7 @@ class DispatchScheduler extends EventEmitter {
           return previous.response;
         }
       }
+      if (message.type === 'sync_ack') return this.handleSyncAck(message);
       if (message.type === 'hello') return this.handleHello(message);
       if (message.type === 'heartbeat') return this.handleHeartbeat(message);
       if (message.type === 'command_ack') return this.handleCommandAck(message);
@@ -309,7 +310,7 @@ class DispatchScheduler extends EventEmitter {
       if (message.type === 'user_action') return this.handleUserAction(message);
       throw codedError('UNSUPPORTED_MESSAGE', `unsupported car message: ${message.type}`);
     } catch (error) {
-      if (message?.message_id) this.sendEventAck(message, false, { error_code: error.code || 'BAD_MESSAGE', error: error.message });
+      if (message?.message_id) this.sendEventAck(message, false, { error_code: error.code || 'BAD_MESSAGE', error: { code: error.code || 'BAD_MESSAGE', message: error.message } });
       this.emit('error_event', { error, message });
       return null;
     }
@@ -341,18 +342,101 @@ class DispatchScheduler extends EventEmitter {
   }
 
   handleHello(message) {
+    // hello 是每个连接的第一条车端消息，标志一个新的会话与新的序号空间。
+    // 车端心跳的 sequence 是进程内计数器（hb_seq_），车端进程重启后从 0 重新计数，
+    // 而 last_sequence 持久化在库里。不在这里归零的话，updateVehicleFromCar 的
+    // "旧序号丢弃"检查会把新会话的每一条心跳整条丢掉，车的位置与运动状态永久停更
+    // ——现场表现是网页上车停在旧位置或 current_node=-1，而链路一切正常。
+    this.database.updateVehicle({ last_sequence: 0 });
     this.updateVehicleFromCar(message);
     this.sendStateSync();
     const pending = this.database.listUnackedCommands().at(-1);
     if (pending) this.sendPersisted(pending.payload);
+    else this.resendFrozenStopIfCarBehind(message);
     this.reconcile();
     this.changed('car_hello');
+  }
+
+  // 车端进程重启会丢掉当前任务（本地 command_version 归零），而服务器这边命令早已
+  // ACK、当前停靠点已 frozen。此时两条重发路径同时失效：listUnackedCommands 是空的
+  // （命令已确认），reconcile 又因 frozen_stop_id 存在而跳过下发。结果是永久死锁——
+  // 后端一直等车到站，车在原地 READY 待命，两边都不报错。
+  // 协议让 hello 携带 last_command_version 正是为了让服务器识别车端落后，这里据此
+  // 重新下发当前冻结停靠点（issueNextStop 会把 command_version 递增，不会被判 STALE）。
+  resendFrozenStopIfCarBehind(message) {
+    const trip = this.database.getActiveTrip();
+    if (!trip || !trip.frozen_stop_id) return;
+    // 判据是"车端此刻是否真的在跑这个停靠点"，而不是版本号是否落后。
+    // 车端重启会从 delivery_state.json 恢复 command_version，却按设计不恢复任务执行
+    // （重启后原地定位、不自行运动）。只比版本号的话两边版本一致、任务其实已经丢了，
+    // 后端一直等车到站、车在原地待命，谁也不报错。心跳的 trip_id/stop_id 才是直接证据
+    // （车端 has_trip = !cur_trip_.empty()）。
+    // trip_id 字段缺失（undefined）说明这条心跳没提供任务信息，不能据此断定车没在跑；
+    // 只有车明确报了 trip_id 才拿来比对——显式 null 表示车端确实无任务，仍要重发。
+    // 真实车端每条心跳都带这个字段（has_trip = !cur_trip_.empty()），实车行为不变。
+    const tripKnown = message.trip_id !== undefined;
+    const tripMatches = tripKnown
+      ? String(message.trip_id || '') === String(trip.trip_id)
+      : true;
+    const executing = tripMatches &&
+                      String(message.stop_id || '') === String(trip.frozen_stop_id);
+    if (executing) return;
+    // 车端刚重启时先发 hello、之后才完成 AprilTag 定位，这期间 current_node 无效。
+    // 拿无效起点去规划会直接抛 ROUTE_UNREACHABLE，所以等定位好再下发（心跳会再次触发）。
+    const vehicle = this.database.getVehicle();
+    if (!vehicle || !(Number(vehicle.current_node) > 0)) return;
+    // 节流：车端未 ack 前每 2s 的心跳都会走到这里，不限流会不断抬高 command_version。
+    if (this.lastResendAt && Date.now() - this.lastResendAt < 5000) return;
+    this.lastResendAt = Date.now();
+    const stop = this.database.getStop(trip.frozen_stop_id);
+    if (!stop) return;
+    // 已经到站的停靠点不重发：车到站后在等屏幕确认，此时它可能已不再上报 trip_id。
+    if (stop.arrived_at) return;
+    console.log('[resend] car is not executing stop ' + stop.location_id + ' (car trip=' + (message.trip_id || 'none') + ', car cmd_ver=' + (message.command_version ?? '?') + ', trip at v' + trip.command_version + '); re-issuing');
+    this.issueNextStop(trip, stop, vehicle);
+  }
+
+  // 车端收到 state_sync 后回 sync_ack（reply_to / snapshot_version / accepted / error）。
+  // accepted=false 表示车拒绝了这份快照——车端同时会进 FAULT 并停车，是必须暴露的
+  // 信号：静默吞掉的话现场只会看到"车不动"而后端一片干净，无从查起。
+  handleSyncAck(message) {
+    if (message.accepted === false) {
+      const error = codedError(message.error?.code || 'SYNC_REJECTED',
+        message.error?.message || 'car rejected state_sync');
+      this.emit('error_event', { error, message });
+    }
+    return null;
   }
 
   handleHeartbeat(message) {
     this.updateVehicleFromCar(message);
     this.reconcile();
+    this.resendFrozenStopIfCarBehind(message);
     this.changed('car_heartbeat');
+    this.sendHeartbeatAck();
+  }
+
+  // 车端保活：car_gateway.hpp 的 connection_timeout_ms=6000，车端 6 秒内收不到
+  // 任何服务器消息就判掉线 -> 停车 -> 指数退避重连（用于识别 TCP 半开连接，是
+  // 已实车验证的安全特性，不能取消）。车端 delivery_protocol.cpp 早已实现
+  // heartbeat_ack 的解析、delivery_controller.cpp 按"保活，无业务动作"处理，
+  // 只是服务器侧一直没发。这里补上：每个心跳回一条，链路才能持续。
+  sendHeartbeatAck() {
+    const snapshot = this.snapshotProvider ? this.snapshotProvider() : {};
+    const vehicle = this.database.getVehicle();
+    const trip = this.database.getActiveTrip();
+    this.gateway.send({
+      protocol_version: PROTOCOL_VERSION,
+      type: 'heartbeat_ack',
+      message_id: crypto.randomUUID(),
+      vehicle_id: VEHICLE_ID,
+      sent_at: nowIso(),
+      // 本后端无 server_epoch 概念；车端该字段必填但只做纪元变化检测，
+      // 与 state_sync 保持一致发空串即可（空=不启用检测）。
+      server_epoch: '',
+      snapshot_version: Number(snapshot.snapshot_version || 0),
+      latest_command_version: Math.max(Number(trip?.command_version || 0), Number(vehicle?.last_command_version || 0))
+    });
   }
 
   handleCommandAck(message) {
@@ -417,9 +501,21 @@ class DispatchScheduler extends EventEmitter {
 
   handleUserAction(message) {
     const trip = this.database.getActiveTrip();
-    if (!trip || trip.trip_id !== message.trip_id || trip.frozen_stop_id !== message.stop_id) {
-      throw codedError('ACTION_STOP_CONFLICT', 'user action does not match the current stop');
+    if (!trip) {
+      throw codedError('ACTION_STOP_CONFLICT', 'user action does not match the current stop (no active trip)');
     }
+    // 车端重启后丢失 stop 上下文：cur_trip_/cur_stop_ 仅在收到 goto_stop 时赋值，
+    // 而等确认期间 frozen_stop_id 已冻结、reconcile 不再下发命令，车端上报的
+    // trip_id/stop_id 为空串（序列化无条件输出，非 null），按"必须精确回显"校验
+    // 会被永久拒绝——双向死锁。服务器是权威方：字段为空时按活跃 trip 推断，
+    // 非空但不匹配仍然拒绝，下层 expected_status/order_version 状态机校验不变。
+    if (message.trip_id && trip.trip_id !== message.trip_id) {
+      throw codedError('ACTION_STOP_CONFLICT', 'user action does not match the current stop (trip mismatch)');
+    }
+    if (message.stop_id && trip.frozen_stop_id !== message.stop_id) {
+      throw codedError('ACTION_STOP_CONFLICT', 'user action does not match the current stop (stop mismatch)');
+    }
+    const stopId = message.stop_id || trip.frozen_stop_id;
     const mapping = {
       [USER_ACTION.CONFIRM_PICKUP_LOADED]: {
         stopAction: STOP_ACTION.PICKUP,
@@ -447,20 +543,64 @@ class DispatchScheduler extends EventEmitter {
       dispatch_state: mapping.dispatch,
       event_type: mapping.eventType,
       trip_id: trip.trip_id,
-      stop_id: message.stop_id,
+      stop_id: stopId,
       payload: message,
       occurred_at: message.sent_at
     });
-    this.database.confirmStopOperation(message.stop_id, message.order_id, mapping.stopAction);
-    const complete = this.database.isStopFullyConfirmed(message.stop_id);
+    this.database.confirmStopOperation(stopId, message.order_id, mapping.stopAction);
+    const complete = this.database.isStopFullyConfirmed(stopId);
     if (complete) {
-      this.database.completeStop(message.stop_id);
+      this.database.completeStop(stopId);
       this.database.updateVehicle({ navigation_state: 'IDLE', current_action: 'STOP' });
     }
     this.sendEventAck(message, true, { order: result.order, stop_completed: complete });
     this.sendStateSync();
     this.changed('user_action_confirmed');
     if (complete) this.reconcile();
+  }
+
+  // 管理兜底：把卡住的订单强制推进到 COMPLETED（典型场景：车端重启丢失 stop
+  // 上下文导致确认被拒且无法自愈）。仍走 transitionOrder 状态机写入；订单在
+  // 活跃 trip 各未完成 stop 里的挂起操作一并确认，避免 reconcile 再次派发它。
+  forceCompleteOrder(orderId) {
+    const order = this.database.getOrder(orderId);
+    if (!order) throw codedError('ORDER_NOT_FOUND', 'order not found');
+    if (Number(order.status) === ORDER_STATUS.COMPLETED) {
+      return { order, changed: false, stop_completed: null };
+    }
+    const trip = this.database.getActiveTrip();
+    const result = this.database.transitionOrder({
+      event_id: `force-complete:${orderId}:${nowIso()}`,
+      order_id: orderId,
+      expected_status: Number(order.status),
+      new_status: ORDER_STATUS.COMPLETED,
+      dispatch_state: DISPATCH_STATE.DONE,
+      event_type: 'ORDER_FORCE_COMPLETED',
+      trip_id: trip ? trip.trip_id : null,
+      stop_id: trip ? trip.frozen_stop_id : null,
+      payload: { manual: true, via: 'admin api' },
+      occurred_at: nowIso()
+    });
+    let stopCompleted = null;
+    if (trip) {
+      for (const stop of trip.stops) {
+        if (stop.state === 'COMPLETED') continue;
+        const op = (stop.operations || []).find((item) => item.order_id === orderId && !item.confirmed_at);
+        if (!op) continue;
+        this.database.confirmStopOperation(stop.stop_id, orderId, op.action);
+        if (this.database.isStopFullyConfirmed(stop.stop_id)) {
+          this.database.completeStop(stop.stop_id);
+          stopCompleted = stop.stop_id;
+        }
+      }
+    }
+    if (stopCompleted) {
+      this.database.updateVehicle({ navigation_state: 'IDLE', current_action: 'STOP' });
+    }
+    this.sendStateSync();
+    this.changed('order_force_completed');
+    this.reconcile();
+    return { order: result.order, changed: true, stop_completed: stopCompleted };
   }
 
   sendStateSync() {
@@ -505,6 +645,11 @@ class DispatchScheduler extends EventEmitter {
       vehicle_id: VEHICLE_ID,
       sent_at: nowIso(),
       trip_id: trip?.trip_id || null,
+      // 车端 Handle_Resume 要求 trip_id 与 stop_id 双双匹配本地当前任务，否则回
+      // ERR_VERSION_CONFLICT "resume target mismatch" 并且不打任何日志——两边都静默，
+      // 表现为 resume 下发成功(sent=true)却始终解不开急停。hold/emergency_stop 走
+      // 同一个构造函数，一并带上。
+      stop_id: trip?.frozen_stop_id || null,
       command_version: Math.max(Number(trip?.command_version || 0), Number(vehicle.last_command_version || 0)) + 1
     };
   }
