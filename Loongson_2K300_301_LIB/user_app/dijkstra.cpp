@@ -352,28 +352,26 @@ int Dijkstra::get_turn_direction_from_heading(int current_id, int next_id, int v
     get_node_coord(current_id, &cx, &cy);
     get_node_coord(next_id, &nx, &ny);
 
-    // 向量B = next - current（目标方向）
-    int bx = nx - cx;
-    int by = ny - cy;
+    // 目标方向方位角：正北 0°，顺时针（坐标表 y 向上为正）
+    float target = 90.0f - atan2f((float)(ny - cy), (float)(nx - cx)) * 180.0f / 3.14159265f;
+    while (target < 0.0f)    target += 360.0f;
+    while (target >= 360.0f) target -= 360.0f;
 
-    // 从车辆角度构造向量A（来车方向）
-    // 角度：正北=0°，顺时针，与 get_direction 一致
-    // 单位向量：角度转弧度，再转方向分量
-    float rad = vehicle_angle * 3.14159265f / 180.0f;
-    // 正北(0°)→(0,-1)，正东(90°)→(1,0)，正南(180°)→(0,1)，正西(270°)→(-1,0)
-    int ax = (int)(100 * sin(rad));   // 水平分量
-    int ay = (int)(-100 * cos(rad));  // 垂直分量（y向下为正）
+    // 车头与目标方向的偏差角，归一化到 (-180, 180]
+    float diff = (float)vehicle_angle - target;
+    while (diff > 180.0f)    diff -= 360.0f;
+    while (diff <= -180.0f)  diff += 360.0f;
 
-    // 叉乘
-    int cross = ax * by - ay * bx;
-
-    if (cross > 0)  return TURN_LEFT;      // 左转
-    if (cross < 0)  return TURN_RIGHT;     // 右转
-
-    // 共线，用点积区分直行和掉头
-    int dot = ax * bx + ay * by;
-    if (dot > 0)  return TURN_STRAIGHT;    // 直行
-    return TURN_UTURN;                      // 掉头
+    // 带容差的四选一（相邻方向差 90°，±45° 分界）。
+    // 原实现用叉乘/点积符号判定，无角度容差：车头偏离目标哪怕 1°，
+    // 直行也会被判成原地转 90°（tag 噪声与 offset 残差都足以触发。
+    // 实测 2026-09-03 在新清华学堂(10)正对大礼堂(9)直行起步，offset
+    // 残差 33° 使估计车头偏到 237°，被判 RIGHT 原地右转，循迹跟错
+    // 线去了学生宿舍(7)）。
+    if (diff >= 135.0f || diff <= -135.0f) return TURN_UTURN;
+    if (diff > 45.0f)   return TURN_LEFT;
+    if (diff < -45.0f)  return TURN_RIGHT;
+    return TURN_STRAIGHT;
 }
 
 /**
@@ -421,6 +419,69 @@ void Dijkstra::get_node_coord(int id, int* x, int* y) {
     if (id < 0 || id >= active_node_count) { *x=0; *y=0; return; }
     const int (*coords)[2] = (current_map == MAP_SUTD) ? sutd_coords : thu_coords;
     *x = coords[id][0]; *y = coords[id][1];
+}
+
+/**
+ * @brief AprilTag 贴装朝向标定：未标定节点用的默认偏移（度）
+ * @details 取已标定两点（34 与 19）的均值。
+ */
+static const int kDefaultTagOffset = 25;
+
+/**
+ * @brief 查询某节点 AprilTag 的贴装角偏移
+ * @details 每张 tag 贴在地面时的旋转角并不统一，因此逐节点记录。
+ */
+static int thu_tag_offset_of(int node_id) {
+    switch (node_id) {
+        case 1:  return 15;   // 紫荆操场    实测 angle≈ 37.9，车头东北  53°
+        case 2:  return 30;   // 理科楼      实测 angle≈240.5，车头正西 270°
+        case 3:  return 34;   // 图书馆      实测 angle≈235.8，车头正西 270°
+        case 4:  return 19;   // 苏世民书院  实测 angle≈250.0，车头正西 270°
+        case 5:  return 51;   // 东大操场    实测 angle≈ 38.7，车头正东  90°
+        case 10: return 58;   // 新清华学堂  实测 angle≈211.8，车头正西 270°
+        case 12: return -5;   // A点         实测 angle≈185.1，车头正南 180°
+        case 9:  return 31;   // 大礼堂      实测 angle≈239.0，车头正西 270°
+        default: return kDefaultTagOffset;   // 其余节点尚未标定
+    }
+}
+
+static int sutd_tag_offset_of(int node_id) {
+    (void)node_id;
+    return kDefaultTagOffset;   // SUTD 地图尚未标定
+}
+
+/**
+ * @brief 把 AprilTag 相对角度换算成地图方位角
+ * @param node_id       当前所在节点（决定用哪张 tag 的标定值）
+ * @param tag_angle_deg Tag_Scan 输出的 tag_angle
+ * @return 地图方位角（0-360°，正北 0°顺时针），节点非法时返回 -1
+ *
+ * @details
+ *   tag_angle 取自单应矩阵的旋转分量，基准是「tag 自身贴装的朝向」，
+ *   而每张 tag 贴在地上的旋转角各不相同，所以要逐节点补一个偏移：
+ *       地图方位角 = tag_angle + offset[node]
+ *
+ *   标定方法：让车沿已知方向循迹到达该节点（循迹保证车头压线、
+ *   朝向确定），读 Tag_Scan 的 [DIR] 日志里的 angle，
+ *   offset = 理论方位角 - 实测 angle。
+ *
+ *   实测（2026-09-03，THU 地图，车头均为正西 270°）：
+ *       节点1 紫荆操场    angle≈ 37.9（车头东北 53°） → offset 15
+ *       节点2 理科楼      angle≈240.5 → offset 30
+ *       节点3 图书馆      angle≈235.8 → offset 34
+ *       节点4 苏世民书院  angle≈250.0 → offset 19
+ *   实测四点跨度 15~34，故未标定节点取均值 25。判定只需在左/右/直/掉头
+ *   四选一、相邻方向差 90°，偏移误差小于 45° 即可判对，
+ *   ±8° 的残差留有充足裕度。
+ */
+int Dijkstra::tag_angle_to_heading(int node_id, float tag_angle_deg) {
+    if (node_id <= 0 || node_id >= active_node_count) return -1;
+    int offset = (current_map == MAP_SUTD) ? sutd_tag_offset_of(node_id)
+                                           : thu_tag_offset_of(node_id);
+    int heading = (int)(tag_angle_deg + 0.5f) + offset;
+    heading %= 360;
+    if (heading < 0) heading += 360;
+    return heading;
 }
 
 /**
@@ -678,7 +739,7 @@ bool Dijkstra::update_nav(const NavUpdateInput& input, NavResult& output) {
             turn = get_turn_direction(output.prev_id, input.current_id, output.next_id);
         } else {
             // 起点，用车辆朝向判断
-            turn = get_turn_direction_from_heading(input.current_id, output.next_id, (int)input.tag_angle);
+            turn = get_turn_direction_from_heading(input.current_id, output.next_id, tag_angle_to_heading(input.current_id, input.tag_angle));
         }
         output.turn_action = turn;
 

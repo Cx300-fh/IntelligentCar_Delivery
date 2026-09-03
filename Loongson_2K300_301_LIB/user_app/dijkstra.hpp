@@ -240,6 +240,7 @@ public:
     // 转向判断相关函数：通过 prev-current-next 三点叉乘判断左转/右转/直行/掉头。
     int get_turn_direction(int prev_id, int current_id, int next_id);
     int get_turn_direction_from_heading(int current_id, int next_id, int vehicle_angle);  // 起始点用车辆朝向
+    int tag_angle_to_heading(int node_id, float tag_angle_deg);  // AprilTag 相对角 → 地图方位角
     const char* get_turn_name(int turn);
 
     void add_undirected_edge(int from, int to, int weight); // 添加双向边

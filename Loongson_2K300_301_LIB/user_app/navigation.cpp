@@ -375,9 +375,52 @@ bool NavigationFSM::start_leg(int map_id, int target_id) {
         return false;
     }
 
-    // 从当前路段出发：循迹到下一个Tag后由AT_NODE正常决策
+    // 从当前路段出发。
+    //
+    // 停靠点本身就是路口时，方向必须先定下来：原实现无条件 ACTION_FOLLOW，
+    // 等于把出发方向交给摄像头此刻恰好看到的哪条线——实测在苏世民书院(4)
+    // 本该直行去图书馆(3)，却循着旁边的线左拐进了学生宿舍(7)。
+    //
+    // 出发时没有“来路”可用（车刚停稳等确认，也可能是重启后重新定位的），
+    // 所以改用 AprilTag 解出的车头朝向判断转向，不依赖历史轨迹。
+    // 定不出朝向（tag 丢失或与当前节点不符）时退回原来的循迹行为。
     status.current_action = ACTION_FOLLOW;
     status.state = NAV_STATE_EXECUTING;
+
+    if (dijkstra->is_intersection_node(keep_cur) && status.next_id > 0 &&
+        det_found && tag_id == keep_cur) {
+        int heading = dijkstra->tag_angle_to_heading(keep_cur, tag_angle);
+        int turn = dijkstra->get_turn_direction_from_heading(keep_cur, status.next_id, heading);
+
+        ActionType act = ACTION_FOLLOW;
+        switch (turn) {
+            case TURN_STRAIGHT: act = ACTION_STRAIGHT;   break;
+            case TURN_LEFT:     act = ACTION_TURN_LEFT;  break;
+            case TURN_RIGHT:    act = ACTION_TURN_RIGHT; break;
+            case TURN_UTURN:    act = ACTION_UTURN;      break;
+            default:            act = ACTION_FOLLOW;     break;
+        }
+
+        if (act != ACTION_FOLLOW) {
+            // 转向动作靠里程结束（control.cpp 的 TURN_MILE_LIMIT），而里程只在
+            // 稳定期结束时清零，所以这里必须走 WAITING，不能直接 EXECUTING，
+            // 否则上一段残留的里程会让转向刚开始就被判定完成。
+            status.current_action = act;
+            status.state = NAV_STATE_WAITING;
+            status.wait_start_ms = get_current_ms();
+            status.wait_duration_ms = node_settle_ms_;
+        }
+
+        printf("[Nav] start_leg路口朝向：tag角%.1f°→车头%d°，%s → %s，动作=%s\n",
+               tag_angle, heading,
+               dijkstra->get_node_name(keep_cur),
+               dijkstra->get_node_name(status.next_id),
+               get_action_name(status.current_action));
+
+        if (act == ACTION_UTURN) {
+            printf("[Nav] 警告：车头背对目标，将在出发前掉头\n");
+        }
+    }
 
     printf("[Nav] start_leg：从%s出发 → 目标%s（保留定位）\n",
            dijkstra->get_node_name(keep_cur),
