@@ -1,0 +1,41 @@
+name: Refine Contact Us section v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/refine-contact-section-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Apply Contact Us refinement
+        shell: bash
+        run: python .github/scripts/refine_contact_section.py
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          set -e
+          ! grep -q 'From motion and control to voice' docs/index.html
+          ! grep -q 'class="team-index"' docs/index.html
+          ! grep -q 'Clear ownership across the stack' docs/index.html
+          ! grep -q '10 WORKSTREAMS' docs/index.html
+          grep -q '>Gan Hongwen</h3>' docs/index.html
+          grep -q '>Li Yuxin</h3>' docs/index.html
+          grep -q '>Pu Renzhi</h3>' docs/index.html
+          grep -q '<h3>Division of Work</h3>' docs/index.html
+          test "$(grep -o 'class="member-avatar"' docs/index.html | wc -l)" -eq 16
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html
+          git diff --cached --check
+          git commit -m "Refine Contact Us profiles and division of work"
+          git push origin main
