@@ -113,9 +113,45 @@ void Tag_Scan_Process(void)
         return;
     }
 
-    // 获取第一个检测到的标签
-    apriltag_detection_t *det;
-    zarray_get(detections, 0, &det);
+    // 在所有检测结果中选置信度(decision_margin)最高的一个，并用阈值挡掉误识别。
+    // 原实现无条件取第 0 个、且完全不看置信度。tag16h5 家族的汉明距离小、假阳性率
+    // 很高（AprilTag 官方推荐 tag36h11），再叠加 quad_decimate=2.0 把本就只有
+    // 160x120 的图降采样到 80x60，导致车静止不动时识别结果在互不相干的节点间乱跳
+    // ——实测停在图书馆(3)却被先后认成大礼堂(9)、A点(12)、东门(8)。
+    // 位置一旦失真，路径规划、到站判定、user_action 的停靠点校验会跟着全线错乱。
+    static const float kMinDecisionMargin = 30.0f;
+
+    apriltag_detection_t *det = NULL;
+    float best_margin = -1.0f;
+    for (int i = 0; i < detection_count; i++)
+    {
+        apriltag_detection_t *cand;
+        zarray_get(detections, i, &cand);
+        if (cand->decision_margin > best_margin)
+        {
+            best_margin = cand->decision_margin;
+            det = cand;
+        }
+    }
+
+
+    if (det == NULL || best_margin < kMinDecisionMargin)
+    {
+        // 置信度不足：按"未检测到"处理，宁可暂时没有位置也不要错误的位置
+        same_id_count = 0;
+        last_tag_id = -1;
+        tag_id = -1;
+        tag_angle = 0.0f;
+        tag_center_x = 0.0f;
+        tag_center_y = 0.0f;
+        det_found = false;
+        tag_dir_ns = DIR_NS_PENDING;
+        tag_dir_ew = DIR_EW_PENDING;
+        tag_dir_ns_name = "P";
+        tag_dir_ew_name = "P";
+        zarray_destroy(detections);
+        return;
+    }
 
     int current_id = det->id;
 
@@ -184,6 +220,7 @@ void Tag_Scan_Process(void)
     // 东西方向：[0,180)为东，[180,360)为西
     tag_dir_ew = (angle_norm < 180) ? DIR_EW_EAST : DIR_EW_WEST;
     tag_dir_ew_name = (tag_dir_ew == DIR_EW_EAST) ? "E" : "W";
+
 
     // 释放检测结果
     for (int i = 0; i < detection_count; i++)
