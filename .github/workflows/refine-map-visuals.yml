@@ -1,0 +1,40 @@
+name: Refine map visuals
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/refine-map-visuals.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refine-map:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Apply map visual refinement
+        run: python .github/scripts/refine_map_visuals.py
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          set -e
+          grep -q 'Map visual hierarchy v2' docs/index.html
+          grep -q 'id="mapZones"' docs/index.html
+          grep -q 'id="roadJunctions"' docs/index.html
+          grep -q 'id="mapTooltip"' docs/index.html
+          grep -q 'route-current-flow' docs/index.html
+          grep -q 'campus-zone-label' docs/index.html
+          grep -q 'map-landmark-icon' docs/index.html
+          grep -q 'targetLabelBreath' docs/index.html
+          grep -q 'vehicleSoftPulse' docs/index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html
+          git diff --cached --check
+          git commit -m "Refine campus map visual hierarchy and motion"
+          git push origin main
