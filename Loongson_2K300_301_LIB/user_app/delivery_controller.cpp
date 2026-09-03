@@ -435,7 +435,11 @@ void DeliveryController::Handle_Goto_Stop(const ServerMessage& m)
     store_.command_version = c.command_version;
     store_.command_hash = hash;
     store_.command_json = m.header.type;   // 简化：版本+哈希已足够恢复一致性校验
-    store_.emergency_latched = false;
+    // 这里不得清 emergency_latched：急停是安全锁存，设计上"EMERGENCY位仅resume可清"。
+    // 原来在接受 goto_stop 时把标志清成 false，却没有同时清 INHIBIT_REASON_EMERGENCY
+    // 禁止位，于是状态自相矛盾——禁止位还压着运动，而 Handle_Resume 检查
+    // !emergency_latched 后判定"nothing to resume"直接拒收。结果是急停之后只要再来
+    // 一条 goto_stop（断线重连后服务器必然重发），这台车就再也 resume 不回来了。
     Store_Save();
 
     // ---- 步骤12：生成accepted=true的ACK（先构造并缓存，用于幂等重放）----
