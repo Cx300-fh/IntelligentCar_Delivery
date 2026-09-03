@@ -313,6 +313,17 @@ void DeliveryController::Handle_State_Sync(const ServerMessage& m)
     snap_ = s;
     synced_ = true;
 
+    // 重启恢复 stop 上下文：等确认期间后端不再下发 goto_stop，cur_trip_/cur_stop_
+    // 无从赋值（重启后为空串，user_action 会被后端 ACTION_STOP_CONFLICT 拒绝）。
+    // 从权威快照恢复上报上下文；不触发任何运动。active_trip.current_stop_id 由
+    // 后端从 frozen_stop_id 映射（无冻结 stop 时为空串则只恢复 trip_id）。
+    if (s.active_trip.present && !s.active_trip.trip_id.empty()) {
+        cur_trip_ = s.active_trip.trip_id;
+        if (!s.active_trip.current_stop_id.empty()) {
+            cur_stop_ = s.active_trip.current_stop_id;
+        }
+    }
+
     // 持久化版本
     store_.server_epoch = s.server_epoch;
     store_.snapshot_version = s.snapshot_version;

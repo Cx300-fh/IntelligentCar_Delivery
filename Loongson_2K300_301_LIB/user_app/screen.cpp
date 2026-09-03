@@ -83,7 +83,36 @@ static bool screen_write_command(const char* cmd)
 static bool screen_write_raw_locked(const uint8_t* data, size_t len)
 {
     std::lock_guard<std::mutex> lock(g_screen_tx_mutex);
-    return screen_uart.uart_write(data, (ssize_t)len, 500) == (ssize_t)len;
+    if (!data || len == 0) return false;
+
+    // ls_uart::uart_write()允许在超时时返回已经发送的字节数。二进制透传
+    // 不能从包头重发，必须从短写位置继续；小块发送也可避免长时间占用驱动。
+    const size_t chunk_limit = 128;
+    const std::chrono::steady_clock::time_point deadline =
+        std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    size_t offset = 0;
+    unsigned short_writes = 0;
+    while (offset < len) {
+        if (std::chrono::steady_clock::now() >= deadline) {
+            printf("[ScreenTTS] UART5续写超时：期望%zu字节，已发送%zu字节\n",
+                   len, offset);
+            return false;
+        }
+        const size_t request = std::min(chunk_limit, len - offset);
+        const ssize_t written = screen_uart.uart_write(
+            data + offset, (ssize_t)request, 1000);
+        if (written <= 0) {
+            printf("[ScreenTTS] UART5写入失败：总计%zu字节，已发送%zu字节，返回%zd\n",
+                   len, offset, written);
+            return false;
+        }
+        offset += (size_t)written;
+        if ((size_t)written < request) ++short_writes;
+    }
+    if (short_writes)
+        printf("[ScreenTTS] UART5短写已自动续传：%u次，总计%zu字节\n",
+               short_writes, len);
+    return true;
 }
 
 static bool screen_write_transfer_command(const std::string& cmd)
@@ -167,6 +196,7 @@ static bool screen_wait_sequence(const uint8_t* expected, size_t expected_len,
                                  uint32_t timeout_ms)
 {
     size_t matched = 0;
+    std::vector<uint8_t> seen;
     std::unique_lock<std::mutex> lock(g_screen_ack_mutex);
     const std::chrono::steady_clock::time_point deadline =
         std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
@@ -178,12 +208,19 @@ static bool screen_wait_sequence(const uint8_t* expected, size_t expected_len,
         }
         uint8_t value = g_screen_ack_bytes.front();
         g_screen_ack_bytes.pop_front();
+        if (seen.size() < 32) seen.push_back(value);
         if (value == expected[matched]) {
             if (++matched == expected_len) return true;
         } else {
             matched = (value == expected[0]) ? 1 : 0;
         }
     }
+    printf("[ScreenTTS] 等待屏幕应答超时，期望:");
+    for (size_t i = 0; i < expected_len; ++i) printf(" %02X", expected[i]);
+    printf("；已收到:");
+    if (seen.empty()) printf(" <无>");
+    for (size_t i = 0; i < seen.size(); ++i) printf(" %02X", seen[i]);
+    printf("\n");
     return false;
 }
 
@@ -233,7 +270,10 @@ bool Screen_Upload_Wav_And_Play(const uint8_t* wav_data, size_t wav_size,
     // 取得独占传输权；若另一个TTS正在上传则立即返回，绝不阻塞控制主循环。
     {
         std::lock_guard<std::mutex> lock(g_screen_tx_mutex);
-        if (g_screen_transfer_active.load()) return false;
+        if (g_screen_transfer_active.load()) {
+            printf("[ScreenTTS] 上传拒绝：已有文件传输正在进行\n");
+            return false;
+        }
         g_screen_transfer_active.store(true);
     }
     screen_rx_state = 0;
@@ -242,27 +282,39 @@ bool Screen_Upload_Wav_And_Play(const uint8_t* wav_data, size_t wav_size,
     screen_ack_clear();
 
     bool ok = false;
+    const char* stage = "准备";
     do {
+        printf("[ScreenTTS] 准备上传 %zu 字节到 %s（控件 %s）\n",
+               wav_size, remote_path, component);
         // HMI定时器据此暂停心跳超时判断。该变量必须在屏幕工程中设为全局。
+        stage = "设置上传标志";
         if (!screen_write_transfer_command("page_sys.v_tts_upload.val=1")) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        stage = "停用音频控件";
         if (!screen_write_transfer_command(std::string(component) + ".en=0")) break;
-        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         screen_ack_clear();
 
         char twfile[128];
         snprintf(twfile, sizeof(twfile), "twfile \"%s\",%zu", remote_path, wav_size);
+        stage = "发送twfile指令";
         if (!screen_write_transfer_command(twfile)) break;
         const uint8_t ready[] = {0xFE, 0xFF, 0xFF, 0xFF};
-        if (!screen_wait_sequence(ready, sizeof(ready), 2000)) {
+        stage = "等待twfile就绪";
+        if (!screen_wait_sequence(ready, sizeof(ready), 3000)) {
             printf("[ScreenTTS] twfile未就绪，请检查RAM文件区和HMI配置\n");
             break;
         }
 
-        const size_t max_payload = 4094;  // dataSize含2字节CRC，X3上限4096
+        stage = "传输WAV数据包";
+        // X3允许dataSize最大4096，但板端轮询UART在大包时会多次短写，
+        // 导致屏幕等待整包超时。510字节音频+2字节CRC可稳定落在512字节内。
+        const size_t max_payload = 510;
         size_t offset = 0;
         uint16_t packet_id = 0;
         while (offset < wav_size) {
             const size_t payload_len = std::min(max_payload, wav_size - offset);
+            const bool last_packet = (offset + payload_len == wav_size);
             const uint16_t data_size = (uint16_t)(payload_len + 2);
             std::vector<uint8_t> packet(12 + payload_len + 2);
             const uint8_t prefix[] = {0x3A, 0xA1, 0xBB, 0x44, 0x7F, 0xFF, 0xFE};
@@ -278,11 +330,19 @@ bool Screen_Upload_Wav_And_Play(const uint8_t* wav_data, size_t wav_size,
             packet[13 + payload_len] = (uint8_t)(crc >> 8);
 
             bool packet_ok = false;
-            for (int retry = 0; retry < 3 && !packet_ok; ++retry) {
+            // 屏幕对中间包回复05；最后一包直接回复FD FF FF FF，不再先发05。
+            // 最后一包若盲目重发会得到04（包序号/传输状态错误），因此只发送一次。
+            const int retry_limit = last_packet ? 1 : 3;
+            for (int retry = 0; retry < retry_limit && !packet_ok; ++retry) {
                 screen_ack_clear();
                 if (!screen_write_raw_locked(&packet[0], packet.size())) continue;
-                const uint8_t ack = 0x05;
-                packet_ok = screen_wait_sequence(&ack, 1, 700);
+                if (last_packet) {
+                    const uint8_t done[] = {0xFD, 0xFF, 0xFF, 0xFF};
+                    packet_ok = screen_wait_sequence(done, sizeof(done), 2000);
+                } else {
+                    const uint8_t ack = 0x05;
+                    packet_ok = screen_wait_sequence(&ack, 1, 700);
+                }
             }
             if (!packet_ok) {
                 printf("[ScreenTTS] 数据包%u传输失败\n", (unsigned)packet_id);
@@ -295,18 +355,28 @@ bool Screen_Upload_Wav_And_Play(const uint8_t* wav_data, size_t wav_size,
         }
         if (offset != wav_size) break;
 
-        const uint8_t done[] = {0xFD, 0xFF, 0xFF, 0xFF};
-        if (!screen_wait_sequence(done, sizeof(done), 1500)) {
-            printf("[ScreenTTS] 未收到文件传输完成应答\n");
-            break;
-        }
-
         // page_sys中的全局外部音频组件：from=1、loop=0、path=ram/tts.wav。
+        stage = "设置音频文件路径";
         if (!screen_write_transfer_command(std::string(component) + ".path=\"" + remote_path + "\"")) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        stage = "设置非循环播放";
         if (!screen_write_transfer_command(std::string(component) + ".loop=0")) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        stage = "设置屏幕音量";
+        if (!screen_write_transfer_command("volume=80")) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        stage = "启用屏幕音频控件";
         if (!screen_write_transfer_command(std::string(component) + ".en=1")) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        // 用户HMI中的开始/暂停按钮分别使用play 0,1,0和play 0,0,0。
+        // wav_tts绑定到默认音频通道0，en=1后显式启动/恢复该通道。
+        stage = "启动音频通道0";
+        if (!screen_write_transfer_command("play 0,1,0")) break;
+        printf("[ScreenTTS] 已发送播放命令：volume=80, play 0,1,0\n");
         ok = true;
     } while (false);
+
+    if (!ok) printf("[ScreenTTS] 上传阶段失败：%s\n", stage);
 
     // 无论成功失败都恢复心跳状态；传输失败时先尝试协议退出包。
     screen_write_transfer_command("page_sys.v_hb_timeout.val=0");
