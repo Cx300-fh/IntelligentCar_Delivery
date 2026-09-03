@@ -1,0 +1,466 @@
+from pathlib import Path
+import re
+
+path = Path("docs/index.html")
+text = path.read_text(encoding="utf-8")
+
+old_nav = '<a href="#source">Open Source</a>'
+new_nav = '<a href="#contact">Contact Us</a>'
+if old_nav not in text:
+    raise SystemExit("Open Source navigation link not found")
+text = text.replace(old_nav, new_nav, 1)
+
+contact_css = r'''
+
+    /* ============================================================
+       Contact Us — team, ownership, and project links
+       ============================================================ */
+    .contact-section {
+      position: relative;
+      isolation: isolate;
+      padding-top: 100px;
+      padding-bottom: 52px;
+      border-top: 1px solid rgba(215,235,223,.10);
+    }
+
+    .contact-section::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      left: 50%;
+      top: 18%;
+      width: min(1040px, 92vw);
+      height: 520px;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse at center, rgba(118,185,0,.085), rgba(35,92,74,.045) 42%, transparent 72%);
+      filter: blur(18px);
+      pointer-events: none;
+    }
+
+    .contact-head {
+      width: min(820px, 100%);
+      margin: 0 auto 38px;
+      text-align: center;
+    }
+
+    .contact-head .eyebrow { margin-bottom: 15px; }
+
+    .contact-head h2 {
+      margin: 0 auto;
+      max-width: 820px;
+    }
+
+    .contact-lead {
+      width: min(680px, 100%);
+      margin: 20px auto 0;
+      color: rgba(214,224,217,.66);
+      font-size: 15px;
+      line-height: 1.75;
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .team-card {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid rgba(215,235,223,.115);
+      border-radius: 18px;
+      background: linear-gradient(145deg, rgba(19,31,26,.82), rgba(7,14,11,.76));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 22px 56px rgba(0,0,0,.18);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transform: translateY(0);
+      transition: transform .34s cubic-bezier(.2,.75,.2,1), border-color .34s ease, box-shadow .34s ease;
+    }
+
+    .team-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background:
+        linear-gradient(120deg, rgba(255,255,255,.045), transparent 24%, transparent 70%, rgba(118,185,0,.045)),
+        radial-gradient(280px circle at 50% 0%, rgba(148,214,51,.09), transparent 64%);
+      opacity: .72;
+      transition: opacity .34s ease;
+    }
+
+    .team-card:hover {
+      transform: translateY(-7px);
+      border-color: rgba(157,218,58,.38);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.045),
+        0 30px 76px rgba(0,0,0,.28),
+        0 0 0 1px rgba(118,185,0,.035),
+        0 0 34px rgba(118,185,0,.075);
+    }
+
+    .team-card:hover::before { opacity: 1; }
+
+    .team-photo {
+      position: relative;
+      margin: 10px 10px 0;
+      aspect-ratio: 4 / 5;
+      overflow: hidden;
+      border: 1px solid rgba(225,238,228,.10);
+      border-radius: 13px;
+      background: #0a120e;
+    }
+
+    .team-photo::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 38%;
+      background: linear-gradient(180deg, transparent, rgba(5,11,8,.66));
+      pointer-events: none;
+    }
+
+    .team-photo img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 50% 32%;
+      filter: saturate(.92) contrast(1.02) brightness(.96);
+      transform: scale(1.002);
+      transition: transform .55s cubic-bezier(.2,.75,.2,1), filter .4s ease;
+    }
+
+    .team-card:hover .team-photo img {
+      transform: scale(1.035);
+      filter: saturate(1) contrast(1.03) brightness(1);
+    }
+
+    .team-card-body {
+      position: relative;
+      z-index: 3;
+      padding: 18px 16px 20px;
+    }
+
+    .team-index {
+      display: block;
+      margin-bottom: 12px;
+      color: rgba(144,207,48,.64);
+      font-family: "Prism", "Arial Narrow", sans-serif;
+      font-size: 9px;
+      letter-spacing: .14em;
+    }
+
+    .team-name {
+      margin: 0 0 11px;
+      min-height: 2.3em;
+      color: rgba(244,248,245,.96);
+      font-size: clamp(18px, 1.55vw, 23px);
+      line-height: 1.05;
+      overflow-wrap: normal;
+      word-break: normal;
+    }
+
+    .team-name.zh-name {
+      font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+      font-weight: 630;
+      letter-spacing: .02em;
+    }
+
+    .team-bio {
+      margin: 0;
+      color: rgba(201,213,205,.63);
+      font-size: 12.5px;
+      line-height: 1.62;
+    }
+
+    .responsibility-panel {
+      position: relative;
+      overflow: hidden;
+      margin-top: 26px;
+      border: 1px solid rgba(215,235,223,.115);
+      border-radius: 18px;
+      background: linear-gradient(145deg, rgba(16,27,22,.76), rgba(7,14,11,.72));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 22px 58px rgba(0,0,0,.16);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .responsibility-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(460px circle at 12% 0%, rgba(118,185,0,.08), transparent 66%),
+        linear-gradient(115deg, rgba(255,255,255,.035), transparent 26%);
+    }
+
+    .responsibility-head {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 24px 25px 21px;
+      border-bottom: 1px solid rgba(215,235,223,.09);
+    }
+
+    .responsibility-kicker {
+      margin: 0 0 7px;
+      color: var(--green);
+      font-family: "Prism", "Arial Narrow", sans-serif;
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .responsibility-head h3 {
+      margin: 0;
+      font-size: clamp(24px, 2.4vw, 34px);
+    }
+
+    .workstream-count {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 11px;
+      border: 1px solid rgba(118,185,0,.30);
+      border-radius: 999px;
+      background: rgba(118,185,0,.075);
+      color: rgba(216,245,183,.80);
+      font-family: "Prism", "Arial Narrow", sans-serif;
+      font-size: 9px;
+      letter-spacing: .10em;
+    }
+
+    .responsibility-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .responsibility-item {
+      min-height: 116px;
+      padding: 19px 18px;
+      border-right: 1px solid rgba(215,235,223,.075);
+      border-bottom: 1px solid rgba(215,235,223,.075);
+      transition: background .28s ease;
+    }
+
+    .responsibility-item:nth-child(5n) { border-right: 0; }
+    .responsibility-item:nth-last-child(-n + 5) { border-bottom: 0; }
+    .responsibility-item:hover { background: rgba(118,185,0,.045); }
+
+    .role-title {
+      display: block;
+      margin-bottom: 11px;
+      color: rgba(152,214,58,.86);
+      font-family: "Prism", "Arial Narrow", sans-serif;
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .role-members {
+      margin: 0;
+      color: rgba(235,241,237,.82);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .contact-links {
+      display: grid;
+      justify-items: center;
+      margin-top: 34px;
+      padding-top: 30px;
+      border-top: 1px solid rgba(215,235,223,.085);
+      text-align: center;
+    }
+
+    .contact-links-kicker {
+      margin: 0 0 8px;
+      color: rgba(189,203,194,.46);
+      font-family: "Prism", "Arial Narrow", sans-serif;
+      font-size: 9px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .contact-links h3 {
+      margin: 0;
+      font-size: clamp(23px, 2.2vw, 31px);
+    }
+
+    .contact-links .hero-actions {
+      justify-content: center;
+      margin-top: 18px;
+    }
+
+    .contact-links .btn {
+      min-width: 132px;
+      border-radius: 6px;
+    }
+
+    @media (max-width: 1040px) {
+      .team-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .responsibility-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .responsibility-item:nth-child(5n),
+      .responsibility-item:nth-last-child(-n + 5) {
+        border-right: 1px solid rgba(215,235,223,.075);
+        border-bottom: 1px solid rgba(215,235,223,.075);
+      }
+      .responsibility-item:nth-child(2n) { border-right: 0; }
+      .responsibility-item:nth-last-child(-n + 2) { border-bottom: 0; }
+    }
+
+    @media (max-width: 700px) {
+      .contact-section { padding-top: 72px; }
+      .team-grid { grid-template-columns: 1fr; }
+      .team-card {
+        display: grid;
+        grid-template-columns: 128px minmax(0, 1fr);
+        align-items: stretch;
+      }
+      .team-photo {
+        height: 100%;
+        min-height: 168px;
+        margin: 8px 0 8px 8px;
+        aspect-ratio: auto;
+      }
+      .team-card-body {
+        align-self: center;
+        padding: 18px;
+      }
+      .team-name { min-height: 0; }
+      .responsibility-head { align-items: flex-start; }
+    }
+
+    @media (max-width: 520px) {
+      .team-card { grid-template-columns: 104px minmax(0, 1fr); }
+      .team-photo { min-height: 156px; }
+      .responsibility-head { display: grid; }
+      .responsibility-grid { grid-template-columns: 1fr; }
+      .responsibility-item,
+      .responsibility-item:nth-child(2n),
+      .responsibility-item:nth-last-child(-n + 2) {
+        min-height: 0;
+        border-right: 0;
+        border-bottom: 1px solid rgba(215,235,223,.075);
+      }
+      .responsibility-item:last-child { border-bottom: 0; }
+      .contact-links .hero-actions { width: min(100%, 330px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .team-card,
+      .team-photo img {
+        transition: none !important;
+        transform: none !important;
+      }
+    }
+'''
+
+style_marker = "\n  </style>\n</head>"
+if style_marker not in text:
+    raise SystemExit("Closing style marker not found")
+text = text.replace(style_marker, contact_css + style_marker, 1)
+
+new_section = r'''    <section id="contact" class="shell open-source contact-section">
+      <div class="contact-head">
+        <p class="eyebrow">Contact Us</p>
+        <h2>Built by five people, connected by one system.</h2>
+        <p class="contact-lead">From motion and control to voice, perception, networking, and interface design, each part of THU Delivery is owned end to end by the team.</p>
+      </div>
+
+      <div class="team-grid" aria-label="THU Delivery team">
+        <article class="team-card">
+          <div class="team-photo"><img src="assets/team/gan-hongwen.png" alt="甘闳文" loading="lazy"></div>
+          <div class="team-card-body">
+            <span class="team-index">01 / MOTION · CONTROL · NET · CAMERA</span>
+            <h3 class="team-name zh-name">甘闳文</h3>
+            <p class="team-bio">I make the car move reliably and keep its networked sensing connected.</p>
+          </div>
+        </article>
+
+        <article class="team-card">
+          <div class="team-photo"><img src="assets/team/zhi-tong.png" alt="Lim Zhitong" loading="lazy"></div>
+          <div class="team-card-body">
+            <span class="team-index">02 / FRAME · WEIGHT · UI</span>
+            <h3 class="team-name">Lim Zhitong</h3>
+            <p class="team-bio">I shape the frame and turn system logic into a clear interface.</p>
+          </div>
+        </article>
+
+        <article class="team-card">
+          <div class="team-photo"><img src="assets/team/li-yuxin.png" alt="李雨欣" loading="lazy"></div>
+          <div class="team-card-body">
+            <span class="team-index">03 / CONTROL · UI · PRESENTATION · NET</span>
+            <h3 class="team-name zh-name">李雨欣</h3>
+            <p class="team-bio">I connect control, networking, UI, and presentation into one coherent system.</p>
+          </div>
+        </article>
+
+        <article class="team-card">
+          <div class="team-photo"><img src="assets/team/su-liyun.png" alt="Saw Liyun" loading="lazy"></div>
+          <div class="team-card-body">
+            <span class="team-index">04 / WEIGHT · UI · OBSTACLE</span>
+            <h3 class="team-name">Saw Liyun</h3>
+            <p class="team-bio">I focus on route weighting, obstacle handling, and interaction details.</p>
+          </div>
+        </article>
+
+        <article class="team-card">
+          <div class="team-photo"><img src="assets/team/pu-renzhi.png" alt="蒲仁智" loading="lazy"></div>
+          <div class="team-card-body">
+            <span class="team-index">05 / VOICE · CAMERA</span>
+            <h3 class="team-name zh-name">蒲仁智</h3>
+            <p class="team-bio">I build voice interaction and camera perception for a more natural delivery experience.</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="responsibility-panel" aria-label="Division of work">
+        <div class="responsibility-head">
+          <div>
+            <p class="responsibility-kicker">Division of Work</p>
+            <h3>Clear ownership across the stack.</h3>
+          </div>
+          <span class="workstream-count">10 WORKSTREAMS</span>
+        </div>
+        <div class="responsibility-grid">
+          <div class="responsibility-item"><span class="role-title">Motion</span><p class="role-members">甘闳文</p></div>
+          <div class="responsibility-item"><span class="role-title">Control</span><p class="role-members">李雨欣 · 甘闳文</p></div>
+          <div class="responsibility-item"><span class="role-title">Voice</span><p class="role-members">蒲仁智</p></div>
+          <div class="responsibility-item"><span class="role-title">Weight</span><p class="role-members">Saw Liyun · Lim Zhitong</p></div>
+          <div class="responsibility-item"><span class="role-title">UI Design</span><p class="role-members">Lim Zhitong · Saw Liyun · 李雨欣</p></div>
+          <div class="responsibility-item"><span class="role-title">Presentation</span><p class="role-members">李雨欣</p></div>
+          <div class="responsibility-item"><span class="role-title">Net</span><p class="role-members">李雨欣 · 甘闳文</p></div>
+          <div class="responsibility-item"><span class="role-title">Camera</span><p class="role-members">蒲仁智 · 甘闳文</p></div>
+          <div class="responsibility-item"><span class="role-title">Frame</span><p class="role-members">Lim Zhitong</p></div>
+          <div class="responsibility-item"><span class="role-title">Obstacle</span><p class="role-members">Saw Liyun</p></div>
+        </div>
+      </div>
+
+      <div class="contact-links">
+        <p class="contact-links-kicker">Open Source</p>
+        <h3>Explore the project.</h3>
+        <div class="hero-actions">
+          <a class="btn primary" href="https://github.com/Cx300-fh/IntelligentCar_Delivery">Source Code</a>
+          <a class="btn" href="https://github.com/Cx300-fh/IntelligentCar_Delivery#readme">README</a>
+        </div>
+      </div>
+    </section>'''
+
+pattern = re.compile(r'    <section id="source" class="shell open-source">.*?    </section>(?=\n  </main>)', re.S)
+text, count = pattern.subn(new_section, text, count=1)
+if count != 1:
+    raise SystemExit(f"Expected one Open Source section, replaced {count}")
+
+path.write_text(text, encoding="utf-8")
