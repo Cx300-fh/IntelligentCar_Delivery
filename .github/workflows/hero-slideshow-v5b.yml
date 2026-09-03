@@ -1,0 +1,28 @@
+name: Hero slideshow v5b
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/hero-slideshow-v5b.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply robust hero slideshow refinement
+        run: python .github/hero_slideshow_v5b.py
+      - name: Commit result and clean temporary tooling
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html
+          git rm -f .github/hero_slideshow_v5.py .github/workflows/hero-slideshow-v5.yml .github/hero_slideshow_v5b.py .github/workflows/hero-slideshow-v5b.yml
+          git commit -m "refine hero with smooth photo slideshow"
+          git push
