@@ -5827,6 +5827,81 @@
     .app-view-system .system-workspace {
       margin-top: 8px;
     }
+
+
+    /* ============================================================
+       System card navigation v1
+       Feature cards are the interaction target; repetitive Demo badges are gone.
+       Dynamic rerouting jumps to the embedded interactive campus-map demo.
+       ============================================================ */
+    .app-view-system .story-feature {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .app-view-system .story-feature .feature-video-trigger,
+    .app-view-system .story-feature .feature-route-trigger {
+      position: absolute !important;
+      inset: 0 !important;
+      z-index: 8 !important;
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      border-radius: inherit !important;
+      background: transparent !important;
+      color: transparent !important;
+      font-size: 0 !important;
+      opacity: 0 !important;
+      cursor: pointer;
+    }
+
+    .app-view-system .story-feature .story-feature-top {
+      justify-content: flex-start;
+    }
+
+    .app-view-system .story-feature::after {
+      content: "↗";
+      position: absolute;
+      right: 17px;
+      top: 15px;
+      z-index: 3;
+      color: rgba(171,196,179,.28);
+      font-family: var(--font-ui, system-ui, sans-serif);
+      font-size: 14px;
+      line-height: 1;
+      transform: translate(0, 0);
+      transition: color .24s ease, transform .24s cubic-bezier(.2,.75,.2,1);
+      pointer-events: none;
+    }
+
+    .app-view-system .story-feature:hover::after,
+    .app-view-system .story-feature:focus-within::after {
+      color: rgba(164,220,75,.82);
+      transform: translate(3px, -3px);
+    }
+
+    .app-view-system .story-feature:focus-within {
+      border-color: rgba(139,201,44,.30) !important;
+      box-shadow: 0 0 0 1px rgba(118,185,0,.06), inset 0 1px 0 rgba(255,255,255,.025);
+    }
+
+    .app-view-system #moveRouteLab {
+      scroll-margin-top: 14px;
+      outline: none;
+      transition: filter .35s ease;
+    }
+
+    .app-view-system #moveRouteLab.is-jump-highlight {
+      animation: routeDemoArrival 1.15s ease both;
+    }
+
+    @keyframes routeDemoArrival {
+      0%   { filter: brightness(1); }
+      28%  { filter: brightness(1.12); }
+      100% { filter: brightness(1); }
+    }
   </style>
 </head>
 <body>
@@ -5954,10 +6029,10 @@
             <div class="story-flow" aria-label="Order flow"><span>Speak or tap</span><i></i><span>Choose pickup</span><i></i><span>Preview route</span><i></i><span>Dispatch</span></div>
           </div>
           <div class="story-feature-grid cols-2">
-            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-voice.mp4" data-title="Voice ordering" data-copy="Show a user speaking a delivery request and the system turning it into a structured task.">Demo ↗</button></div><h4>Voice ordering</h4><p>Let users express intent naturally instead of navigating a dense control interface.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-web.mp4" data-title="Web ordering" data-copy="Show pickup, destination and order creation in the web interface.">Demo ↗</button></div><h4>Web order UI</h4><p>A lightweight browser flow for pickup, destination, order state and control.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-route-preview.mp4" data-title="Route preview" data-copy="Show the campus route preview before the user confirms the mission.">Demo ↗</button></div><h4>Route preview</h4><p>Expose the planned path and estimated delivery time before the mission starts.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-live-status.mp4" data-title="Live status" data-copy="Show the live map, robot position and order state updating while the car is moving.">Demo ↗</button></div><h4>Live feedback</h4><p>Real-time state keeps the user aware of pickup, navigation and handoff progress.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-voice.mp4" data-title="Voice ordering" data-copy="Show a user speaking a delivery request and the system turning it into a structured task." aria-label="Open Voice ordering demo"></button></div><h4>Voice ordering</h4><p>Let users express intent naturally instead of navigating a dense control interface.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-web.mp4" data-title="Web ordering" data-copy="Show pickup, destination and order creation in the web interface." aria-label="Open Web ordering demo"></button></div><h4>Web order UI</h4><p>A lightweight browser flow for pickup, destination, order state and control.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-route-preview.mp4" data-title="Route preview" data-copy="Show the campus route preview before the user confirms the mission." aria-label="Open Route preview demo"></button></div><h4>Route preview</h4><p>Expose the planned path and estimated delivery time before the mission starts.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/order-live-status.mp4" data-title="Live status" data-copy="Show the live map, robot position and order state updating while the car is moving." aria-label="Open Live status demo"></button></div><h4>Live feedback</h4><p>Real-time state keeps the user aware of pickup, navigation and handoff progress.</p></article>
           </div>
         </article>
 
@@ -5969,10 +6044,10 @@
             <div class="story-flow" aria-label="Cargo flow"><span>Open</span><i></i><span>Load</span><i></i><span>Verify</span><i></i><span>Handoff</span></div>
           </div>
           <div class="story-feature-grid cols-2">
-            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-weight.mp4" data-title="Weight sensing" data-copy="Show the load cell responding when an item is placed into or removed from the cargo area.">Demo ↗</button></div><h4>Weight sensing</h4><p>Track cargo changes physically instead of trusting location alone.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-bay.mp4" data-title="Cargo compartment" data-copy="Show how an item is placed into the compartment and kept stable during motion.">Demo ↗</button></div><h4>Cargo bay</h4><p>A dedicated carrying space keeps loading, transport and pickup visually understandable.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-display.mp4" data-title="On-car display" data-copy="Show the display guiding a user through loading or pickup without requiring a phone.">Demo ↗</button></div><h4>On-car display</h4><p>Pickup and drop-off instructions remain visible directly on the vehicle.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-voice.mp4" data-title="Voice prompts" data-copy="Show the car speaking concise pickup and handoff prompts at the correct stage.">Demo ↗</button></div><h4>Voice prompts</h4><p>Audio cues make loading and handoff understandable even when users are not looking at the screen.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-weight.mp4" data-title="Weight sensing" data-copy="Show the load cell responding when an item is placed into or removed from the cargo area." aria-label="Open Weight sensing demo"></button></div><h4>Weight sensing</h4><p>Track cargo changes physically instead of trusting location alone.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-bay.mp4" data-title="Cargo compartment" data-copy="Show how an item is placed into the compartment and kept stable during motion." aria-label="Open Cargo compartment demo"></button></div><h4>Cargo bay</h4><p>A dedicated carrying space keeps loading, transport and pickup visually understandable.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-display.mp4" data-title="On-car display" data-copy="Show the display guiding a user through loading or pickup without requiring a phone." aria-label="Open On-car display demo"></button></div><h4>On-car display</h4><p>Pickup and drop-off instructions remain visible directly on the vehicle.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/cargo-voice.mp4" data-title="Voice prompts" data-copy="Show the car speaking concise pickup and handoff prompts at the correct stage." aria-label="Open Voice prompts demo"></button></div><h4>Voice prompts</h4><p>Audio cues make loading and handoff understandable even when users are not looking at the screen.</p></article>
           </div>
         </article>
 
@@ -5984,20 +6059,20 @@
             <div class="story-flow story-flow-move" aria-label="Motion flow"><span>Perceive</span><i></i><span>Weigh</span><i></i><span>Localize</span><i></i><span>Re-plan</span><i></i><span>Tune</span><i></i><span>Control</span></div>
           </div>
           <div class="story-feature-grid cols-3 move-grid">
-            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-camera.mp4" data-title="Camera perception" data-copy="Show the live camera view and lane or boundary extraction while the car is driving.">Demo ↗</button></div><h4>Camera perception</h4><p>Road boundaries and scene information enter the navigation loop continuously.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-apriltag.mp4" data-title="AprilTag localization" data-copy="Show the car recognizing a campus node and updating its current position.">Demo ↗</button></div><h4>AprilTag localization</h4><p>Physical tags anchor the vehicle to real campus graph nodes.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-weight.mp4" data-title="Payload measurement" data-copy="Show different payloads on the load cell and the measured weight changing.">Demo ↗</button></div><h4>Payload measurement</h4><p>The vehicle knows when its mass condition changes instead of assuming an empty-car model.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-weight-turn.mp4" data-title="Weight-adaptive turning" data-copy="Compare the same corner under different loads and show the controller selecting different turning parameters.">Demo ↗</button></div><h4>Weight-adaptive turns</h4><p>Different payload ranges select different turning parameters so cornering remains stable.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>05</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-obstacle.mp4" data-title="Obstacle detection" data-copy="Show a red obstacle entering the camera view and being detected as a blocked road condition.">Demo ↗</button></div><h4>Obstacle detection</h4><p>Visual obstacles become road-level information rather than a purely local reaction.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>06</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-reroute.mp4" data-title="Dynamic rerouting" data-copy="Show the original path becoming blocked and the route changing from the current node.">Demo ↗</button></div><h4>Dynamic rerouting</h4><p>Blocked edges and changing route costs trigger a new path from the current position.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>07</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-navigation.mp4" data-title="Navigation FSM" data-copy="Show the car moving through FOLLOW, TURN, STRAIGHT and ARRIVED navigation states.">Demo ↗</button></div><h4>Navigation FSM</h4><p>Route decisions become explicit follow, turn, straight, U-turn and stop actions.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>08</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-control.mp4" data-title="5 ms motion control" data-copy="Show steering and motor control responding in real time while the car follows the path.">Demo ↗</button></div><h4>5 ms control loop</h4><p>Steering, speed feedback and safety gating execute below the navigation layer.</p></article>
-            <article class="story-feature story-feature-shell"><div class="story-feature-top"><span>09</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-shell.mp4" data-title="Frame and shell" data-copy="Show the final shell, internal frame, cargo placement and protected electronics in a slow product walkaround.">Demo ↗</button></div><h4>Frame & shell</h4><p>The enclosure protects electronics, stabilizes the cargo layout and turns the prototype into a usable product.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-camera.mp4" data-title="Camera perception" data-copy="Show the live camera view and lane or boundary extraction while the car is driving." aria-label="Open Camera perception demo"></button></div><h4>Camera perception</h4><p>Road boundaries and scene information enter the navigation loop continuously.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-apriltag.mp4" data-title="AprilTag localization" data-copy="Show the car recognizing a campus node and updating its current position." aria-label="Open AprilTag localization demo"></button></div><h4>AprilTag localization</h4><p>Physical tags anchor the vehicle to real campus graph nodes.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-weight.mp4" data-title="Payload measurement" data-copy="Show different payloads on the load cell and the measured weight changing." aria-label="Open Payload measurement demo"></button></div><h4>Payload measurement</h4><p>The vehicle knows when its mass condition changes instead of assuming an empty-car model.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-weight-turn.mp4" data-title="Weight-adaptive turning" data-copy="Compare the same corner under different loads and show the controller selecting different turning parameters." aria-label="Open Weight-adaptive turning demo"></button></div><h4>Weight-adaptive turns</h4><p>Different payload ranges select different turning parameters so cornering remains stable.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>05</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-obstacle.mp4" data-title="Obstacle detection" data-copy="Show a red obstacle entering the camera view and being detected as a blocked road condition." aria-label="Open Obstacle detection demo"></button></div><h4>Obstacle detection</h4><p>Visual obstacles become road-level information rather than a purely local reaction.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>06</span><button class="feature-route-trigger" type="button" data-target="moveRouteLab" aria-label="Open interactive dynamic routing demo"></button></div><h4>Dynamic rerouting</h4><p>Blocked edges and changing route costs trigger a new path from the current position.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>07</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-navigation.mp4" data-title="Navigation FSM" data-copy="Show the car moving through FOLLOW, TURN, STRAIGHT and ARRIVED navigation states." aria-label="Open Navigation FSM demo"></button></div><h4>Navigation FSM</h4><p>Route decisions become explicit follow, turn, straight, U-turn and stop actions.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>08</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-control.mp4" data-title="5 ms motion control" data-copy="Show steering and motor control responding in real time while the car follows the path." aria-label="Open 5 ms motion control demo"></button></div><h4>5 ms control loop</h4><p>Steering, speed feedback and safety gating execute below the navigation layer.</p></article>
+            <article class="story-feature story-feature-shell"><div class="story-feature-top"><span>09</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/move-shell.mp4" data-title="Frame and shell" data-copy="Show the final shell, internal frame, cargo placement and protected electronics in a slow product walkaround." aria-label="Open Frame and shell demo"></button></div><h4>Frame & shell</h4><p>The enclosure protects electronics, stabilizes the cargo layout and turns the prototype into a usable product.</p></article>
           </div>
 
 
-          <div class="move-route-lab">
-            <span class="story-label">Dynamic routing algorithm</span>
+          <div class="move-route-lab" id="moveRouteLab" tabindex="-1">
+            <span class="story-label">Interactive demo / Dynamic routing</span>
 <div class="section-head">
         <h2>The campus is not static.</h2>
 
@@ -6067,10 +6142,10 @@
             <div class="story-flow" aria-label="Scale flow"><span>Orders</span><i></i><span>Schedule</span><i></i><span>Plan</span><i></i><span>Dispatch</span></div>
           </div>
           <div class="story-feature-grid cols-2">
-            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/scale-scheduler.mp4" data-title="Dispatch scheduler" data-copy="Show multiple pending orders becoming a single ordered sequence of stops.">Demo ↗</button></div><h4>Dispatch scheduler</h4><p>Turns several user requests into one executable delivery plan.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/scale-insertion.mp4" data-title="Capacity-aware insertion" data-copy="Show a new pickup and drop-off being inserted only when capacity and detour remain feasible.">Demo ↗</button></div><h4>Capacity-aware insertion</h4><p>New pickups and drop-offs are inserted only when load and detour constraints remain feasible.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/scale-route-planner.mp4" data-title="Weighted route planning" data-copy="Show base distance, penalties and blocked edges changing the selected campus route.">Demo ↗</button></div><h4>Weighted route planning</h4><p>Base distance, manual penalties, dynamic conditions and blocked edges shape route cost.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/scale-gateway.mp4" data-title="PC-to-car gateway" data-copy="Show the backend issuing a goto_stop command and receiving live vehicle events.">Demo ↗</button></div><h4>PC ↔ car gateway</h4><p>Persistent commands and live vehicle events keep dispatch tied to physical execution.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/scale-scheduler.mp4" data-title="Dispatch scheduler" data-copy="Show multiple pending orders becoming a single ordered sequence of stops." aria-label="Open Dispatch scheduler demo"></button></div><h4>Dispatch scheduler</h4><p>Turns several user requests into one executable delivery plan.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/scale-insertion.mp4" data-title="Capacity-aware insertion" data-copy="Show a new pickup and drop-off being inserted only when capacity and detour remain feasible." aria-label="Open Capacity-aware insertion demo"></button></div><h4>Capacity-aware insertion</h4><p>New pickups and drop-offs are inserted only when load and detour constraints remain feasible.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/scale-route-planner.mp4" data-title="Weighted route planning" data-copy="Show base distance, penalties and blocked edges changing the selected campus route." aria-label="Open Weighted route planning demo"></button></div><h4>Weighted route planning</h4><p>Base distance, manual penalties, dynamic conditions and blocked edges shape route cost.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/scale-gateway.mp4" data-title="PC-to-car gateway" data-copy="Show the backend issuing a goto_stop command and receiving live vehicle events." aria-label="Open PC-to-car gateway demo"></button></div><h4>PC ↔ car gateway</h4><p>Persistent commands and live vehicle events keep dispatch tied to physical execution.</p></article>
           </div>
         </article>
 
@@ -6082,10 +6157,10 @@
             <div class="story-flow" aria-label="Trust flow"><span>Detect</span><i></i><span>Inhibit</span><i></i><span>Stop</span><i></i><span>Sync</span><i></i><span>Resume</span></div>
           </div>
           <div class="story-feature-grid cols-2">
-            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/trust-link-loss.mp4" data-title="Link-loss safe stop" data-copy="Show network disconnection causing the vehicle to stop and remain inhibited until recovery.">Demo ↗</button></div><h4>Link-loss safe stop</h4><p>A broken connection becomes a motion inhibit, not a silent control failure.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/trust-watchdog.mp4" data-title="Control watchdog" data-copy="Show stale command detection forcing a safe stopped state at the low-level controller.">Demo ↗</button></div><h4>Control watchdog</h4><p>The low-level loop refuses stale or unsafe motion even if higher layers misbehave.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/trust-sync.mp4" data-title="State synchronization" data-copy="Show the car reconnecting, synchronizing state and recovering the current delivery context.">Demo ↗</button></div><h4>State synchronization</h4><p>Reconnect and restart flows recover mission state before motion is allowed again.</p></article>
-            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/trust-emergency.mp4" data-title="Emergency stop" data-copy="Show an emergency stop immediately removing motion permission and bringing PWM to a safe state.">Demo ↗</button></div><h4>Emergency stop</h4><p>Safety commands bypass the normal user journey and lead directly to a controlled stop.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/trust-link-loss.mp4" data-title="Link-loss safe stop" data-copy="Show network disconnection causing the vehicle to stop and remain inhibited until recovery." aria-label="Open Link-loss safe stop demo"></button></div><h4>Link-loss safe stop</h4><p>A broken connection becomes a motion inhibit, not a silent control failure.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/trust-watchdog.mp4" data-title="Control watchdog" data-copy="Show stale command detection forcing a safe stopped state at the low-level controller." aria-label="Open Control watchdog demo"></button></div><h4>Control watchdog</h4><p>The low-level loop refuses stale or unsafe motion even if higher layers misbehave.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/trust-sync.mp4" data-title="State synchronization" data-copy="Show the car reconnecting, synchronizing state and recovering the current delivery context." aria-label="Open State synchronization demo"></button></div><h4>State synchronization</h4><p>Reconnect and restart flows recover mission state before motion is allowed again.</p></article>
+            <article class="story-feature"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/system/trust-emergency.mp4" data-title="Emergency stop" data-copy="Show an emergency stop immediately removing motion permission and bringing PWM to a safe state." aria-label="Open Emergency stop demo"></button></div><h4>Emergency stop</h4><p>Safety commands bypass the normal user journey and lead directly to a controlled stop.</p></article>
           </div>
         </article>
 
@@ -7863,6 +7938,36 @@
     })();
 
   </script>
+
+
+<script>
+(() => {
+  const systemScroll = document.getElementById('systemStoryScroll');
+  const routeTriggers = [...document.querySelectorAll('.feature-route-trigger[data-target]')];
+  if (!systemScroll || !routeTriggers.length) return;
+
+  const jumpToTarget = (trigger) => {
+    const target = document.getElementById(trigger.dataset.target || '');
+    if (!target) return;
+    const top = target.getBoundingClientRect().top
+      - systemScroll.getBoundingClientRect().top
+      + systemScroll.scrollTop
+      - 10;
+    systemScroll.scrollTo({ top, behavior: 'smooth' });
+    window.setTimeout(() => {
+      target.focus({ preventScroll: true });
+      target.classList.remove('is-jump-highlight');
+      void target.offsetWidth;
+      target.classList.add('is-jump-highlight');
+      window.setTimeout(() => target.classList.remove('is-jump-highlight'), 1200);
+    }, 360);
+  };
+
+  routeTriggers.forEach((trigger) => {
+    trigger.addEventListener('click', () => jumpToTarget(trigger));
+  });
+})();
+</script>
 
 </body>
 </html>
