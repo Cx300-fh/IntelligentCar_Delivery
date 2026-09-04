@@ -438,6 +438,26 @@ void DeliveryController::Handle_Goto_Stop(const ServerMessage& m)
     }
 
     // ---- 步骤10：先持久化（接受前落盘）----
+    // 通知语音模块本次停靠类型，到站时决定播PUT（请放入）还是END（请取走）。
+    // 真后端goto_stop不带stop_type字段，从operations[0].action推断。
+    // 注意顺序：Notify会清除抑制标志，同stop补发的Suppress必须放在Notify之后。
+    {
+        int st = c.stop_type;
+        if (st == STOP_TYPE_UNKNOWN && !c.operations.empty()) {
+            st = (c.operations[0].action == "PICKUP") ? STOP_TYPE_PICKUP
+                                                      : STOP_TYPE_DROPOFF;
+        }
+        Voice_Notify_Stop_Type(st);
+    }
+    // 同一stop的goto_stop补发（后端resend误判时会抬版本重发）：这个stop已到站
+    // 播报过——pending_arrival_（到站锁存已消费，含未停稳窗口）或arrival_reported_
+    // （已上报arrived），两者均为内存态，重启即失，不会误伤重启恢复场景。
+    // 抑制下一次到站播报，否则"目标即当前位置直接到站"会把地名+PUT/END再播一遍。
+    if (c.trip_id == cur_trip_ && c.stop_id == cur_stop_ &&
+        (arrival_reported_ || pending_arrival_)) {
+        Voice_Suppress_Next_Arrival();
+        printf("[DLV] goto_stop为同stop补发，抑制重复到站播报\n");
+    }
     cur_trip_ = c.trip_id;
     cur_stop_ = c.stop_id;
     cur_cmd_ver_ = c.command_version;

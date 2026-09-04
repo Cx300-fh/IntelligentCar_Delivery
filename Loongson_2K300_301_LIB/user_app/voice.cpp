@@ -162,6 +162,61 @@ void Voice_Play_Arrived(void)
     printf("[Voice] TX: END (arrived)\n");
 }
 
+/**
+ * @brief   到达取件点：发送PUT（裸字符串，不带换行）
+ * @note    ASRPRO收到后播“请放入物品”；天问Block侧需加“接收字符串等于PUT”分支
+ */
+void Voice_Play_Pickup(void)
+{
+    Voice_Send_String("PUT");
+    printf("[Voice] TX: PUT (pickup)\n");
+}
+
+/*============================================================================
+ *                          配送停靠类型（供导航查询）
+ *============================================================================*/
+static int s_voice_stop_type = VOICE_STOP_UNKNOWN;
+static bool s_voice_suppress_arrival = false;
+
+/**
+ * @brief   配送协调器在goto_stop接受时通知本次停靠类型
+ */
+void Voice_Notify_Stop_Type(int type)
+{
+    if (type != VOICE_STOP_PICKUP && type != VOICE_STOP_DROPOFF) {
+        type = VOICE_STOP_UNKNOWN;
+    }
+    s_voice_stop_type = type;
+    s_voice_suppress_arrival = false;   // 新stop正常播报
+}
+
+/**
+ * @brief   导航到站时查询本次停靠类型，决定播PUT（放入）还是END（取走）
+ */
+int Voice_Get_Stop_Type(void)
+{
+    return s_voice_stop_type;
+}
+
+/**
+ * @brief   抑制下一次到站播报：同一stop的goto_stop补发（后端resend）场景，
+ *          车端已到站播报过，直接到站流程不应再播一遍
+ */
+void Voice_Suppress_Next_Arrival(void)
+{
+    s_voice_suppress_arrival = true;
+}
+
+/**
+ * @brief   查询并清除抑制标志（一次性消费）
+ */
+bool Voice_Consume_Suppress_Flag(void)
+{
+    bool s = s_voice_suppress_arrival;
+    s_voice_suppress_arrival = false;
+    return s;
+}
+
 /*============================================================================
  *                第6部分：给语音模块发送指令
  *============================================================================*/
@@ -184,10 +239,27 @@ void Voice_Play_ID(uint16_t id)
 /**
  * @brief   语音模块接收回调函数
  * @param   data 接收到的单字节数据
- * @note    ASRPRO 输出格式: 命令字符串 + "\r\n"
+ * @note    ASRPRO 输出格式: 命令字符串 + "\r\n"；语音确认为裸单字节
  */
 static void voice_rx_callback(const uint8_t data)
 {
+    // ASRPRO语音确认（单字节，无换行）：0x01=物品已装好 0x02=物品已取走。
+    // 与屏幕确认按钮完全等价：这里只入队，主线程配送协调器统一校验订单
+    // 状态后生成user_action；订单状态不符则忽略，后端另有幂等，双通道
+    // 不冲突不覆盖（先到者生效，后到者被状态机拒绝）。
+    if (data == 0x01)
+    {
+        printf("[Voice] RX: 0x01（语音装载确认，入队）\n");
+        Screen_Push_Event(SCREEN_EV_LOAD_CONFIRMED);
+        return;
+    }
+    if (data == 0x02)
+    {
+        printf("[Voice] RX: 0x02（语音取件确认，入队）\n");
+        Screen_Push_Event(SCREEN_EV_UNLOAD_CONFIRMED);
+        return;
+    }
+
     if (data == '\n' || data == '\r')
     {
         if (voice_rx_idx > 0)

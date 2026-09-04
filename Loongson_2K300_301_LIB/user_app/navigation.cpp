@@ -260,7 +260,10 @@ bool NavigationFSM::start_task(int map_id, int target_id) {
     
     // TODO: 语音播报 - 任务开始
     // Voice_Broadcast_Start();
-    
+
+    // 本地模式无stop类型，清除配送残留，保证到站播END（请取走）
+    Voice_Notify_Stop_Type(VOICE_STOP_UNKNOWN);
+
     return true;
 }
 
@@ -854,16 +857,27 @@ void NavigationFSM::handle_arrived(void) {
         status.target_arrived = true;   // 到站锁存：一次到站只消费一次
     }
 
-    // 播报到达终点语音（仅播报一次）
+    // 播报到站语音（仅播报一次）：配送取件点播PUT（请放入），终点/本地模式播END（请取走）；
+    // 同stop补发goto_stop时抑制（voice标志一次性消费），arrived事件照发不影响后端状态机
     if (!status.arrived_announced) {
-        Voice_Play_Current_Node(task.map_id, task.target_id);
-        usleep(200 * 1000);  // 等待ASRPRO超时断帧，避免地名与END粘连成一帧
-        Voice_Play_Arrived();  // 发送END终点指令
+        if (Voice_Consume_Suppress_Flag()) {
+            printf("[Nav] 到达：%s（同stop补发，不重复播报）\n",
+                   dijkstra->get_node_name(task.target_id));
+        } else {
+            Voice_Play_Current_Node(task.map_id, task.target_id);
+            usleep(200 * 1000);  // 等待ASRPRO超时断帧，避免地名与PUT/END粘连成一帧
+            if (Voice_Get_Stop_Type() == VOICE_STOP_PICKUP) {
+                Voice_Play_Pickup();  // 发送PUT取件指令
+            } else {
+                Voice_Play_Arrived();  // 发送END终点指令
+            }
+            printf("[Nav] 到达：%s（%s，已播报，到站锁存已置位）\n",
+                   dijkstra->get_node_name(task.target_id),
+                   Voice_Get_Stop_Type() == VOICE_STOP_PICKUP ? "取件点PUT" : "终点END");
+        }
         status.arrived_announced = true;
-        printf("[Nav] 到达终点：%s（已播报，到站锁存已置位）\n",
-               dijkstra->get_node_name(task.target_id));
     } else {
-        printf("[Nav] 到达终点：%s\n", dijkstra->get_node_name(task.target_id));
+        printf("[Nav] 到达：%s\n", dijkstra->get_node_name(task.target_id));
     }
 }
 
