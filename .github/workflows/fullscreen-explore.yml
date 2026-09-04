@@ -1,0 +1,33 @@
+name: Fullscreen Explore
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/fullscreen_explore.py'
+      - '.github/workflows/fullscreen-explore.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply fullscreen Explore patch
+        run: python .github/scripts/fullscreen_explore.py
+      - name: Validate
+        run: |
+          grep -q 'EXPLORE FULL VIEWPORT CHAPTERS v1' docs/explore.html
+          grep -q 'scroll-snap-type: y proximity' docs/explore.html
+          grep -q 'height: 100svh' docs/explore.html
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/explore.html
+          git commit -m 'Make Explore chapters fill the viewport'
+          git push
