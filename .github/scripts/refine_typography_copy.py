@@ -52,7 +52,6 @@ css = r'''
       --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    /* Preserve primary display headings exactly in the existing brand face. */
     h1,
     h2,
     h3,
@@ -64,7 +63,6 @@ css = r'''
       font-style: normal;
     }
 
-    /* Editorial layer: secondary module names and human/context copy. */
     .story-feature h4,
     .system-architecture-v2 h4,
     .role-title,
@@ -86,7 +84,6 @@ css = r'''
       letter-spacing: .005em;
     }
 
-    /* Operational text stays neutral and highly legible. */
     .app-nav,
     .btn,
     .story-tab,
@@ -101,8 +98,6 @@ css = r'''
       font-family: var(--font-ui) !important;
     }
 
-    /* Reduce the blanket all-caps effect. Uppercase remains only for tiny
-       technical micro-labels such as story-label / system-arch-kicker. */
     .eyebrow,
     .demo-video-kicker,
     .role-title,
@@ -127,7 +122,6 @@ css = r'''
       line-height: 1.08;
     }
 
-    /* System header: one open hierarchy after removing the explanatory lead. */
     .app-view-system .system-view-frame > .system-story-head {
       grid-template-columns: minmax(0, 1fr) !important;
       align-items: end;
@@ -159,4 +153,5 @@ css = r'''
 '''
 
 text = text.replace(marker, css + marker, 1)
+text = '\n'.join(line.rstrip() for line in text.splitlines()) + '\n'
 path.write_text(text, encoding='utf-8')
