@@ -29,7 +29,7 @@ jobs:
           for name in turnaround obstacle weight; do
             ffmpeg -y \
               -i "docs/assets/media/${name}.mov" \
-              -map 0:v:0 -map '0:a?' \
+              -map 0:v:0 -map '0:a:0?' \
               -c:v libx264 -preset medium -crf 24 -pix_fmt yuv420p \
               -c:a aac -b:a 128k \
               -movflags +faststart \
