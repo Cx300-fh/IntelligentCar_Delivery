@@ -6549,7 +6549,7 @@
       <div class="system-view-frame shell">
 <div class="system-story-head">
         <p class="eyebrow">Designed for the real world</p>
-        <h2>System: From Problem To Answer</h2>
+        <h2>From Problem To Answer</h2>
 
       </div>
 
@@ -9123,20 +9123,25 @@ void Control_Safe_Shutdown(void)
   const nav = document.querySelector('.app-view-system .system-story-nav');
   if (!scroll || !nav) return;
 
+  const pageHead = document.querySelector('.app-view-system .system-story-head');
+  if (pageHead && pageHead.parentElement !== scroll) {
+    scroll.insertBefore(pageHead, scroll.firstChild);
+  }
+
   // Preserve the existing interactive route lab, then move it into the integrated System section.
   const routeLab = document.getElementById('moveRouteLab');
 
   nav.innerHTML = `
-    <button class="story-tab four-tab is-active" type="button" data-four="order"><span>01</span>Order</button>
-    <button class="story-tab four-tab" type="button" data-four="system"><span>02</span>System</button>
-    <button class="story-tab four-tab" type="button" data-four="safety"><span>03</span>Safety</button>
-    <button class="story-tab four-tab" type="button" data-four="future"><span>04</span>Future Work</button>`;
+    <button class="story-tab four-tab is-active" type="button" data-four="order"><span>01</span>Mission: Impossible</button>
+    <button class="story-tab four-tab" type="button" data-four="system"><span>02</span>Fast &amp; Furious</button>
+    <button class="story-tab four-tab" type="button" data-four="safety"><span>03</span>No Time to Die</button>
+    <button class="story-tab four-tab" type="button" data-four="future"><span>04</span>Brand New Car</button>`;
 
   const stage = document.createElement('div');
   stage.className = 'system-four-stage';
   stage.innerHTML = `
     <section class="four-section" id="fourOrder" data-four-panel="order">
-      <div class="four-section-head"><div><span class="four-kicker">01 / Order</span><h3>From request to a dispatchable mission.</h3></div><p>Keep interaction concrete: one real UI, one voice gateway, one route decision and one persistent order lifecycle.</p></div>
+      <div class="four-section-head"><div><span class="four-kicker">01 / Order</span><h3>Mission: Impossible</h3></div><p>Keep interaction concrete: one real UI, one voice gateway, one route decision and one persistent order lifecycle.</p></div>
       <div class="order-layout">
         <div class="order-video-card">
           <video src="assets/media/web_order_ui.mp4" muted autoplay loop playsinline preload="metadata"></video>
@@ -9151,7 +9156,7 @@ void Control_Safe_Shutdown(void)
     </section>
 
     <section class="four-section" id="fourSystem" data-four-panel="system">
-      <div class="four-section-head"><div><span class="four-kicker">02 / System</span><h3>One robot, coordinated from sensing to dispatch.</h3></div><p>This is the only blueprint view: the physical car stays centered while the modules around it reveal real videos, source code and the interactive route graph.</p></div>
+      <div class="four-section-head"><div><span class="four-kicker">02 / System</span><h3>Fast &amp; Furious</h3></div><p>This is the only blueprint view: the physical car stays centered while the modules around it reveal real videos, source code and the interactive route graph.</p></div>
       <div class="system-blueprint">
         <div class="system-blueprint-side">
           <button class="system-node is-action" type="button" data-proxy-code="perception"><span class="node-type">Perception</span><strong>Camera + AprilTag</strong><small>Physical-node localization</small></button>
@@ -9174,7 +9179,7 @@ void Control_Safe_Shutdown(void)
     </section>
 
     <section class="four-section" id="fourSafety" data-four-panel="safety">
-      <div class="four-section-head"><div><span class="four-kicker">03 / Safety</span><h3>A safe stop is a designed system state.</h3></div><p>Safety is shown as a state transition rather than another robot diagram: detect a fault, inhibit motion, stop predictably, then synchronize before resuming.</p></div>
+      <div class="four-section-head"><div><span class="four-kicker">03 / Safety</span><h3>No Time to Die</h3></div><p>Safety is shown as a state transition rather than another robot diagram: detect a fault, inhibit motion, stop predictably, then synchronize before resuming.</p></div>
       <div class="safety-flow">
         <div class="safety-step"><span>01</span><strong>Detect</strong><p>Link loss, stale command, obstacle or manual emergency intervention.</p></div>
         <div class="safety-step"><span>02</span><strong>Inhibit</strong><p>Motion permission is removed before another command can propagate.</p></div>
@@ -9189,7 +9194,7 @@ void Control_Safe_Shutdown(void)
     </section>
 
     <section class="four-section" id="fourFuture" data-four-panel="future">
-      <div class="four-section-head"><div><span class="four-kicker">04 / Future Work</span><h3>Beyond delivery: new ways to control and scale the robot.</h3></div><p>Future work stays concrete by connecting to prototypes we can actually demonstrate next, rather than listing generic AI ambitions.</p></div>
+      <div class="four-section-head"><div><span class="four-kicker">04 / Future Work</span><h3>Brand New Car</h3></div><p>Future work stays concrete by connecting to prototypes we can actually demonstrate next, rather than listing generic AI ambitions.</p></div>
       <div class="future-grid">
         <article class="future-main">
           <span class="future-status">Video incoming</span>
@@ -9267,6 +9272,46 @@ void Control_Safe_Shutdown(void)
   updateActive();
 })();
 </script>
+
+<style id="system-cinema-title-pass">
+  .app-view-system .system-workspace {
+    grid-template-columns: 158px minmax(0, 1fr);
+  }
+  .app-view-system .system-story-head {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    margin: 0 0 30px !important;
+    padding: 0 0 18px !important;
+  }
+  .app-view-system .system-story-head h2 {
+    max-width: none !important;
+    width: max-content;
+    white-space: nowrap;
+    font-size: clamp(38px, 4.25vw, 62px) !important;
+    line-height: .94 !important;
+  }
+  .app-view-system .story-tab.four-tab {
+    min-height: 70px;
+    padding-right: 8px;
+    font-size: 11px;
+    line-height: 1.15;
+  }
+  .app-view-system .story-tab.four-tab span {
+    margin-bottom: 4px;
+  }
+  @media (max-width: 980px) {
+    .app-view-system .system-workspace { grid-template-columns: 142px minmax(0,1fr); }
+    .app-view-system .system-story-head h2 { font-size: clamp(32px, 5.2vw, 50px) !important; }
+  }
+  @media (max-width: 840px) {
+    .app-view-system .system-story-head h2 {
+      width: auto;
+      white-space: normal;
+      text-wrap: balance;
+    }
+  }
+</style>
 <!-- SYSTEM FOUR MODULES v2 END -->
 
 </body>
