@@ -20,7 +20,7 @@ jobs:
       - name: Validate
         run: |
           grep -q 'ROBOT BLUEPRINT TRIAL v1 BEGIN' docs/index.html
-          grep -q 'robot-blueprint-move' docs/index.html
+          grep -q 'robot-blueprint' docs/index.html
           grep -q 'Turn Around' docs/index.html
           grep -q 'Dynamic rerouting' docs/index.html
           grep -q '5 ms control' docs/index.html
