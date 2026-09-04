@@ -4809,6 +4809,7 @@
       display: none;
       height: calc(100svh - 64px);
       min-height: 0;
+      padding: 0;
       overflow: hidden;
     }
 
@@ -5188,6 +5189,13 @@
     @media (prefers-reduced-motion: reduce) {
       .app-view-overview::before { opacity: 1; animation: none !important; transform: none !important; }
       .app-view-overview::after { opacity: 0; animation: none !important; transform: none !important; }
+    }
+
+    /* Top-level app views are layout shells, not content sections.
+       Reset legacy global section spacing at the shell boundary. */
+    main.app-shell-main > section.app-view {
+      padding: 0 !important;
+      margin: 0 !important;
     }
 
     /* Four-view viewport fill v3
