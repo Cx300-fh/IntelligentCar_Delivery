@@ -1,0 +1,37 @@
+name: Patch System media and code cards
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-system-media-code.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply System redesign
+        run: python .github/scripts/patch_system_media_code.py
+
+      - name: Validate
+        run: |
+          grep -q 'assets/media/web_order_ui.mp4' docs/index.html
+          grep -q 'assets/media/turnaround.mov' docs/index.html
+          grep -q 'id="featureCodeModal"' docs/index.html
+          grep -q 'data-code-key="routePlanner"' docs/index.html
+          grep -q '<h4>Turn Around</h4>' docs/index.html
+          git diff --check
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html
+          git commit -m "Deploy System videos and source code cards"
+          git push origin main
