@@ -5158,11 +5158,26 @@
       background: linear-gradient(180deg, transparent, rgba(7,16,13,.34)) !important;
     }
 
-    .app-view-overview .hero-grid,
-    .app-view-overview .hero-scroll-hint,
-    .app-view-overview .hero-morph-shape {
+    .app-view-overview .hero-grid {
       position: relative;
       z-index: 3;
+    }
+
+    .app-view-overview .hero-scroll-hint {
+      position: absolute !important;
+      left: 50%;
+      bottom: 18px;
+      z-index: 4;
+      transform: translateX(-50%);
+    }
+
+    .app-view-overview .hero-morph-shape {
+      position: absolute !important;
+      z-index: 1;
+    }
+
+    .app-view-overview .hero::after {
+      display: none !important;
     }
 
     @media (max-width: 860px) {
