@@ -6188,6 +6188,263 @@
       }
     }
 
+
+
+    /* ============================================================
+       System visual storytelling + density v3
+       ============================================================ */
+    @media (min-width: 901px) {
+      .app-view-system .system-story-scroll > .story-panel {
+        min-height: clamp(500px, 61vh, 610px) !important;
+        padding: 8px 0 30px !important;
+        align-items: stretch !important;
+      }
+
+      .app-view-system .story-problem {
+        min-height: 100% !important;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding: 24px 26px 20px !important;
+      }
+
+      .app-view-system .story-feature-grid {
+        height: 100%;
+        align-self: stretch;
+        grid-auto-rows: 1fr;
+        align-content: stretch !important;
+      }
+
+      .app-view-system .story-feature {
+        height: 100%;
+        min-height: 0 !important;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 14px 15px 0 !important;
+      }
+
+      .app-view-system .move-grid .story-feature {
+        min-height: 0 !important;
+      }
+    }
+
+    .feature-visual {
+      position: relative;
+      isolation: isolate;
+      flex: 1 1 auto;
+      min-height: 92px;
+      margin: 16px -15px 0;
+      overflow: hidden;
+      border-top: 1px solid rgba(219,232,223,.07);
+      background:
+        linear-gradient(rgba(118,185,0,.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(118,185,0,.026) 1px, transparent 1px),
+        radial-gradient(circle at 72% 42%, rgba(118,185,0,.09), transparent 46%),
+        rgba(4,10,7,.24);
+      background-size: 18px 18px, 18px 18px, auto, auto;
+    }
+
+    .feature-visual b {
+      position: absolute;
+      left: 14px;
+      bottom: 10px;
+      color: rgba(185,202,190,.38);
+      font: 600 8px/1 Inter, ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .16em;
+    }
+
+    .is-video .feature-visual b::after { content: "REAL VIDEO"; }
+    .is-code .feature-visual b::after { content: "SOURCE CODE"; }
+    .is-map .feature-visual b::after { content: "INTERACTIVE MAP"; }
+    .is-static .feature-visual b::after { content: "HARDWARE"; }
+
+    /* Video: viewfinder + play mark + timing bars. */
+    .is-video .feature-visual::before {
+      content: "";
+      position: absolute;
+      width: 58px;
+      height: 40px;
+      right: 20px;
+      top: 18px;
+      border: 1px solid rgba(171,219,91,.34);
+      border-radius: 7px;
+      box-shadow: 0 0 24px rgba(118,185,0,.06);
+    }
+
+    .is-video .feature-visual::after {
+      content: "▶" !important;
+      position: absolute !important;
+      right: 42px !important;
+      top: 30px !important;
+      width: auto !important;
+      height: auto !important;
+      color: rgba(157,216,64,.88) !important;
+      background: none !important;
+      border: 0 !important;
+      font-size: 13px !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    .is-video .feature-visual span {
+      position: absolute;
+      bottom: 27px;
+      width: 2px;
+      border-radius: 3px;
+      background: rgba(144,205,49,.52);
+    }
+    .is-video .feature-visual span:nth-child(1) { left: 48%; height: 14px; }
+    .is-video .feature-visual span:nth-child(2) { left: 52%; height: 26px; }
+    .is-video .feature-visual span:nth-child(3) { left: 56%; height: 19px; }
+    .is-video .feature-visual span:nth-child(4) { left: 60%; height: 31px; }
+
+    /* Code: terminal glyph made from syntax lines. */
+    .is-code .feature-visual::before {
+      content: "</>";
+      position: absolute;
+      right: 18px;
+      top: 14px;
+      color: rgba(150,210,58,.52);
+      font: 500 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .is-code .feature-visual span {
+      position: absolute;
+      left: 18px;
+      height: 2px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, rgba(214,229,218,.36), rgba(118,185,0,.16));
+    }
+    .is-code .feature-visual span:nth-child(1) { top: 23px; width: 46%; }
+    .is-code .feature-visual span:nth-child(2) { top: 35px; left: 30px; width: 58%; }
+    .is-code .feature-visual span:nth-child(3) { top: 47px; left: 30px; width: 37%; }
+    .is-code .feature-visual span:nth-child(4) { top: 59px; width: 51%; }
+
+    /* Map: route trace and nodes. */
+    .is-map .feature-visual::before {
+      content: "";
+      position: absolute;
+      left: 25px;
+      right: 28px;
+      top: 46%;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(118,185,0,.18), rgba(155,215,60,.72), rgba(118,185,0,.18));
+      transform: rotate(-4deg);
+      transform-origin: center;
+    }
+    .is-map .feature-visual span {
+      position: absolute;
+      top: 40%;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      border: 1px solid rgba(163,219,76,.6);
+      background: #08100b;
+      box-shadow: 0 0 0 4px rgba(118,185,0,.025);
+    }
+    .is-map .feature-visual span:nth-child(1) { left: 18%; top: 52%; }
+    .is-map .feature-visual span:nth-child(2) { left: 38%; top: 38%; }
+    .is-map .feature-visual span:nth-child(3) { left: 59%; top: 44%; background: var(--green); }
+    .is-map .feature-visual span:nth-child(4) { left: 78%; top: 27%; }
+
+    /* Hardware: layered enclosure / sensor geometry. */
+    .is-static .feature-visual::before,
+    .is-static .feature-visual::after {
+      content: "";
+      position: absolute;
+      right: 22px;
+      border: 1px solid rgba(176,215,114,.24);
+      border-radius: 9px;
+      transform: skewY(-4deg);
+    }
+    .is-static .feature-visual::before { top: 19px; width: 76px; height: 45px; }
+    .is-static .feature-visual::after { top: 31px; right: 34px; width: 76px; height: 45px; border-color: rgba(118,185,0,.18); }
+    .is-static .feature-visual span:nth-child(1) {
+      position: absolute; right: 52px; top: 42px; width: 8px; height: 8px; border-radius: 50%; background: rgba(118,185,0,.76);
+      box-shadow: 0 0 18px rgba(118,185,0,.18);
+    }
+
+    /* Problem-side scene diagram fills the previously empty lower field. */
+    .problem-visual {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 105px;
+      margin: 20px 0 16px;
+      overflow: hidden;
+      border-top: 1px solid rgba(218,232,223,.06);
+      border-bottom: 1px solid rgba(218,232,223,.055);
+      background:
+        radial-gradient(circle at 72% 48%, rgba(118,185,0,.08), transparent 35%),
+        linear-gradient(90deg, transparent, rgba(118,185,0,.025), transparent);
+    }
+
+    .problem-visual b::after {
+      position: absolute;
+      left: 0;
+      bottom: 9px;
+      color: rgba(190,206,195,.34);
+      font: 600 8px/1 Inter, ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: .15em;
+    }
+    .pv-order b::after { content: "INTENT → TASK"; }
+    .pv-cargo b::after { content: "LOAD → VERIFY"; }
+    .pv-move b::after { content: "SENSE → PLAN → MOVE"; }
+    .pv-scale b::after { content: "REQUESTS → SCHEDULE"; }
+    .pv-trust b::after { content: "FAULT → SAFE STATE"; }
+
+    .pv-order::before, .pv-move::before, .pv-scale::before {
+      content: "";
+      position: absolute;
+      left: 7%; right: 8%; top: 47%;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(118,185,0,.1), rgba(151,212,54,.65), rgba(118,185,0,.1));
+    }
+    .pv-order span, .pv-move span, .pv-scale span {
+      position: absolute;
+      top: calc(47% - 5px);
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(157,215,68,.58);
+      background: #08100b;
+    }
+    .pv-order span:nth-child(1), .pv-move span:nth-child(1), .pv-scale span:nth-child(1) { left: 8%; }
+    .pv-order span:nth-child(2), .pv-move span:nth-child(2), .pv-scale span:nth-child(2) { left: 29%; }
+    .pv-order span:nth-child(3), .pv-move span:nth-child(3), .pv-scale span:nth-child(3) { left: 50%; background: var(--green); }
+    .pv-order span:nth-child(4), .pv-move span:nth-child(4), .pv-scale span:nth-child(4) { left: 71%; }
+    .pv-order span:nth-child(5), .pv-move span:nth-child(5), .pv-scale span:nth-child(5) { left: 90%; }
+    .pv-move span:nth-child(2) { top: 29%; }
+    .pv-move span:nth-child(4) { top: 61%; }
+
+    .pv-cargo::before {
+      content: ""; position: absolute; left: 13%; top: 25%; width: 68px; height: 48px;
+      border: 1px solid rgba(170,216,93,.38); border-radius: 8px;
+      box-shadow: inset 0 -12px 0 rgba(118,185,0,.035);
+    }
+    .pv-cargo::after {
+      content: ""; position: absolute; right: 13%; top: 49%; width: 38%; height: 4px; border-radius: 4px;
+      background: linear-gradient(90deg, rgba(118,185,0,.2), rgba(118,185,0,.8));
+      box-shadow: 0 -12px 0 rgba(213,227,217,.08), 0 12px 0 rgba(213,227,217,.05);
+    }
+
+    .pv-trust::before {
+      content: ""; position: absolute; left: 15%; top: 18%; width: 58px; height: 66px;
+      clip-path: polygon(50% 0, 92% 15%, 84% 68%, 50% 100%, 16% 68%, 8% 15%);
+      border: 1px solid rgba(118,185,0,.5); background: rgba(118,185,0,.06);
+    }
+    .pv-trust::after {
+      content: ""; position: absolute; left: 42%; right: 10%; top: 49%; height: 1px;
+      background: repeating-linear-gradient(90deg, rgba(118,185,0,.6) 0 8px, transparent 8px 14px);
+    }
+
+    .story-flow {
+      margin-top: 0 !important;
+    }
+
+    @media (max-width: 900px) {
+      .feature-visual { min-height: 82px; }
+      .problem-visual { min-height: 88px; }
+    }
+
   </style>
 </head>
 <body>
@@ -6312,12 +6569,13 @@
             <span class="story-label">Real scene / Order</span>
             <h3>What if ordering is harder than the delivery itself?</h3>
             <p>Campus users may be walking, carrying items, or simply unwilling to operate a complicated console. The interaction has to disappear into the task.</p>
+            <div class="problem-visual pv-order" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><b></b></div>
             <div class="story-flow" aria-label="Order flow"><span>Speak or tap</span><i></i><span>Choose pickup</span><i></i><span>Preview route</span><i></i><span>Dispatch</span></div>
           </div>
           <div class="story-feature-grid cols-3">
-  <article class="story-feature is-video"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/web_order_ui.mp4" data-title="Web Order UI" data-copy="Real browser interaction covering pickup, destination, route preview, order creation and live task state." aria-label="Play Web Order UI video"></button></div><h4>Web Order UI</h4><p>One real interface carries pickup, destination, route preview and live delivery feedback.</p></article>
-  <article class="story-feature is-code"><div class="story-feature-top"><span>02</span><button class="feature-code-trigger" type="button" data-code-key="voice" aria-label="Open Voice interaction source code"></button></div><h4>Voice interaction</h4><p>Natural-language requests enter the same task pipeline through the PC voice gateway.</p></article>
-  <article class="story-feature is-code"><div class="story-feature-top"><span>03</span><button class="feature-code-trigger" type="button" data-code-key="orderLifecycle" aria-label="Open Order lifecycle source code"></button></div><h4>Order lifecycle</h4><p>Validated requests become persistent pickup/drop-off stops before dispatch begins.</p></article>
+  <article class="story-feature is-video"><div class="story-feature-top"><span>01</span><button class="feature-video-trigger" type="button" data-video="assets/media/web_order_ui.mp4" data-title="Web Order UI" data-copy="Real browser interaction covering pickup, destination, route preview, order creation and live task state." aria-label="Play Web Order UI video"></button></div><h4>Web Order UI</h4><p>One real interface carries pickup, destination, route preview and live delivery feedback.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
+  <article class="story-feature is-code"><div class="story-feature-top"><span>02</span><button class="feature-code-trigger" type="button" data-code-key="voice" aria-label="Open Voice interaction source code"></button></div><h4>Voice interaction</h4><p>Natural-language requests enter the same task pipeline through the PC voice gateway.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
+  <article class="story-feature is-code"><div class="story-feature-top"><span>03</span><button class="feature-code-trigger" type="button" data-code-key="orderLifecycle" aria-label="Open Order lifecycle source code"></button></div><h4>Order lifecycle</h4><p>Validated requests become persistent pickup/drop-off stops before dispatch begins.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
 </div>
         </article>
 
@@ -6326,11 +6584,12 @@
             <span class="story-label">Real scene / Cargo</span>
             <h3>Reaching a place does not prove the package is there.</h3>
             <p>Pickup and handoff need physical evidence and clear interaction. Cargo state, user prompts and the compartment itself all become part of the delivery loop.</p>
+            <div class="problem-visual pv-cargo" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><b></b></div>
             <div class="story-flow" aria-label="Cargo flow"><span>Open</span><i></i><span>Load</span><i></i><span>Verify</span><i></i><span>Handoff</span></div>
           </div>
           <div class="story-feature-grid cols-2">
-  <article class="story-feature is-static"><div class="story-feature-top"><span>01</span></div><h4>Payload verification</h4><p>Load sensing and the cargo bay provide physical evidence that an item was loaded or removed.</p></article>
-  <article class="story-feature is-code"><div class="story-feature-top"><span>02</span><button class="feature-code-trigger" type="button" data-code-key="handoff" aria-label="Open On-car handoff source code"></button></div><h4>On-car handoff</h4><p>Screen events, user confirmation and arrival handling close the pickup/drop-off loop on the vehicle.</p></article>
+  <article class="story-feature is-static"><div class="story-feature-top"><span>01</span></div><h4>Payload verification</h4><p>Load sensing and the cargo bay provide physical evidence that an item was loaded or removed.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
+  <article class="story-feature is-code"><div class="story-feature-top"><span>02</span><button class="feature-code-trigger" type="button" data-code-key="handoff" aria-label="Open On-car handoff source code"></button></div><h4>On-car handoff</h4><p>Screen events, user confirmation and arrival handling close the pickup/drop-off loop on the vehicle.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
 </div>
         </article>
 
@@ -6339,15 +6598,16 @@
             <span class="story-label">Real scene / Move</span>
             <h3>The road changes. The payload changes. Motion has to adapt.</h3>
             <p>Real delivery is not one fixed controller on one clean route. The car has to perceive the road, localize itself, estimate cargo load, change turning behavior, avoid blocked edges and still execute safely.</p>
+            <div class="problem-visual pv-move" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><b></b></div>
             <div class="story-flow story-flow-move" aria-label="Motion flow"><span>Perceive</span><i></i><span>Weigh</span><i></i><span>Localize</span><i></i><span>Re-plan</span><i></i><span>Tune</span><i></i><span>Control</span></div>
           </div>
           <div class="story-feature-grid cols-3 move-grid">
-  <article class="story-feature is-code"><div class="story-feature-top"><span>01</span><button class="feature-code-trigger" type="button" data-code-key="perception" aria-label="Open Perception and localization source code"></button></div><h4>Perception & localization</h4><p>Camera processing and AprilTag recognition anchor the car to physical campus nodes.</p></article>
-  <article class="story-feature is-video"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/weight.mov" data-title="Payload Measurement" data-copy="Real load-cell demonstration showing the measured payload changing before motion parameters are selected." aria-label="Play Payload Measurement video"></button></div><h4>Payload measurement</h4><p>Measured payload becomes a real control input instead of an assumed empty-car condition.</p></article>
-  <article class="story-feature is-video"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/turnaround.mov" data-title="Turn Around" data-copy="Real vehicle demonstration of the dedicated U-turn maneuver." aria-label="Play Turn Around video"></button></div><h4>Turn Around</h4><p>A dedicated multi-stage U-turn behavior handles routes that require the vehicle to reverse its travel direction.</p></article>
-  <article class="story-feature is-video"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/obstacle.mov" data-title="Obstacle Handling" data-copy="Real vehicle demonstration of obstacle detection and the blocked-road response." aria-label="Play Obstacle Handling video"></button></div><h4>Obstacle handling</h4><p>Detected obstacles are converted into a physical stop or blocked-road condition before replanning.</p></article>
-  <article class="story-feature is-map"><div class="story-feature-top"><span>05</span><button class="feature-route-trigger" type="button" data-target="moveRouteLab" aria-label="Open interactive navigation and rerouting demo"></button></div><h4>Navigation & rerouting</h4><p>The current node, destination, blocked edges and weighted route are exposed as one interactive campus graph.</p></article>
-  <article class="story-feature is-static story-feature-shell"><div class="story-feature-top"><span>06</span></div><h4>Frame & shell</h4><p>The enclosure protects electronics, stabilizes the cargo layout and turns the prototype into a usable product.</p></article>
+  <article class="story-feature is-code"><div class="story-feature-top"><span>01</span><button class="feature-code-trigger" type="button" data-code-key="perception" aria-label="Open Perception and localization source code"></button></div><h4>Perception & localization</h4><p>Camera processing and AprilTag recognition anchor the car to physical campus nodes.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
+  <article class="story-feature is-video"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/weight.mp4" data-title="Payload Measurement" data-copy="Real load-cell demonstration showing the measured payload changing before motion parameters are selected." aria-label="Play Payload Measurement video"></button></div><h4>Payload measurement</h4><p>Measured payload becomes a real control input instead of an assumed empty-car condition.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
+  <article class="story-feature is-video"><div class="story-feature-top"><span>03</span><button class="feature-video-trigger" type="button" data-video="assets/media/turnaround.mp4" data-title="Turn Around" data-copy="Real vehicle demonstration of the dedicated U-turn maneuver." aria-label="Play Turn Around video"></button></div><h4>Turn Around</h4><p>A dedicated multi-stage U-turn behavior handles routes that require the vehicle to reverse its travel direction.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
+  <article class="story-feature is-video"><div class="story-feature-top"><span>04</span><button class="feature-video-trigger" type="button" data-video="assets/media/obstacle.mp4" data-title="Obstacle Handling" data-copy="Real vehicle demonstration of obstacle detection and the blocked-road response." aria-label="Play Obstacle Handling video"></button></div><h4>Obstacle handling</h4><p>Detected obstacles are converted into a physical stop or blocked-road condition before replanning.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
+  <article class="story-feature is-map"><div class="story-feature-top"><span>05</span><button class="feature-route-trigger" type="button" data-target="moveRouteLab" aria-label="Open interactive navigation and rerouting demo"></button></div><h4>Navigation & rerouting</h4><p>The current node, destination, blocked edges and weighted route are exposed as one interactive campus graph.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
+  <article class="story-feature is-static story-feature-shell"><div class="story-feature-top"><span>06</span></div><h4>Frame & shell</h4><p>The enclosure protects electronics, stabilizes the cargo layout and turns the prototype into a usable product.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
 </div>
 
 
@@ -6419,12 +6679,13 @@
             <span class="story-label">Real scene / Scale</span>
             <h3>What happens when several users need one robot?</h3>
             <p>A useful campus delivery system has to coordinate orders, capacity, stops and routes instead of treating every request as an isolated demo.</p>
+            <div class="problem-visual pv-scale" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><b></b></div>
             <div class="story-flow" aria-label="Scale flow"><span>Orders</span><i></i><span>Schedule</span><i></i><span>Plan</span><i></i><span>Dispatch</span></div>
           </div>
           <div class="story-feature-grid cols-3">
-  <article class="story-feature is-code"><div class="story-feature-top"><span>01</span><button class="feature-code-trigger" type="button" data-code-key="scheduler" aria-label="Open Dispatch scheduler source code"></button></div><h4>Dispatch scheduler</h4><p>Multiple orders are merged into one feasible stop sequence with capacity and detour checks.</p></article>
-  <article class="story-feature is-code"><div class="story-feature-top"><span>02</span><button class="feature-code-trigger" type="button" data-code-key="routePlanner" aria-label="Open Weighted route planner source code"></button></div><h4>Weighted route planner</h4><p>Distance, penalties and blocked edges determine the route that the PC recommends.</p></article>
-  <article class="story-feature is-code"><div class="story-feature-top"><span>03</span><button class="feature-code-trigger" type="button" data-code-key="gateway" aria-label="Open PC to car gateway source code"></button></div><h4>PC ↔ car gateway</h4><p>NDJSON commands, heartbeats and vehicle events tie dispatch to physical execution.</p></article>
+  <article class="story-feature is-code"><div class="story-feature-top"><span>01</span><button class="feature-code-trigger" type="button" data-code-key="scheduler" aria-label="Open Dispatch scheduler source code"></button></div><h4>Dispatch scheduler</h4><p>Multiple orders are merged into one feasible stop sequence with capacity and detour checks.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
+  <article class="story-feature is-code"><div class="story-feature-top"><span>02</span><button class="feature-code-trigger" type="button" data-code-key="routePlanner" aria-label="Open Weighted route planner source code"></button></div><h4>Weighted route planner</h4><p>Distance, penalties and blocked edges determine the route that the PC recommends.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
+  <article class="story-feature is-code"><div class="story-feature-top"><span>03</span><button class="feature-code-trigger" type="button" data-code-key="gateway" aria-label="Open PC to car gateway source code"></button></div><h4>PC ↔ car gateway</h4><p>NDJSON commands, heartbeats and vehicle events tie dispatch to physical execution.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
 </div>
         </article>
 
@@ -6433,11 +6694,12 @@
             <span class="story-label">Real scene / Trust</span>
             <h3>Autonomy also means knowing when not to move.</h3>
             <p>Network loss, stale commands, emergency intervention and restart recovery have to end in a predictable physical state, not just an error message.</p>
+            <div class="problem-visual pv-trust" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><b></b></div>
             <div class="story-flow" aria-label="Trust flow"><span>Detect</span><i></i><span>Inhibit</span><i></i><span>Stop</span><i></i><span>Sync</span><i></i><span>Resume</span></div>
           </div>
           <div class="story-feature-grid cols-2">
-  <article class="story-feature is-code"><div class="story-feature-top"><span>01</span><button class="feature-code-trigger" type="button" data-code-key="safety" aria-label="Open Fail-safe control source code"></button></div><h4>Fail-safe control</h4><p>Safety inhibit, watchdog and PWM shutdown converge on the same predictable stopped state.</p></article>
-  <article class="story-feature is-code"><div class="story-feature-top"><span>02</span><button class="feature-code-trigger" type="button" data-code-key="sync" aria-label="Open Link recovery and synchronization source code"></button></div><h4>Link recovery & sync</h4><p>Reconnect restores authoritative mission state before the vehicle is allowed to move again.</p></article>
+  <article class="story-feature is-code"><div class="story-feature-top"><span>01</span><button class="feature-code-trigger" type="button" data-code-key="safety" aria-label="Open Fail-safe control source code"></button></div><h4>Fail-safe control</h4><p>Safety inhibit, watchdog and PWM shutdown converge on the same predictable stopped state.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
+  <article class="story-feature is-code"><div class="story-feature-top"><span>02</span><button class="feature-code-trigger" type="button" data-code-key="sync" aria-label="Open Link recovery and synchronization source code"></button></div><h4>Link recovery & sync</h4><p>Reconnect restores authoritative mission state before the vehicle is allowed to move again.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>
 </div>
         </article>
 
