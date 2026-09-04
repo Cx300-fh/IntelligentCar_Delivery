@@ -106,7 +106,23 @@ class SnapshotBuilder {
     const locations = this.database.listLocations();
     const locationsById = new Map(locations.map((location) => [location.location_id, location]));
     const rawOrders = this.database.listOrders(1000, true);
-    const orders = rawOrders.map((order) => decorateOrder(order, locationsById));
+    const decoratedAll = rawOrders.map((order) => decorateOrder(order, locationsById));
+
+    // 车端 kMaxOrdersCached = 20（delivery_types.hpp），超过这个数量整条 state_sync
+    // 会被判 "too many orders in snapshot" 直接丢弃，于是车端永远完不成同步、
+    // 对所有 goto_stop 回 NOT_SYNCHRONIZED——2026-09-04 实测跑到第 21 单触发，
+    // 后端还会因为“车没在执行”不断重发，版本号一路涨上去。
+    // 协议本来就留了 orders_total/orders_included/orders_truncated 三个字段，
+    // 这里落实截断：未完成的必须全带上，剩余名额给最近完成的，保持原顺序。
+    const SNAPSHOT_ORDER_LIMIT = 15;   // 留余量，不贴着车端上限 20
+    const keepIds = new Set();
+    for (const o of decoratedAll) {
+      if (Number(o.status) !== ORDER_STATUS.COMPLETED) keepIds.add(o.order_id);
+    }
+    for (let i = decoratedAll.length - 1; i >= 0 && keepIds.size < SNAPSHOT_ORDER_LIMIT; i--) {
+      keepIds.add(decoratedAll[i].order_id);
+    }
+    const orders = decoratedAll.filter((o) => keepIds.has(o.order_id));
     const activeTrip = this.database.getActiveTrip();
     const vehicle = this.database.getVehicle();
     const currentOrderId = this.chooseCurrentOrder(activeTrip, rawOrders);
@@ -120,6 +136,9 @@ class SnapshotBuilder {
       current_order_id: current?.order_id || null,
       vehicle,
       orders,
+      orders_total: decoratedAll.length,
+      orders_included: orders.length,
+      orders_truncated: orders.length < decoratedAll.length,
       // 车端重启恢复：cur_stop_ 只能从快照拿。车端解析器读 active_trip.current_stop_id
       // （选填），frozen_stop_id 为空时输出空串而非 null（P_Str 对空串安全）。
       active_trip: activeTrip ? { ...activeTrip, current_stop_id: activeTrip.frozen_stop_id || '' } : null,

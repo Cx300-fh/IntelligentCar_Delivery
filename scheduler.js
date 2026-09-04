@@ -378,8 +378,18 @@ class DispatchScheduler extends EventEmitter {
     const tripMatches = tripKnown
       ? String(message.trip_id || '') === String(trip.trip_id)
       : true;
+    // 车端可能“知道”这个 trip 却并没有在执行它：重启后 state_sync 会把
+    // trip/stop 上下文恢复回来，但按设计不恢复导航任务（原地定位待命）。
+    // 只比 trip_id/stop_id 会把这种情况误判成“在跑”，于是永不重发，
+    // 车永远停在原地——2026-09-03 实测：车端重启后定位到节点10、
+    // 心跳报的 trip/stop 与服务器完全一致，但 nav 是空的，两边干耗着都不报错。
+    // navigation_state 才是执行与否的直接证据：IDLE/LOCATING 都是停着的。
+    // 字段缺失时 navIdle=false，退回原来的判据，不会误重发。
+    const navState = String(message.navigation_state || '').toUpperCase();
+    const navIdle = navState === 'IDLE' || navState === 'LOCATING';
     const executing = tripMatches &&
-                      String(message.stop_id || '') === String(trip.frozen_stop_id);
+                      String(message.stop_id || '') === String(trip.frozen_stop_id) &&
+                      !navIdle;
     if (executing) return;
     // 车端刚重启时先发 hello、之后才完成 AprilTag 定位，这期间 current_node 无效。
     // 拿无效起点去规划会直接抛 ROUTE_UNREACHABLE，所以等定位好再下发（心跳会再次触发）。
