@@ -1,29 +1,21 @@
 from pathlib import Path
-import re
 
 path = Path('docs/index.html')
 text = path.read_text(encoding='utf-8')
 
-# Target homepage actions structurally so the patch does not depend on stale copy.
-text, n_demo = re.subn(
-    r'(<a class="btn primary" href="#demo" data-app-view="demo">).*?(</a>)',
-    r'\1Watch Demo\2',
-    text,
-    count=1,
-)
-text, n_system = re.subn(
-    r'(<a class="btn" href="#system" data-app-view="system">).*?(</a>)',
-    r'\1System Design\2',
-    text,
-    count=1,
-)
-if n_demo != 1 or n_system != 1:
-    raise SystemExit(f'homepage CTA match failed: demo={n_demo}, system={n_system}')
+# Required copy from the requested content pass.
+required = [
+    'Watch Demo',
+    'System Design',
+    'Intertwined Roles, Unified Vision',
+    'System: From Problem To Answer',
+]
+for item in required:
+    if item not in text:
+        raise SystemExit(f'missing required copy: {item}')
 
-replacements = {
-    'Built by five people, connected by one system.': 'Intertwined Roles, Unified Vision',
-    'Every module answers a real delivery problem.': 'System: From Problem to Answer',
-    '        <p class="system-story-lead">Start with the situation, then reveal the engineering response. Scroll through six linked scenes while the left rail always shows where you are.</p>\n': '',
+# Reduce all-caps noise in contextual labels while preserving major Prism titles.
+label_replacements = {
     'REAL SCENE / ORDER': 'Real scene / Order',
     'REAL SCENE / CARGO': 'Real scene / Cargo',
     'REAL SCENE / MOVE': 'Real scene / Move',
@@ -33,16 +25,14 @@ replacements = {
     'HUMAN & INTERACTION': 'Human & interaction',
     'PC DISPATCH': 'PC dispatch',
     'DELIVERY CAR': 'Delivery car',
+    'FUNCTION DEMO': 'Function demo',
 }
-
-for old, new in replacements.items():
+for old, new in label_replacements.items():
     if old in text:
-        text = text.replace(old, new, 1)
-    elif new not in text:
-        raise SystemExit(f'missing expected copy pair: {old} / {new}')
+        text = text.replace(old, new)
 
-if 'Typography hierarchy v1' in text:
-    raise SystemExit('typography patch already present')
+if 'Typography hierarchy v2' in text:
+    raise SystemExit('Typography hierarchy v2 already present')
 
 marker = '  </style>\n</head>'
 if marker not in text:
@@ -51,142 +41,144 @@ if marker not in text:
 css = r'''
 
     /* ============================================================
-       Typography hierarchy v1
-       Prism = primary display titles
-       Didot = editorial / secondary hierarchy
-       Sans = navigation, UI, descriptions, controls
+       Typography hierarchy v2
+       Primary title  -> Prism (unchanged)
+       Editorial bold -> Didot Bold
+       Editorial note -> Didot Italic
+       UI / body      -> neutral sans
        ============================================================ */
     @font-face {
-      font-family: "DidotEditorial";
-      src: url("./assets/fonts/Didot-Bold-1.ttf") format("truetype");
+      font-family: "DidotWeb";
+      src:
+        url("./assets/fonts/Didot-Bold-1.ttf") format("truetype"),
+        local("Didot Bold"),
+        local("Didot-Bold"),
+        local("Didot");
       font-style: normal;
       font-weight: 700;
       font-display: swap;
     }
 
     @font-face {
-      font-family: "DidotEditorial";
-      src: url("./assets/fonts/Didot-Italic-2.ttf") format("truetype");
+      font-family: "DidotWeb";
+      src:
+        url("./assets/fonts/Didot-Italic-2.ttf") format("truetype"),
+        local("Didot Italic"),
+        local("Didot-Italic"),
+        local("Didot");
       font-style: italic;
       font-weight: 400;
       font-display: swap;
     }
 
-    /* Major display titles remain Prism. */
+    :root {
+      --font-display: "Prism", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+      --font-editorial: "DidotWeb", "DidotEditorial", Didot, "Bodoni 72", "Bodoni MT", Georgia, serif;
+      --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* Main titles stay exactly in the original display language. */
+    h1,
+    h2,
+    h3,
+    .hero-title-en,
     .demo-video-head h2,
     .system-story-head h2,
-    .contact-head h2,
-    .hero-title-en,
-    .hero-title-en * {
-      font-family: "Prism", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
-      font-weight: 400;
+    .contact-head h2 {
+      font-family: var(--font-display) !important;
+      font-style: normal !important;
     }
 
-    /* Editorial secondary headings: mixed case, more contrast, less visual shouting. */
-    .app-view-system .story-problem h3,
-    .app-view-system .story-feature h4,
-    .app-view-system .system-architecture-v2 h4,
-    .app-view-system .system-final-copy h3,
-    .app-view-contact .team-name,
-    .app-view-contact .responsibility-head h3,
-    .app-view-contact .contact-links h3 {
-      font-family: "DidotEditorial", Didot, "Bodoni MT", "Bodoni 72", Georgia, serif;
-      font-weight: 700;
-      text-transform: none;
-      letter-spacing: -.018em;
-    }
-
-    .app-view-system .story-problem h3 {
-      font-size: clamp(32px, 3.1vw, 50px);
-      line-height: .98;
-    }
-
-    .app-view-system .story-feature h4,
-    .app-view-system .system-architecture-v2 h4 {
-      font-size: clamp(19px, 1.55vw, 24px);
-      line-height: 1.02;
-    }
-
-    .app-view-system .move-grid .story-feature h4 {
-      font-size: clamp(17px, 1.35vw, 21px);
-    }
-
-    .app-view-contact .team-name {
-      font-size: clamp(20px, 1.55vw, 25px);
-      line-height: 1.02;
-    }
-
-    /* Italic Didot is reserved for editorial context labels, not UI controls. */
-    .app-view-system .story-label,
-    .app-view-system .system-arch-kicker,
-    .app-view-contact .contact-links-kicker {
-      font-family: "DidotEditorial", Didot, "Bodoni MT", "Bodoni 72", Georgia, serif;
-      font-style: italic;
-      font-weight: 400;
-      text-transform: none;
-      letter-spacing: .025em;
-    }
-
-    .app-view-system .story-label {
-      font-size: 14px;
-      color: rgba(166,213,95,.86);
-    }
-
-    .app-view-system .system-arch-kicker {
-      font-size: 12px;
-      color: rgba(173,194,180,.65);
-    }
-
-    /* UI language stays neutral and legible. */
-    .app-nav,
-    .hero-cta .btn,
-    .feature-video-trigger,
-    .story-flow,
-    .system-story-nav .story-tab,
+    /* Bold Didot marks the second information tier, never the main title tier. */
+    .story-feature h4,
+    .system-architecture-v2 h4,
     .role-title,
-    .role-members,
-    .team-bio,
-    .story-feature p,
-    .story-problem p {
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    .feature-video-title,
+    .team-name {
+      font-family: var(--font-editorial) !important;
+      font-style: normal !important;
+      font-weight: 700 !important;
+      text-transform: none !important;
+      letter-spacing: -.014em;
     }
 
-    /* System header: open, compact, single-column after removing explanatory copy. */
+    .team-name {
+      font-size: clamp(20px, 1.55vw, 25px);
+      line-height: 1.03;
+    }
+
+    /* Italic Didot is used sparingly for editorial context and scene markers. */
+    .story-label,
+    .system-arch-kicker,
+    .contact-links-kicker,
+    .responsibility-kicker {
+      font-family: var(--font-editorial) !important;
+      font-style: italic !important;
+      font-weight: 400 !important;
+      text-transform: none !important;
+      letter-spacing: .018em;
+    }
+
+    .story-label {
+      font-size: 13px;
+      color: rgba(158,207,83,.84);
+    }
+
+    .system-arch-kicker {
+      font-size: 12px;
+    }
+
+    /* Paragraphs and operational UI return to sans for clarity. */
+    .team-bio,
+    .story-problem > p,
+    .story-feature p,
+    .role-members,
+    .story-flow,
+    .feature-video-trigger,
+    .story-tab,
+    .btn,
+    .app-nav,
+    .team-index,
+    .demo-video-kicker,
+    .eyebrow {
+      font-family: var(--font-ui) !important;
+      font-style: normal !important;
+    }
+
+    .eyebrow,
+    .demo-video-kicker {
+      text-transform: none !important;
+      font-weight: 620;
+      letter-spacing: .045em;
+    }
+
+    /* Keep the System header compact after removing the explanatory paragraph. */
     .app-view-system .system-view-frame > .system-story-head {
-      grid-template-columns: minmax(0, 900px);
-      justify-content: start;
+      grid-template-columns: minmax(0, 1fr) !important;
+      width: min(960px, 100%);
+      max-width: 960px;
+      gap: 0 !important;
       align-items: end;
-      gap: 0;
-      padding: 10px 0 4px;
+      padding: 6px 0 8px;
       margin: 0;
     }
 
     .app-view-system .system-story-head .eyebrow {
-      margin: 0 0 8px;
-      font-size: 11px;
-      letter-spacing: .09em;
-      color: rgba(126,190,25,.82);
+      margin: 0 0 9px;
     }
 
     .app-view-system .system-story-head h2 {
-      max-width: 900px;
+      max-width: 920px;
       margin: 0;
-      font-size: clamp(44px, 5.3vw, 72px);
-      line-height: .9;
+      line-height: .92;
+    }
+
+    .app-view-system .system-story-lead {
+      display: none !important;
     }
 
     .app-view-system .system-workspace {
-      margin-top: 4px;
-    }
-
-    @media (max-width: 900px) {
-      .app-view-system .system-view-frame > .system-story-head {
-        padding-top: 4px;
-      }
-
-      .app-view-system .system-story-head h2 {
-        font-size: clamp(38px, 8vw, 56px);
-      }
+      margin-top: 8px;
     }
 '''
 
