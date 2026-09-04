@@ -45,7 +45,9 @@
     overflow:visible;
   }
   #roadLayer{position:absolute; inset:0; width:1440px; height:900px; pointer-events:none;}
-  .road-static{fill:none; stroke:rgba(140,150,173,.55); stroke-width:7; stroke-linecap:round;}
+  .road-base,.road-center{fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .road-base{stroke:#111A15;stroke-width:11;}
+  .road-center{stroke:rgba(223,229,224,.28);stroke-width:3;}
   #routeSvg{position:absolute; inset:0; width:1440px; height:900px; pointer-events:none;}
   .route-track{fill:none; stroke:rgba(255,201,77,.6); stroke-width:5; stroke-linecap:round; stroke-dasharray:10 9;}
   .route-travelled{fill:none; stroke:var(--blue); stroke-width:6; stroke-linecap:round;
@@ -224,13 +226,13 @@
   }
   .swap-btn:hover{color:var(--text); border-color:var(--blue-strong);}
 
-  .eta-heading{font-size:22px; font-weight:800; color:var(--text); margin:2px 0 4px;}
-  .eta-sub{font-size:20px; color:var(--text-soft); margin-bottom:16px;}
+  .eta-heading{font-size:20px; font-weight:750; color:var(--text); margin:10px 0 3px;}
+  .eta-sub{font-size:13px; color:rgba(185,190,185,.58); margin-bottom:12px;}
 
-  .name-field{margin-bottom:16px;}
-  .name-label{font-size:20px; font-weight:800; color:var(--text-faint); margin-bottom:6px;}
+  .name-field{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:8px;margin-bottom:12px;}
+  .name-label{font-size:13px; font-weight:600; color:var(--text-faint); margin:0;}
   .name-input{width:100%; background:var(--panel2); border:1px solid var(--border); border-radius:12px;
-    padding:12px 14px; font-size:20px; font-weight:700; color:var(--text); outline:none; font-family:inherit;}
+    padding:9px 11px; font-size:15px; font-weight:650; color:var(--text); outline:none; font-family:inherit;}
   .name-input:focus{border-color:var(--blue-strong);}
 
   .sel-actions{display:flex; gap:10px;}
@@ -272,6 +274,27 @@
     src:url("https://cx300-fh.github.io/IntelligentCar_Delivery/assets/fonts/Yishanbei.ttf?v=20260827-1") format("truetype");
     font-style:normal;
     font-weight:400;
+    font-display:swap;
+  }
+  @font-face{
+    font-family:"Didot Delivery";
+    src:url("/Didot-Bold-1.ttf") format("truetype");
+    font-style:normal;
+    font-weight:700;
+    font-display:swap;
+  }
+  @font-face{
+    font-family:"Noto Sans SC UI";
+    src:url("https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc@5.2.6/files/noto-sans-sc-chinese-simplified-400-normal.woff2") format("woff2");
+    font-style:normal;
+    font-weight:400;
+    font-display:swap;
+  }
+  @font-face{
+    font-family:"Noto Sans SC UI";
+    src:url("https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc@5.2.6/files/noto-sans-sc-chinese-simplified-700-normal.woff2") format("woff2");
+    font-style:normal;
+    font-weight:700 900;
     font-display:swap;
   }
 
@@ -330,10 +353,11 @@
     inset:-20%;
     z-index:-1;
     pointer-events:none;
-    background:radial-gradient(520px circle at 68% 28%,rgba(145,214,43,.085),rgba(49,118,104,.04) 36%,transparent 68%);
+    background:radial-gradient(520px circle at 68% 28%,rgba(145,214,43,.038),rgba(49,118,104,.018) 36%,transparent 68%);
     filter:blur(8px);
     animation:ambientDrift 12s ease-in-out infinite alternate;
   }
+  #stage{overflow:clip;}
 
   .wordmark{
     top:22px;
@@ -353,10 +377,10 @@
   .wordmark-icon rect:first-of-type,
   #robotMarker rect:first-of-type{fill:#76B900;}
   .wordmark-text{
-    display:grid;
-    grid-template-columns:1fr;
-    align-items:start;
-    row-gap:3px;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:4px;
     color:var(--text);
     line-height:1;
   }
@@ -365,7 +389,7 @@
     font-size:24px;
     font-weight:400;
     letter-spacing:.08em;
-    line-height:.82;
+    line-height:1;
   }
   .wordmark-en{
     color:#A9EB36;
@@ -405,6 +429,12 @@
     top:82px;
     animation:panelEnter .72s cubic-bezier(.16,.85,.2,1) both;
   }
+  #sidePanel,#cameraDock{
+    font-family:"Didot Delivery","Noto Sans SC UI","Microsoft YaHei UI","PingFang SC","Source Han Sans SC",sans-serif;
+    font-kerning:normal;
+  }
+  #sidePanel button,#sidePanel input,#cameraDock button{font-family:inherit;}
+  #sidePanel .count-pill{font-family:"Didot Delivery",Didot,"Bodoni MT",serif;}
   .panel-card{
     position:relative;
     overflow:hidden;
@@ -438,17 +468,14 @@
   .panel-title{
     display:flex;
     flex-direction:column;
-    gap:5px;
-    font-size:20px;
-    letter-spacing:.02em;
-  }
-  .panel-title::after{
-    content:"LIVE ORDER CONSOLE";
-    color:rgba(185,190,185,.42);
-    font-family:"Prism","Arial Narrow",Arial,sans-serif;
-    font-size:8px;
-    font-weight:400;
-    letter-spacing:.14em;
+    gap:0;
+    color:#F2F4F1;
+    font-family:"Didot Delivery",Didot,"Bodoni MT",serif;
+    font-size:27px;
+    font-style:normal;
+    font-weight:700;
+    letter-spacing:.015em;
+    line-height:1;
   }
   .count-pill{
     border:1px solid rgba(118,185,0,.32);
@@ -552,7 +579,8 @@
   .panel-footer{color:rgba(185,190,185,.58);font-size:14px;}
   .empty-slogan{color:#A9EB36;}
 
-  .road-static{stroke:rgba(241,243,240,.30);stroke-width:5;}
+  .road-base{stroke:rgba(4,9,6,.92);stroke-width:12;}
+  .road-center{stroke:rgba(220,226,221,.30);stroke-width:3.2;}
   .route-track{
     stroke:#76B900;
     stroke-width:6;
@@ -572,18 +600,44 @@
     animation:routeSignal 1.2s linear infinite;
   }
   .pin-dot{
-    width:12px;
-    height:12px;
-    background:rgba(245,247,244,.94);
-    border:2px solid #0F1210;
-    box-shadow:0 0 0 4px rgba(241,243,240,.07);
+    width:17px;
+    height:17px;
+    background:#0B120E;
+    border:2px solid rgba(225,231,226,.48);
+    box-shadow:0 0 0 4px rgba(3,8,5,.54),inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .pin-dot::after{
+    content:"";
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:4px;
+    height:4px;
+    border-radius:50%;
+    background:rgba(235,239,235,.78);
+    transform:translate(-50%,-50%);
+    transition:background .18s ease,box-shadow .18s ease,transform .18s ease;
   }
   .pin:hover .pin-dot{
-    background:#B9FF41;
-    box-shadow:0 0 0 5px rgba(118,185,0,.14),0 0 18px rgba(118,185,0,.48);
+    background:rgba(118,185,0,.10);
+    border-color:#8FD20D;
+    box-shadow:0 0 0 5px rgba(118,185,0,.10),0 0 16px rgba(118,185,0,.30);
   }
-  .pin-label{color:rgba(241,243,240,.68);font-weight:650;}
-  .pin:hover .pin-label{color:#F1F3F0;}
+  .pin:hover .pin-dot::after{background:#B9FF41;box-shadow:0 0 9px rgba(185,255,65,.72);transform:translate(-50%,-50%) scale(1.15);}
+  .pin-label{
+    padding:4px 7px 5px;
+    border:1px solid transparent;
+    border-radius:6px;
+    background:rgba(5,11,8,.24);
+    color:rgba(232,236,232,.66);
+    font-family:"Noto Sans SC UI","Microsoft YaHei UI","PingFang SC",sans-serif;
+    font-size:22px;
+    font-weight:600;
+    letter-spacing:.035em;
+    line-height:1;
+    text-shadow:0 2px 8px rgba(0,0,0,.82);
+  }
+  .pin:hover .pin-label{border-color:rgba(118,185,0,.16);background:rgba(8,16,11,.76);color:#F3F5F2;}
   .endpoint-badge,.stop-badge{border-color:#0C0E0D;}
   .stop-badge{background:#76B900;color:#0C0E0D;box-shadow:0 0 18px rgba(118,185,0,.40);}
   #robotMarker{
@@ -600,6 +654,13 @@
   .swap-btn{background:#0F1210;border-color:rgba(215,235,223,.14);}
   .swap-btn:hover{border-color:rgba(118,185,0,.68);}
   .status-line{color:#A9EB36;}
+  .eta-heading{
+    font-family:"Didot Delivery",Didot,"Bodoni MT",serif;
+    font-size:24px;
+    font-style:normal;
+    font-weight:700;
+    letter-spacing:.015em;
+  }
   .btn{position:relative;overflow:hidden;border-radius:3px;}
   .btn::after{
     content:"";
@@ -663,26 +724,6 @@
     overflow:hidden;
     text-overflow:ellipsis;
   }
-  .system-metric{
-    min-height:36px;
-    padding:7px 11px;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    gap:2px;
-    border:1px solid rgba(215,235,223,.11);
-    background:linear-gradient(145deg,rgba(19,31,26,.84),rgba(8,15,12,.76));
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 14px 38px rgba(0,0,0,.16);
-    backdrop-filter:blur(14px);
-    white-space:nowrap;
-  }
-  .system-metric span{
-    color:rgba(185,190,185,.48);
-    font-family:"Prism","Arial Narrow",Arial,sans-serif;
-    font-size:7px;
-    letter-spacing:.12em;
-  }
-  .system-metric strong{color:#F1F3F0;font-size:11px;font-weight:700;}
   #systemRail[data-state="connecting"] #hintChip::before{
     background:#E3A62F;
     box-shadow:0 0 12px rgba(227,166,47,.82);
@@ -696,12 +737,12 @@
     box-shadow:0 0 12px rgba(118,185,0,.90);
   }
 
-  #sidePanel{width:360px;bottom:24px;}
+  #sidePanel{width:360px;bottom:auto;}
   .panel-card{padding:18px 18px 16px;}
   .queue-panel{
     display:flex;
     flex-direction:column;
-    max-height:calc(100vh - 106px);
+    max-height:calc(100vh - 178px);
   }
   .queue-panel .drag-handle,
   .queue-panel .panel-header,
@@ -717,6 +758,7 @@
     touch-action:pan-y;
     scrollbar-gutter:stable;
   }
+  .queue-panel .order-card,.queue-panel .carpool-box{flex:0 0 auto;}
   .order-card:not(.order-card-active){padding:10px 12px;}
   .order-card:not(.order-card-active) .order-top{margin-bottom:4px;}
   .order-card:not(.order-card-active) .order-name{font-size:15px;margin-bottom:1px;}
@@ -724,49 +766,115 @@
   .order-card:not(.order-card-active) .order-id{font-size:12px;}
   .order-card:not(.order-card-active) .badge{font-size:12px;padding:2px 7px;}
   .order-card-active{padding:14px 13px;}
-  .order-card-active::after{animation:cardSweepOnce 1.05s cubic-bezier(.2,.75,.2,1) both;}
+  .order-card-active::after{display:none;}
   .order-card{cursor:pointer;outline:none;}
   .order-card:focus-visible{
     border-color:#B9FF41;
     box-shadow:0 0 0 2px rgba(185,255,65,.22),inset 0 1px 0 rgba(255,255,255,.035);
   }
-  .order-route{padding-right:70px;}
-  .order-card::before{
-    content:"查看详情  ›";
-    position:absolute;
-    right:12px;
-    bottom:11px;
-    color:rgba(169,235,54,.68);
-    font-size:9px;
-    letter-spacing:.04em;
-    pointer-events:none;
+  .order-card-focused{
+    border-color:#B9FF41!important;
+    background:linear-gradient(145deg,rgba(31,46,35,.96),rgba(12,21,15,.92));
+    box-shadow:inset 3px 0 0 #B9FF41,0 12px 34px rgba(0,0,0,.28)!important;
+    transform:translateY(-1px);
   }
+  .order-card-new{animation:orderEnter .34s cubic-bezier(.2,.8,.2,1) both;}
+  .order-card-exit{pointer-events:none;animation:orderExit .28s ease both;}
+  .badge-changed{animation:badgeSwitch .38s cubic-bezier(.2,.8,.2,1) both;}
 
-  #robotMarker{animation:none;isolation:isolate;}
+  #robotMarker{
+    width:60px;
+    height:60px;
+    margin:-4px 0 0 -4px;
+    cursor:pointer;
+    pointer-events:auto;
+    z-index:15;
+    outline:none;
+    isolation:isolate;
+    transition:left .48s cubic-bezier(.2,.8,.2,1),top .48s cubic-bezier(.2,.8,.2,1),filter .22s ease,transform .22s ease;
+  }
+  #robotMarker:hover,#robotMarker:focus-visible{transform:translate(-50%,-50%) scale(1.08);}
+  #robotMarker svg{width:60px;height:60px;position:relative;z-index:2;}
   #robotMarker svg{position:relative;z-index:2;}
-  #robotMarker::before,
-  #robotMarker::after{
+  #robotMarker::before{
     content:"";
     position:absolute;
-    inset:-7px;
+    inset:-5px;
     z-index:1;
-    border:2px solid rgba(185,255,65,.72);
+    border:1px solid rgba(185,255,65,.46);
     border-radius:50%;
     pointer-events:none;
-    animation:vehicleHalo 2.4s ease-out infinite;
+    animation:vehicleHalo 4.8s ease-out infinite;
   }
-  #robotMarker::after{animation-delay:1.2s;}
   #stage[data-connection="offline"] #robotMarker{filter:grayscale(1) opacity(.58);}
-  #stage[data-connection="offline"] #robotMarker::before,
-  #stage[data-connection="offline"] #robotMarker::after{border-color:rgba(216,91,70,.66);}
-  #stage[data-motion="moving"] .route-track{
-    stroke-dasharray:16 7;
-    animation:routeFlow 1.05s linear infinite;
+  #stage[data-connection="offline"] #robotMarker::before{border-color:rgba(216,91,70,.52);}
+
+  #mapLayer{
+    overflow:visible;
+    border:1px solid rgba(215,235,223,.025);
+    border-radius:32px;
+    background:linear-gradient(145deg,rgba(12,24,19,.10),rgba(5,12,9,.025));
+    box-shadow:none;
+    transition:left .62s cubic-bezier(.2,.8,.2,1),top .62s cubic-bezier(.2,.8,.2,1),transform .62s cubic-bezier(.2,.8,.2,1);
   }
+  #roadLayer{shape-rendering:geometricPrecision;}
+  #roadLayer .road-base{stroke:rgba(2,7,4,.94);stroke-width:12;}
+  #roadLayer .road-center{stroke:rgba(211,220,212,.24);stroke-width:3.2;}
+  #routeSvg .route-track,#routeSvg .route-repositioning{stroke:rgba(118,185,0,.26);stroke-width:5;filter:none;}
+  #routeSvg .route-segment-current{
+    stroke:#A9EB36;
+    stroke-width:6;
+    stroke-dasharray:18 10;
+    filter:drop-shadow(0 0 6px rgba(118,185,0,.34));
+    animation:routeFlow 1.8s linear infinite;
+  }
+  #routeSvg .route-travelled{
+    stroke:rgba(73,105,67,.88);
+    stroke-width:8;
+    stroke-dasharray:none;
+    filter:none;
+  }
+  #routeSvg .route-focus{
+    fill:none;
+    stroke:#B9FF41;
+    stroke-width:7;
+    stroke-linecap:round;
+    stroke-dasharray:18 10;
+    filter:drop-shadow(0 0 8px rgba(118,185,0,.42));
+    animation:routeFlow 1.8s linear infinite,focusRouteIn .45s ease both;
+  }
+  #routeSvg .route-preview{
+    stroke:#E3A62F;
+    stroke-width:5;
+    filter:drop-shadow(0 0 5px rgba(227,166,47,.30));
+  }
+  #routeSvg .route-preview-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:routeDraw .72s cubic-bezier(.2,.75,.2,1) forwards;}
+
+  .pin{outline:none;}
+  button.pin{width:44px;height:44px;transform:translate(-50%,-50%);appearance:none;padding:0;border:0;background:none;color:inherit;font:inherit;}
+  button.pin .pin-dot{left:50%;top:50%;}
+  button.pin .pin-label{left:50%;top:calc(50% + 13px);}
+  .pin::before{content:"";position:absolute;inset:0;border-radius:50%;}
+  .pin-dot,.pin-label{transition:transform .18s ease,color .18s ease,background .18s ease,box-shadow .18s ease,opacity .18s ease;}
+  .pin:hover .pin-dot,.pin:focus-visible .pin-dot{transform:translate(-50%,-50%) scale(1.22);}
+  .pin:hover .pin-label,.pin:focus-visible .pin-label{color:#F1F3F0;transform:translate(-50%,0) scale(1.045);}
+  .pin.is-order-focus .pin-dot{background:#76B900;border-color:#B9FF41;box-shadow:0 0 0 5px rgba(118,185,0,.14),0 0 15px rgba(118,185,0,.30);transform:translate(-50%,-50%) scale(1.18);}
+  .pin.is-order-focus .pin-dot::after{background:#0B120E;box-shadow:none;}
+  .pin.is-order-focus .pin-label{border-color:rgba(118,185,0,.18);background:rgba(8,16,11,.74);color:#F3F5F2;font-weight:700;}
+  .stop-marker{pointer-events:auto;cursor:pointer;outline:none;}
+  button.stop-marker{width:56px;height:56px;transform:translate(-50%,-50%);appearance:none;padding:0;border:0;background:none;color:inherit;font:inherit;}
+  button.stop-marker .stop-badge{left:50%;top:50%;}
+  .stop-marker .stop-badge{transition:transform .2s ease,opacity .2s ease,filter .2s ease;}
+  .stop-marker:hover .stop-badge,.stop-marker:focus-visible .stop-badge{transform:translate(-50%,-50%) scale(1.08);}
+  .stop-marker.is-current-target .stop-badge{animation:targetBreathe 2.8s ease-in-out infinite;}
+  .endpoint-tag{top:26px;padding:5px 9px;border:1px solid currentColor;border-radius:999px;background:rgba(8,14,10,.92);font-size:20px;}
+
+  .queue-panel .empty-slogan{margin:2px 0 8px;font-size:16px;}
+  .queue-panel .log-empty{padding:8px 6px 10px;font-size:13px;line-height:1.65;}
 
   #mapLegend{
     position:absolute;
-    left:430px;
+    left:402px;
     bottom:24px;
     z-index:19;
     display:flex;
@@ -774,6 +882,7 @@
     gap:15px;
     padding:8px 10px;
     border:1px solid rgba(215,235,223,.09);
+    border-radius:10px;
     background:rgba(8,15,12,.76);
     color:#8E948F;
     font-size:10px;
@@ -790,129 +899,162 @@
   }
   .legend-road{background:rgba(241,243,240,.34);box-shadow:none;}
   .legend-alert{background:#E3A62F;box-shadow:none;}
+  .legend-done{background:rgba(73,105,67,.88);box-shadow:none;}
+
+  /* ---------- Existing UDP camera stream entry ---------- */
+  #cameraDock{
+    position:absolute;
+    left:32px;
+    bottom:24px;
+    z-index:42;
+    width:360px;
+  }
+  .camera-toggle{
+    width:100%;
+    min-height:58px;
+    padding:9px 11px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border:1px solid rgba(215,235,223,.12);
+    border-radius:14px;
+    background:linear-gradient(145deg,rgba(19,31,26,.92),rgba(8,15,12,.88));
+    color:#F1F3F0;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 16px 42px rgba(0,0,0,.26);
+    backdrop-filter:blur(16px);
+    cursor:pointer;
+    transition:border-color .2s ease,background .2s ease,transform .2s ease;
+  }
+  .camera-toggle:hover,.camera-toggle:focus-visible{
+    border-color:rgba(118,185,0,.46);
+    background:linear-gradient(145deg,rgba(24,39,30,.96),rgba(9,18,13,.92));
+    transform:translateY(-1px);
+    outline:none;
+  }
+  .camera-icon{
+    width:36px;
+    height:36px;
+    flex:none;
+    display:grid;
+    place-items:center;
+    border-radius:10px;
+    background:rgba(118,185,0,.13);
+    color:#A9EB36;
+  }
+  .camera-icon svg{width:20px;height:20px;stroke:currentColor;}
+  .camera-copy{min-width:0;display:flex;flex:1;flex-direction:column;align-items:flex-start;gap:2px;}
+  .camera-copy strong{font-size:14px;font-weight:700;letter-spacing:.02em;}
+  .camera-copy small{max-width:190px;overflow:hidden;color:rgba(185,190,185,.54);font-size:10px;text-overflow:ellipsis;white-space:nowrap;}
+  .camera-live-pill{
+    padding:4px 7px;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    border:1px solid rgba(185,190,185,.14);
+    border-radius:999px;
+    color:#8E948F;
+    font-family:"Prism","Arial Narrow",Arial,sans-serif;
+    font-size:9px;
+    letter-spacing:.08em;
+  }
+  .camera-live-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:#6D746E;}
+  #cameraDock.has-frame .camera-live-pill{border-color:rgba(118,185,0,.34);color:#B9FF41;}
+  #cameraDock.has-frame .camera-live-pill::before{background:#76B900;box-shadow:0 0 9px rgba(118,185,0,.86);animation:statusPulse 2.2s ease-in-out infinite;}
+  .camera-viewer{
+    position:absolute;
+    left:calc(100% + 12px);
+    bottom:0;
+    width:420px;
+    padding:10px;
+    visibility:hidden;
+    opacity:0;
+    pointer-events:none;
+    border:1px solid rgba(118,185,0,.24);
+    border-radius:18px;
+    background:linear-gradient(145deg,rgba(16,27,21,.98),rgba(5,11,8,.98));
+    box-shadow:0 24px 72px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.035);
+    transform:translateX(-8px) scale(.98);
+    transform-origin:left bottom;
+    transition:opacity .22s ease,transform .22s ease,visibility .22s ease;
+  }
+  #cameraDock.is-open .camera-viewer{visibility:visible;opacity:1;pointer-events:auto;transform:translateX(0) scale(1);}
+  .camera-viewer-head{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 9px;}
+  .camera-viewer-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;}
+  .camera-viewer-title i{width:6px;height:6px;border-radius:50%;background:#76B900;box-shadow:0 0 8px rgba(118,185,0,.8);}
+  .camera-close{width:26px;height:26px;border:0;border-radius:8px;background:transparent;color:#8E948F;font:inherit;font-size:18px;cursor:pointer;}
+  .camera-close:hover{background:rgba(241,243,240,.06);color:#F1F3F0;}
+  .camera-frame-shell{
+    position:relative;
+    aspect-ratio:16/9;
+    display:grid;
+    place-items:center;
+    overflow:hidden;
+    border:1px solid rgba(215,235,223,.10);
+    border-radius:12px;
+    background:#030705;
+  }
+  #cameraFrame{width:100%;height:100%;display:block;object-fit:cover;}
+  #cameraFrame[hidden]{display:none;}
+  #cameraEmpty{padding:18px;color:rgba(185,190,185,.50);font-size:12px;text-align:center;line-height:1.7;}
 
   .carpool-label>span{width:17px;height:17px;display:inline-flex;align-items:center;justify-content:center;}
   .carpool-label svg{width:17px;height:17px;stroke:currentColor;}
 
-  /* ---------- Read-only order details ---------- */
-  .order-detail-modal{
+  /* ---------- Robot status popover ---------- */
+  #robotPopover{
     position:fixed;
-    inset:0;
-    z-index:80;
-    display:grid;
-    place-items:center;
-    padding:24px;
+    z-index:55;
+    width:238px;
+    padding:14px;
     visibility:hidden;
     opacity:0;
     pointer-events:none;
-    transition:opacity .22s ease,visibility .22s ease;
-  }
-  .order-detail-modal.is-open{visibility:visible;opacity:1;pointer-events:auto;}
-  .order-detail-backdrop{
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    padding:0;
-    border:0;
-    background:rgba(3,7,5,.72);
-    backdrop-filter:blur(8px);
-    cursor:default;
-  }
-  .order-detail-sheet{
-    position:relative;
-    width:min(460px,100%);
-    max-height:min(720px,calc(100vh - 48px));
-    overflow:auto;
-    overscroll-behavior:contain;
-    -webkit-overflow-scrolling:touch;
-    touch-action:pan-y;
-    padding:24px;
-    border:1px solid rgba(185,255,65,.20);
-    border-radius:18px;
-    background:linear-gradient(145deg,rgba(21,28,23,.98),rgba(8,14,10,.98));
-    box-shadow:0 36px 100px rgba(0,0,0,.58),inset 0 1px 0 rgba(255,255,255,.05);
-    transform:translateY(16px) scale(.98);
-    transition:transform .26s cubic-bezier(.2,.8,.2,1);
-  }
-  .order-detail-modal.is-open .order-detail-sheet{transform:translateY(0) scale(1);}
-  .order-detail-close{
-    position:absolute;
-    top:16px;
-    right:16px;
-    width:34px;
-    height:34px;
-    border:1px solid rgba(215,235,223,.12);
-    border-radius:50%;
-    background:rgba(241,243,240,.05);
-    color:#F1F3F0;
-    font-size:21px;
-    line-height:1;
-    cursor:pointer;
-  }
-  .order-detail-kicker{
-    color:#A9EB36;
-    font-family:"Prism","Arial Narrow",Arial,sans-serif;
-    font-size:10px;
-    letter-spacing:.15em;
-  }
-  .order-detail-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:10px 42px 22px 0;}
-  .order-detail-heading h2{margin:0;color:#F1F3F0;font-size:25px;line-height:1.2;}
-  .detail-route{
-    position:relative;
-    display:grid;
-    grid-template-columns:32px 1fr;
-    gap:0 13px;
-    padding:16px;
-    border:1px solid rgba(215,235,223,.10);
+    border:1px solid rgba(185,255,65,.22);
     border-radius:12px;
-    background:rgba(7,13,10,.62);
+    background:linear-gradient(145deg,rgba(20,29,23,.96),rgba(7,13,9,.96));
+    box-shadow:0 20px 60px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.04);
+    backdrop-filter:blur(14px);
+    transform:translateY(6px) scale(.98);
+    transition:opacity .2s ease,transform .2s ease,visibility .2s ease;
   }
-  .detail-route-line{position:absolute;left:31px;top:35px;bottom:35px;width:1px;background:rgba(118,185,0,.42);}
-  .detail-route-dot{
-    position:relative;
-    z-index:1;
-    width:12px;
-    height:12px;
-    margin:7px 0 26px 10px;
-    border:2px solid #0F1210;
-    border-radius:50%;
-    background:#70A4FF;
-    box-shadow:0 0 0 4px rgba(112,164,255,.13);
-  }
-  .detail-route-dot:last-of-type{margin-bottom:7px;background:#D85B46;box-shadow:0 0 0 4px rgba(216,91,70,.13);}
-  .detail-route-copy{padding-bottom:21px;}
-  .detail-route-copy:last-child{padding-bottom:0;}
-  .detail-route-copy span,.detail-meta dt{display:block;color:rgba(185,190,185,.52);font-size:10px;letter-spacing:.08em;}
-  .detail-route-copy strong{display:block;margin-top:3px;color:#F1F3F0;font-size:16px;}
-  .detail-progress{margin:20px 0 4px;}
-  .detail-progress-copy{display:flex;justify-content:space-between;margin-bottom:9px;color:#B9BEB9;font-size:12px;}
-  .detail-progress .progress-track{margin:0;}
-  .detail-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0 0;}
-  .detail-meta>div{min-width:0;padding:12px;border-top:1px solid rgba(215,235,223,.09);}
-  .detail-meta dd{margin:6px 0 0;color:#F1F3F0;font-size:13px;overflow-wrap:anywhere;}
-  body.order-detail-open{overflow:hidden;}
+  #robotPopover.is-open{visibility:visible;opacity:1;pointer-events:auto;transform:translateY(0) scale(1);}
+  .robot-pop-kicker{color:#A9EB36;font-family:"Prism","Arial Narrow",Arial,sans-serif;font-size:8px;letter-spacing:.14em;}
+  .robot-pop-title{margin:7px 0 12px;color:#F1F3F0;font-size:15px;font-weight:780;}
+  .robot-pop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .robot-pop-item span{display:block;color:rgba(185,190,185,.48);font-size:9px;}
+  .robot-pop-item strong{display:block;margin-top:3px;color:#F1F3F0;font-size:12px;}
+  .robot-pop-progress{margin-top:12px;}
+  .robot-pop-progress .progress-track{margin-top:7px;}
 
   @keyframes cardSweepOnce{
     from{transform:translateX(-125%);opacity:.4;}
     to{transform:translateX(125%);opacity:0;}
   }
   @keyframes vehicleHalo{
-    0%{opacity:.76;transform:scale(.66);}
-    78%,100%{opacity:0;transform:scale(1.28);}
+    0%,58%{opacity:0;transform:scale(.82);}
+    64%{opacity:.42;}
+    100%{opacity:0;transform:scale(1.15);}
   }
-  @keyframes routeFlow{to{stroke-dashoffset:-23;}}
-
+  @keyframes routeFlow{to{stroke-dashoffset:-28;}}
+  @keyframes routeDraw{to{stroke-dashoffset:0;}}
+  @keyframes focusRouteIn{from{opacity:0;}to{opacity:1;}}
+  @keyframes targetBreathe{50%{opacity:.72;transform:translate(-50%,-50%) scale(1.06);}}
+  @keyframes orderEnter{from{opacity:0;transform:translateY(9px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes orderExit{to{opacity:0;transform:scale(.96);max-height:0;padding-top:0;padding-bottom:0;margin:0;border-width:0;}}
+  @keyframes badgeSwitch{0%{opacity:.35;transform:translateY(3px);}100%{opacity:1;transform:translateY(0);}}
   @media (max-width:900px){
     .wordmark{left:16px;top:14px;}
     #systemRail{top:12px;right:16px;}
-    #systemRail .system-metric{display:none;}
     #systemRail #hintChip{max-width:46vw;}
-    #sidePanel{left:16px;right:16px;top:auto;bottom:16px;width:auto;animation:none;}
+    #sidePanel{left:16px;right:16px;top:auto;bottom:84px;width:auto;animation:none;}
     .panel-card{max-height:48vh;padding:13px 14px;}
-    .queue-panel{height:min(48vh,430px);max-height:48vh;}
+    .panel-card:not(.queue-panel){overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+    .queue-panel{height:auto;max-height:48vh;}
     .queue-panel .order-list{max-height:none;}
-    #mapLegend{left:16px;bottom:50vh;}
+    #mapLegend{left:16px;top:calc(51vh - 30px);bottom:auto;}
+    #cameraDock{left:16px;right:16px;bottom:16px;width:auto;}
+    .camera-viewer{position:fixed;left:16px;right:16px;top:108px;bottom:auto;width:auto;transform:translateY(8px) scale(.98);transform-origin:center top;}
+    #cameraDock.is-open .camera-viewer{transform:translateY(0) scale(1);}
   }
 
   @media (max-width:520px){
@@ -922,17 +1064,7 @@
     #systemRail{top:56px;left:16px;right:16px;}
     #systemRail #hintChip{width:100%;max-width:none;min-height:32px;padding:7px 10px;font-size:11px;}
     #mapLegend{gap:9px;padding:7px 8px;font-size:8px;}
-    .order-detail-modal{align-items:end;padding:0;}
-    .order-detail-sheet{
-      width:100%;
-      max-height:82vh;
-      padding:22px 18px max(22px,env(safe-area-inset-bottom));
-      border-width:1px 0 0;
-      border-radius:20px 20px 0 0;
-      transform:translateY(100%);
-    }
-    .order-detail-modal.is-open .order-detail-sheet{transform:translateY(0);}
-    .detail-meta{grid-template-columns:1fr;}
+    #robotPopover{width:min(238px,calc(100vw - 32px));}
   }
 
   @media (prefers-reduced-motion:reduce){
@@ -947,7 +1079,7 @@
       <svg id="routeSvg" viewBox="0 0 1440 900"></svg>
       <div id="pinLayer"></div>
       <div id="markerLayer"></div>
-      <div id="robotMarker">
+      <div id="robotMarker" role="button" tabindex="0" aria-label="查看机器人实时状态" aria-expanded="false">
         <svg width="26" height="26" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
           <g clip-path="url(#wmClipRobot)">
             <rect x="1.5625" y="1.5625" width="31.25" height="31.25" rx="10.9375" fill="#5292FF"/>
@@ -982,47 +1114,55 @@
 
     <div id="systemRail" data-state="connecting" aria-label="系统实时状态">
       <div id="hintChip">正在连接配送服务</div>
-      <div class="system-metric"><span>POSITION</span><strong id="vehicleNodeLabel">定位中</strong></div>
-      <div class="system-metric"><span>MISSION</span><strong id="missionProgressLabel">待命</strong></div>
     </div>
 
     <div id="mapLegend" aria-label="地图图例">
-      <span><i class="legend-line"></i>活动路线</span>
+      <span><i class="legend-line"></i>当前路线</span>
+      <span><i class="legend-line legend-done"></i>已走路线</span>
       <span><i class="legend-line legend-road"></i>普通道路</span>
-      <span><i class="legend-line legend-alert"></i>路线异常</span>
     </div>
 
     <div id="sidePanel"></div>
 
+    <div id="cameraDock" aria-label="Live vehicle camera">
+      <button class="camera-toggle" id="cameraToggle" type="button" aria-expanded="false" aria-controls="cameraViewer">
+        <span class="camera-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7.5h3l1.4-2h7.2l1.4 2h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </span>
+        <span class="camera-copy">
+          <strong>Live Camera</strong>
+          <small id="cameraStatusText">Connecting to feed</small>
+        </span>
+        <span class="camera-live-pill">LIVE</span>
+      </button>
+      <div class="camera-viewer" id="cameraViewer" aria-hidden="true">
+        <div class="camera-viewer-head">
+          <div class="camera-viewer-title"><i></i><span>Vehicle Camera</span></div>
+          <button class="camera-close" id="cameraClose" type="button" aria-label="Close camera">×</button>
+        </div>
+        <div class="camera-frame-shell">
+          <img id="cameraFrame" alt="Live vehicle camera feed" hidden>
+          <div id="cameraEmpty">Waiting for vehicle feed<br>UDP 8888</div>
+        </div>
+      </div>
+    </div>
+
     <div id="toast"></div>
 
-    <div id="orderDetailModal" class="order-detail-modal" aria-hidden="true">
-      <button class="order-detail-backdrop" type="button" data-close-order-detail aria-label="关闭订单详情"></button>
-      <section class="order-detail-sheet" role="dialog" aria-modal="true" aria-labelledby="orderDetailTitle">
-        <button class="order-detail-close" type="button" data-close-order-detail aria-label="关闭订单详情">×</button>
-        <div class="order-detail-kicker" id="orderDetailNumber">ORDER DETAILS</div>
-        <div class="order-detail-heading">
-          <h2 id="orderDetailTitle">订单详情</h2>
-          <div class="badge badge-queued" id="orderDetailBadge">排队中</div>
-        </div>
-        <div class="detail-route">
-          <div class="detail-route-line" aria-hidden="true"></div>
-          <div class="detail-route-dot" aria-hidden="true"></div>
-          <div class="detail-route-copy"><span>取件地点</span><strong id="orderDetailFrom">—</strong></div>
-          <div class="detail-route-dot" aria-hidden="true"></div>
-          <div class="detail-route-copy"><span>送达地点</span><strong id="orderDetailTo">—</strong></div>
-        </div>
-        <div class="detail-progress">
-          <div class="detail-progress-copy"><span>配送进度</span><strong id="orderDetailProgressLabel">等待调度</strong></div>
-          <div class="progress-track"><div class="progress-fill" id="orderDetailProgress"></div></div>
-        </div>
-        <dl class="detail-meta">
-          <div><dt>下单时间</dt><dd id="orderDetailTime">—</dd></div>
-          <div><dt>系统订单号</dt><dd id="orderDetailServerId">—</dd></div>
-          <div><dt>配送方式</dt><dd id="orderDetailMode">智能小车</dd></div>
-          <div><dt>实时状态</dt><dd id="orderDetailStatus">—</dd></div>
-        </dl>
-      </section>
+    <div id="robotPopover" role="status" aria-live="polite">
+      <div class="robot-pop-kicker">ROBOT LIVE STATUS</div>
+      <div class="robot-pop-title" id="robotTaskLabel">当前无执行任务</div>
+      <div class="robot-pop-grid">
+        <div class="robot-pop-item"><span>下一站</span><strong id="robotNextStop">等待调度</strong></div>
+        <div class="robot-pop-item"><span>预计状态</span><strong id="robotEtaStatus">静止待命</strong></div>
+      </div>
+      <div class="robot-pop-progress">
+        <div class="robot-pop-item"><span>配送进度</span><strong id="robotProgressLabel">0%</strong></div>
+        <div class="progress-track"><div class="progress-fill" id="robotProgressFill" style="width:0%"></div></div>
+      </div>
     </div>
   </div>
 
@@ -1051,7 +1191,7 @@ const NODES = {
   like:      { x: 350,  y: 242, label: '理科楼',     selectable: true },
   library:   { x: 560,  y: 242, label: '图书馆',     selectable: true },
   sushimin:  { x: 801,  y: 242, label: '苏世民书院', selectable: true },
-  dongda:    { x: 1154, y: 242, label: '东大操场',   selectable: true },
+  dongda:    { x: 1050, y: 242, label: '东大操场',   selectable: true },
   hospital:  { x: 147,  y: 465, label: '校医院',     selectable: true },
   dorm:      { x: 801,  y: 465, label: '学生宿舍',   selectable: true },
   dongmen:   { x: 1269, y: 465, label: '东门',       selectable: true },
@@ -1064,7 +1204,6 @@ const NODES = {
   // junctions (routing only, not selectable / not drawn)
   j1:        { x: 147,  y: 242, label: '', selectable: false },
   jBumpL:    { x: 555,  y: 242, label: '', selectable: false },
-  jBumpR:    { x: 1050, y: 242, label: '', selectable: false },
   j3:        { x: 1269, y: 242, label: '', selectable: false },
   jBumpTL:   { x: 555,  y: 30,  label: '', selectable: false },
   jBumpTR:   { x: 1050, y: 30,  label: '', selectable: false },
@@ -1076,9 +1215,8 @@ const NODES = {
 const EDGES = [
   ['j1','like'],['like','library'],['library','jBumpL'],
   ['jBumpL','sushimin'],
-  ['sushimin','jBumpR'],
-  ['jBumpR','dongda'],['dongda','j3'],
-  ['jBumpL','jBumpTL'],['jBumpTL','zijing'],['zijing','jBumpTR'],['jBumpTR','jBumpR'],
+  ['sushimin','dongda'],['dongda','j3'],
+  ['jBumpL','jBumpTL'],['jBumpTL','zijing'],['zijing','jBumpTR'],['jBumpTR','dongda'],
   ['j1','hospital'],['hospital','j4'],
   ['sushimin','dorm'],['dorm','xinqinghua'],
   ['j3','dongmen'],['dongmen','aBuild'],
@@ -1260,9 +1398,13 @@ const state = {
   orders: [],
   tab: 'active',           // 'active' | 'all'
   selecting: null,         // null | {from:nodeId|null, to:nodeId|null}
+  focusedOrderId: null,    // presentation-only map/order linkage
   robotPos: 'hall',        // node id the robot is physically resting at when idle
   run: null,               // null | {orderIds, rawPath, points, breakLen, totalLen, startTime, duration, t}
 };
+
+const seenOrderIds = new Set();
+const lastOrderStatuses = new Map();
 
 function seedOrders() {
   state.orders = [];
@@ -1412,21 +1554,21 @@ function showToast(msg) {
 const STATIC_CHAINS = [
   ['jBumpL','library','like','j1','hospital','j4','hall'],
   ['jBumpL','sushimin'],
-  ['jBumpL','jBumpTL','zijing','jBumpTR','jBumpR'],
-  ['sushimin','jBumpR'],
+  ['jBumpL','jBumpTL','zijing','jBumpTR','dongda'],
+  ['sushimin','dongda'],
   ['sushimin','dorm','xinqinghua'],
-  ['jBumpR','dongda','j3','dongmen','aBuild'],
+  ['dongda','j3','dongmen','aBuild'],
   ['hall','xinqinghua'],
   ['xinqinghua','zhongyang','aBuild'],
-  ['hall','j7','zhaolan','keji','j8'],
-  ['aBuild','j8'],
+  ['hall','j7','zhaolan','keji','j8','aBuild'],
 ];
 
 function buildStaticRoads() {
   const svg = document.getElementById('roadLayer');
   svg.innerHTML = STATIC_CHAINS.map(ids => {
     const pts = ids.map(id => NODES[id]);
-    return `<path d="${roundedPathD(pts, ROUTE_CORNER_R)}" class="road-static" />`;
+    const path = roundedPathD(pts, ROUTE_CORNER_R);
+    return `<path d="${path}" class="road-base" /><path d="${path}" class="road-center" />`;
   }).join('');
 }
 
@@ -1436,11 +1578,13 @@ function buildPins() {
   layer.innerHTML = '';
   Object.entries(NODES).forEach(([id, n]) => {
     if (!n.selectable) return;
-    const wrap = document.createElement('div');
+    const wrap = document.createElement('button');
     wrap.className = 'pin' + (n.home ? ' pin-home' : '');
+    wrap.type = 'button';
     wrap.style.left = n.x + 'px';
     wrap.style.top = n.y + 'px';
     wrap.dataset.node = id;
+    wrap.setAttribute('aria-label',`选择${n.label}`);
     wrap.innerHTML = `<div class="pin-dot"></div><div class="pin-label">${n.label}</div>`;
     wrap.addEventListener('click', (e) => { e.stopPropagation(); onPinClick(id); });
     layer.appendChild(wrap);
@@ -1470,7 +1614,7 @@ function renderSvgOverlay() {
   // selection preview (from/to picking) — pathPoints() is already rounded
   if (state.selecting && state.selecting.from && state.selecting.to) {
     const pts = pathPoints(state.selecting.from, state.selecting.to);
-    markup += `<path d="${pointsToPathD(pts)}" class="route-preview" />`;
+    markup += `<path d="${pointsToPathD(pts)}" pathLength="1" class="route-preview route-preview-draw" />`;
   }
 
   svg.innerHTML = markup;
@@ -1512,8 +1656,10 @@ function renderSvgOverlay() {
 
 function buildStopMarker(nodeId, num, color, iconMode) {
   const n = NODES[nodeId];
-  const el = document.createElement('div');
+  const el = document.createElement('button');
   el.className = 'stop-marker';
+  el.type = 'button';
+  el.dataset.node = nodeId;
   el.style.left = n.x + 'px';
   el.style.top = n.y + 'px';
   const content = iconMode === 'load' ? ICON_LOAD : iconMode === 'unload' ? ICON_UNLOAD : num;
@@ -1549,74 +1695,94 @@ function buildEndpointMarker(nodeId, kind) {
   el.style.left = n.x + 'px';
   el.style.top = n.y + 'px';
   const icon = kind === 'from' ? ICON_FROM : ICON_TO;
+  const stepLabel = kind === 'from' ? '① Pickup' : '② Drop-off';
   el.innerHTML = `
     <div class="endpoint-badge endpoint-badge-${kind}">${icon}</div>
-    <div class="endpoint-tag tag-${kind}">${n.label}</div>`;
+    <div class="endpoint-tag tag-${kind}">${stepLabel} · ${n.label}</div>`;
   return el;
 }
 
 /* ---------- 8. Rendering: side panel ---------- */
 function renderPanel() {
   const panel = document.getElementById('sidePanel');
+  const previousCard = panel.querySelector('.panel-card');
+  const previousPanelScrollTop = previousCard ? previousCard.scrollTop : 0;
   const previousList = panel.querySelector('.order-list');
   const previousScrollTop = previousList ? previousList.scrollTop : 0;
+  const visibleIds = new Set(state.orders
+    .filter(o => state.tab === 'all' || o.status !== '已送达')
+    .map(o => String(o.id)));
+  const exitingCards = previousList ? [...previousList.querySelectorAll('.order-card[data-order]')]
+    .filter(card => !visibleIds.has(String(card.dataset.order)))
+    .map(card => card.cloneNode(true)) : [];
   if (state.selecting) {
     panel.innerHTML = selectionPanelHTML();
     wireSelectionPanel();
+    const nextCard = panel.querySelector('.panel-card');
+    if (nextCard) nextCard.scrollTop = previousPanelScrollTop;
     document.getElementById('hintChip').textContent = hintText();
   } else {
     panel.innerHTML = queuePanelHTML();
     wireQueuePanel();
     const nextList = panel.querySelector('.order-list');
-    if (nextList) nextList.scrollTop = previousScrollTop;
+    if (nextList) {
+      nextList.scrollTop = previousScrollTop;
+      exitingCards.forEach(card => {
+        card.classList.remove('order-card-new','order-card-focused');
+        card.classList.add('order-card-exit');
+        nextList.appendChild(card);
+        setTimeout(() => card.remove(), 320);
+      });
+    }
+    markOrderVisualState();
     document.getElementById('hintChip').textContent = '点选地图上的建筑，选择取件与送达地点';
   }
 }
 
 function hintText() {
   const s = state.selecting;
-  if (s.from && !s.to) return '取件点已选择 · 请在地图上点选送达建筑';
-  if (s.from && s.to) return '已选择取送地点 · 点击下方「确认下单」';
-  return '请在地图上点选取件建筑';
+  if (s.from && !s.to) return 'Select a drop-off';
+  if (s.from && s.to) return 'Route ready · Confirm below';
+  return 'Select a pickup on the map';
 }
 
 function selectionPanelHTML() {
   const s = state.selecting;
-  const fromLabel = s.from ? NODES[s.from].label : '点选地图上的建筑作为取件点';
-  const toLabel = s.to ? NODES[s.to].label : '点选地图上的建筑作为送达点';
+  const fromLabel = s.from ? NODES[s.from].label : 'Select pickup';
+  const toLabel = s.to ? NODES[s.to].label : 'Select drop-off';
   const ready = s.from && s.to;
   let extra = '';
   if (ready) {
     const eta = etaInfo(s.from, s.to);
     const sub = eta.queueAhead > 0
-      ? `距离 ${eta.distM} 米 · 前面 ${eta.queueAhead} 单排队 · 预计 ${eta.waitMin} 分钟后出发`
-      : `距离 ${eta.distM} 米 · 机器人即将出发`;
+      ? `${eta.distM} m away · ${eta.queueAhead} ahead`
+      : `${eta.distM} m away · No queue`;
     extra = `
-      <div class="eta-heading">${eta.totalMin} 分钟后送达</div>
+      <div class="eta-heading">ETA · ${eta.totalMin} min</div>
       <div class="eta-sub">${sub}</div>
       <div class="name-field">
-        <div class="name-label">姓名</div>
+        <div class="name-label">Name</div>
         <input class="name-input" id="nameInput" type="text" maxlength="12" value="${s.name || peekName()}" />
       </div>
       <div class="sel-actions">
-        <button class="btn btn-primary" id="confirmSelBtn">确认下单</button>
+        <button class="btn btn-primary" id="confirmSelBtn">Confirm</button>
       </div>`;
   }
   return `
     <div class="panel-card">
       <div class="panel-header">
-        <div class="panel-title">新建配送</div>
-        <button class="icon-btn" id="closeSelBtn" aria-label="关闭">×</button>
+        <div class="panel-title">New Delivery</div>
+        <button class="icon-btn" id="closeSelBtn" aria-label="Close">×</button>
       </div>
       <div class="ft-card">
         <div class="ft-row">
           <div class="ft-icon">${ICON_FROM}</div>
-          <div class="ft-text"><span class="ft-tag ft-tag-from">取件</span><span class="ft-val ${s.from?'':'ft-placeholder'}">${fromLabel}</span></div>
+          <div class="ft-text"><span class="ft-tag ft-tag-from">Pickup</span><span class="ft-val ${s.from?'':'ft-placeholder'}">${fromLabel}</span></div>
         </div>
         ${ ready ? `<button class="swap-btn" id="swapBtnSel" aria-label="交换取送地点">⇅</button>` : '' }
         <div class="ft-row">
           <div class="ft-icon ft-icon-to">${ICON_TO}</div>
-          <div class="ft-text"><span class="ft-tag ft-tag-to">送达</span><span class="ft-val ${s.to?'':'ft-placeholder'}">${toLabel}</span></div>
+          <div class="ft-text"><span class="ft-tag ft-tag-to">Drop-off</span><span class="ft-val ${s.to?'':'ft-placeholder'}">${toLabel}</span></div>
         </div>
       </div>
       ${ ready ? '' : `<div class="status-line">${hintText()}</div>` }
@@ -1643,6 +1809,23 @@ function swapSelection() {
   renderPanel();
 }
 
+function displayOrderStatus(order) {
+  const value = order && (order.statusLabel || order.status);
+  return ({
+    '排队中':'Queued',
+    '前往取件':'To Pickup',
+    '等待装载':'Awaiting Load',
+    '配送中':'En Route',
+    '正在配送':'En Route',
+    '即将到达':'Arriving',
+    '等待取件':'Awaiting Collection',
+    '等待卸货':'Awaiting Collection',
+    '已送达':'Delivered',
+    '已完成':'Completed',
+    '处理中':'Processing'
+  })[value] || value || 'Processing';
+}
+
 function buildQueueBody() {
   const list = state.orders.filter(o => state.tab === 'all' ? true : o.status !== '已送达');
   const overflow = state.orders.filter(o => o.status === '排队中').length;
@@ -1650,11 +1833,11 @@ function buildQueueBody() {
   let bodyHTML = '';
   if (list.length === 0) {
     bodyHTML = `
-      <div class="empty-slogan">有了清送，更轻松</div>
+      <div class="empty-slogan">Ready when you are</div>
       <div class="log-empty">
         ${state.tab === 'all'
-          ? '没有进行中或未来的订单<br>（都已送达，可切到"进行中"查看）'
-          : '暂无记录<br>选好起点和终点并点击「确认」后<br>会显示在这里'}
+          ? 'No delivery history yet'
+          : 'No active deliveries<br>Select pickup and drop-off to begin'}
       </div>`;
   } else {
     // group orders genuinely riding together in the same run (real pooling,
@@ -1677,11 +1860,11 @@ function buildQueueBody() {
   if (list.length) {
     if (state.tab === 'all') {
       const doneCount = state.orders.filter(o => o.status === '已送达').length;
-      footerHTML = `<div class="panel-footer">共 ${state.orders.length} 单 · ${doneCount} 单已送达</div>`;
+      footerHTML = `<div class="panel-footer">${state.orders.length} total · ${doneCount} delivered</div>`;
     } else {
       footerHTML = overflow > 0
-        ? `<div class="panel-footer">还有 ${overflow} 单排队中 · 机器人最多同时处理 5 单</div>`
-        : `<div class="panel-footer">机器人最多同时处理 5 单</div>`;
+        ? `<div class="panel-footer">${overflow} queued</div>`
+        : '';
     }
   }
 
@@ -1694,12 +1877,12 @@ function queuePanelHTML() {
     <div class="panel-card queue-panel">
       <div class="drag-handle"></div>
       <div class="panel-header">
-        <div class="panel-title">配送队列</div>
-        <div class="count-pill">${totalOpen()} 单</div>
+        <div class="panel-title">Delivery Queue</div>
+        <div class="count-pill">${totalOpen()} OPEN</div>
       </div>
       <div class="tabs">
-        <button class="tab ${state.tab==='active'?'tab-active':''}" data-tab="active">进行中</button>
-        <button class="tab ${state.tab==='all'?'tab-active':''}" data-tab="all">全部</button>
+        <button class="tab ${state.tab==='active'?'tab-active':''}" data-tab="active">Active</button>
+        <button class="tab ${state.tab==='all'?'tab-active':''}" data-tab="all">All</button>
       </div>
       <div class="order-list">${bodyHTML}</div>
       <div class="panel-footer-slot">${footerHTML}</div>
@@ -1711,11 +1894,12 @@ function updateQueuePanelLive() {
   if (!card || !card.querySelector('.tabs')) { renderPanel(); return; }
   const { bodyHTML, footerHTML } = buildQueueBody();
   const countEl = card.querySelector('.count-pill');
-  if (countEl) countEl.textContent = `${totalOpen()} 单`;
+  if (countEl) countEl.textContent = `${totalOpen()} OPEN`;
   const listEl = card.querySelector('.order-list');
   if (listEl) listEl.innerHTML = bodyHTML;
   const footerSlot = card.querySelector('.panel-footer-slot');
   if (footerSlot) footerSlot.innerHTML = footerHTML;
+  markOrderVisualState();
 }
 
 function orderSort(a,b) {
@@ -1727,15 +1911,41 @@ function statusBadgeClass(status) {
   return { '配送中':'badge-active','排队中':'badge-queued','已送达':'badge-done' }[status];
 }
 
+function orderCardVisualClass(order) {
+  const classes = [];
+  if (String(state.focusedOrderId) === String(order.id)) classes.push('order-card-focused');
+  if (!seenOrderIds.has(String(order.id))) classes.push('order-card-new');
+  return classes.join(' ');
+}
+
+function orderCardAriaLabel(order) {
+  return String(state.focusedOrderId) === String(order.id)
+    ? `取消聚焦订单 #0${order.id}`
+    : `在地图上聚焦订单 #0${order.id}`;
+}
+
+function orderBadgeVisualClass(order) {
+  const previous = lastOrderStatuses.get(String(order.id));
+  const current = displayOrderStatus(order);
+  return previous && previous !== current ? 'badge-changed' : '';
+}
+
+function markOrderVisualState() {
+  state.orders.forEach(order => {
+    seenOrderIds.add(String(order.id));
+    lastOrderStatuses.set(String(order.id),displayOrderStatus(order));
+  });
+}
+
 function orderCardHTML(o) {
   const isActive = o.status === '配送中';
   const isDone = o.status === '已送达';
-  const badgeLabel = isDone ? '✓ 已送达' : (o.statusLabel || o.status);
+  const badgeLabel = isDone ? '✓ Delivered' : displayOrderStatus(o);
   return `
-    <div class="order-card ${isActive?'order-card-active':''}" data-order="${o.id}" role="button" tabindex="0" aria-label="查看订单 #0${o.id} 详情">
+    <div class="order-card ${isActive?'order-card-active':''} ${orderCardVisualClass(o)}" data-order="${o.id}" role="button" tabindex="0" aria-label="${orderCardAriaLabel(o)}">
       <div class="order-top">
         <div class="order-id">#0${o.id} · ${o.ts ? tsLabel(o.ts) : ''}</div>
-        <div class="badge ${statusBadgeClass(o.status)}">${badgeLabel}</div>
+        <div class="badge ${statusBadgeClass(o.status)} ${orderBadgeVisualClass(o)}">${badgeLabel}</div>
       </div>
       <div class="order-name">${o.name}</div>
       <div class="order-route">${NODES[o.from].label} → ${NODES[o.to].label}</div>
@@ -1746,12 +1956,12 @@ function orderCardHTML(o) {
 function carpoolGroupHTML(members) {
   return `
     <div class="carpool-box">
-      <div class="carpool-label"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16h14l-1.5-5.5a2 2 0 0 0-1.9-1.5H8.4a2 2 0 0 0-1.9 1.5L5 16Z" stroke-width="1.8"/><path d="M3.5 16v3M20.5 16v3M7 19h10M8 13h8" stroke-width="1.8" stroke-linecap="round"/><circle cx="7" cy="17" r="1.2" fill="currentColor" stroke="none"/><circle cx="17" cy="17" r="1.2" fill="currentColor" stroke="none"/></svg></span> 拼车同行 · ${members.length} 单共享路线</div>
+      <div class="carpool-label"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16h14l-1.5-5.5a2 2 0 0 0-1.9-1.5H8.4a2 2 0 0 0-1.9 1.5L5 16Z" stroke-width="1.8"/><path d="M3.5 16v3M20.5 16v3M7 19h10M8 13h8" stroke-width="1.8" stroke-linecap="round"/><circle cx="7" cy="17" r="1.2" fill="currentColor" stroke="none"/><circle cx="17" cy="17" r="1.2" fill="currentColor" stroke="none"/></svg></span> Pooled · ${members.length} orders share this route</div>
       ${members.map(m => `
-        <div class="order-card order-card-sub" data-order="${m.id}" role="button" tabindex="0" aria-label="查看订单 #0${m.id} 详情">
+        <div class="order-card order-card-sub ${orderCardVisualClass(m)}" data-order="${m.id}" role="button" tabindex="0" aria-label="${orderCardAriaLabel(m)}">
           <div class="order-top">
             <div class="order-id">#0${m.id} · ${tsLabel(m.ts)}</div>
-            <div class="badge ${statusBadgeClass(m.status)}">${m.statusLabel || m.status}</div>
+            <div class="badge ${statusBadgeClass(m.status)} ${orderBadgeVisualClass(m)}">${displayOrderStatus(m)}</div>
           </div>
           <div class="order-name">${m.name}</div>
           <div class="order-route">${NODES[m.from].label} → ${NODES[m.to].label}</div>
@@ -1772,90 +1982,198 @@ function wireQueuePanel() {
   });
 }
 
-function orderDetailDate(ts) {
-  if (!ts) return '—';
-  const d = new Date(ts);
-  if (Number.isNaN(d.getTime())) return '—';
-  return new Intl.DateTimeFormat('zh-CN', {
-    month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false
-  }).format(d);
+function focusedOrder() {
+  return state.orders.find(order => String(order.id) === String(state.focusedOrderId)) || null;
 }
 
-function findSnapshotOrder(order) {
-  const snapshotOrders = window.deliveryBackendAdapter?.snapshot?.orders;
-  if (!Array.isArray(snapshotOrders) || !order) return null;
-  return snapshotOrders.find(item => item.order_id === order.serverOrderId) || null;
+function clearOrderFocus() {
+  state.focusedOrderId = null;
+  renderSvgOverlay();
+  renderPanel();
+  enhanceMapPresentation();
+  layoutMap();
 }
 
-function openOrderDetail(orderId) {
+function focusOrder(orderId, allowToggle = true) {
   const order = state.orders.find(item => String(item.id) === String(orderId));
-  const modal = document.getElementById('orderDetailModal');
-  if (!order || !modal) return;
-
-  const rawOrder = findSnapshotOrder(order);
-  const statusLabel = order.statusLabel || order.status || '处理中';
-  const liveProgress = Number(orderProgressPercent(order)) || 0;
-  const statusProgress = order.status === '已送达' ? 100
-    : (statusLabel === '等待取件' ? 92
-      : (statusLabel === '配送中' ? 62
-        : (statusLabel === '等待装载' ? 38
-          : (statusLabel === '前往取件' ? 18 : 6))));
-  const progress = Math.max(liveProgress, statusProgress);
-  const isDone = order.status === '已送达';
-  const badge = document.getElementById('orderDetailBadge');
-  const serverId = order.serverOrderId || rawOrder?.order_id || '本地预览订单';
-
-  document.getElementById('orderDetailNumber').textContent = `ORDER #${String(order.id).padStart(3,'0')} · DETAILS`;
-  document.getElementById('orderDetailTitle').textContent = order.name || '配送订单';
-  document.getElementById('orderDetailFrom').textContent = NODES[order.from]?.label || '—';
-  document.getElementById('orderDetailTo').textContent = NODES[order.to]?.label || '—';
-  document.getElementById('orderDetailProgressLabel').textContent = statusLabel;
-  document.getElementById('orderDetailProgress').style.width = `${isDone ? 100 : progress}%`;
-  document.getElementById('orderDetailTime').textContent = orderDetailDate(order.ts);
-  document.getElementById('orderDetailServerId').textContent = String(serverId);
-  document.getElementById('orderDetailMode').textContent = order.groupId ? '智能拼车配送' : '智能小车配送';
-  document.getElementById('orderDetailStatus').textContent = statusLabel;
-
-  badge.className = `badge ${statusBadgeClass(order.status)}`;
-  badge.textContent = isDone ? '✓ 已送达' : statusLabel;
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden','false');
-  document.body.classList.add('order-detail-open');
-  modal.querySelector('.order-detail-close').focus({preventScroll:true});
+  if (!order) return;
+  if (allowToggle && String(state.focusedOrderId) === String(order.id)) {
+    clearOrderFocus();
+    return;
+  }
+  state.focusedOrderId = order.id;
+  state.selecting = null;
+  clearPinStates();
+  renderSvgOverlay();
+  renderPanel();
+  enhanceMapPresentation();
+  layoutMap();
 }
 
-function closeOrderDetail() {
-  const modal = document.getElementById('orderDetailModal');
-  if (!modal || !modal.classList.contains('is-open')) return;
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden','true');
-  document.body.classList.remove('order-detail-open');
+function currentSnapshotOrder() {
+  const snapshot = window.deliveryBackendAdapter?.snapshot;
+  if (!snapshot || !Array.isArray(snapshot.orders)) return null;
+  const raw = snapshot.orders.find(order => order.order_id === snapshot.current_order_id);
+  return raw ? state.orders.find(order => order.serverOrderId === raw.order_id) || null : null;
 }
 
-function wireOrderDetails() {
+function orderForRouteNode(nodeId) {
+  const candidates = state.orders.filter(order => order.status !== '已送达' && (order.from === nodeId || order.to === nodeId));
+  return candidates.find(order => String(order.id) === String(state.focusedOrderId))
+    || candidates.find(order => order.serverOrderId === window.deliveryBackendAdapter?.snapshot?.current_order_id)
+    || candidates[0]
+    || null;
+}
+
+function uiNodeFromServer(nodeId) {
+  const label = PRESENTATION_NODE_LABELS[Number(nodeId)];
+  return Object.keys(NODES).find(id => NODES[id].label === label) || null;
+}
+
+function toggleRobotPopover(forceOpen) {
+  const popover = document.getElementById('robotPopover');
+  const robot = document.getElementById('robotMarker');
+  const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !popover.classList.contains('is-open');
+  if (shouldOpen) {
+    popover.classList.add('is-open');
+    robot.setAttribute('aria-expanded','true');
+    const order = currentSnapshotOrder() || focusedOrder() || state.orders.find(item => item.status === '配送中');
+    if (order) focusOrder(order.id,false);
+    updateRobotPopover();
+    positionRobotPopover();
+  } else {
+    popover.classList.remove('is-open');
+    robot.setAttribute('aria-expanded','false');
+  }
+}
+
+function positionRobotPopover() {
+  const popover = document.getElementById('robotPopover');
+  const robot = document.getElementById('robotMarker');
+  if (!popover.classList.contains('is-open') && popover.style.left) return;
+  const rect = robot.getBoundingClientRect();
+  const width = popover.offsetWidth || 238;
+  const height = popover.offsetHeight || 152;
+  let left = rect.right + 12;
+  if (left + width > window.innerWidth - 12) left = rect.left - width - 12;
+  let top = rect.top - 8;
+  top = Math.max(92,Math.min(top,window.innerHeight - height - 16));
+  popover.style.left = `${Math.max(12,left)}px`;
+  popover.style.top = `${top}px`;
+}
+
+function updateRobotPopover() {
+  const snapshot = window.deliveryBackendAdapter?.snapshot;
+  const order = currentSnapshotOrder() || focusedOrder() || state.orders.find(item => item.status === '配送中');
+  const status = order ? (order.statusLabel || order.status) : '静止待命';
+  let progress = order ? Math.max(0,Math.min(100,Number(orderProgressPercent(order)) || 0)) : 0;
+  const orderStops = order && Array.isArray(snapshot?.active_trip?.stops)
+    ? snapshot.active_trip.stops.filter(stop => (stop.operations || []).some(operation => operation.order_id === order.serverOrderId))
+    : [];
+  if (order && order.status !== '已送达' && orderStops.length) {
+    const completed = orderStops.filter(stop => stop.state === 'COMPLETED').length;
+    const reachedCurrent = orderStops.some(stop => stop.state === 'WAITING_CONFIRM') ? 1 : progress / 100;
+    progress = Math.min(96,((completed + reachedCurrent) / orderStops.length) * 100);
+  }
+  const nextNode = snapshot?.navigation_progress?.next_node;
+  document.getElementById('robotTaskLabel').textContent = order
+    ? `#0${order.id} ${order.name} · ${NODES[order.from].label} → ${NODES[order.to].label}`
+    : '当前无执行任务';
+  document.getElementById('robotNextStop').textContent = nextNode != null
+    ? presentationNodeLabel(nextNode)
+    : (order ? NODES[order.to].label : '等待调度');
+  document.getElementById('robotEtaStatus').textContent = status;
+  document.getElementById('robotProgressLabel').textContent = `${Math.round(progress)}%`;
+  document.getElementById('robotProgressFill').style.width = `${progress}%`;
+}
+
+let lastPreviewDrawKey = '';
+function enhanceMapPresentation() {
+  const adapter = window.deliveryBackendAdapter;
+  const svg = document.getElementById('routeSvg');
+  if (!svg) return;
+
+  const routePaths = [...svg.querySelectorAll('path.route-track,path.route-repositioning')];
+  routePaths.forEach(path => path.classList.remove('route-segment-current'));
+  if (adapter?.routeVisuals) {
+    adapter.routeVisuals.forEach((leg,index) => {
+      if (leg.is_current && routePaths[index]) routePaths[index].classList.add('route-segment-current');
+    });
+  } else if (state.run && routePaths[0]) {
+    routePaths[0].classList.add('route-segment-current');
+  }
+
+  const preview = svg.querySelector('.route-preview');
+  const previewKey = state.selecting?.from && state.selecting?.to ? `${state.selecting.from}:${state.selecting.to}` : '';
+  if (preview && previewKey && previewKey !== lastPreviewDrawKey) {
+    preview.setAttribute('pathLength','1');
+    preview.classList.add('route-preview-draw');
+    lastPreviewDrawKey = previewKey;
+  }
+  if (!previewKey) lastPreviewDrawKey = '';
+
+  const order = focusedOrder();
+  if (order && !state.selecting && !svg.querySelector(`.route-focus[data-order="${order.id}"]`)) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',pointsToPathD(pathPoints(order.from,order.to)));
+    path.setAttribute('class','route-focus');
+    path.dataset.order = order.id;
+    svg.appendChild(path);
+  }
+
+  document.querySelectorAll('.pin').forEach(pin => {
+    const isFocus = Boolean(order && (pin.dataset.node === order.from || pin.dataset.node === order.to));
+    pin.classList.toggle('is-order-focus',isFocus);
+  });
+  const targetServerNode = adapter?.snapshot?.navigation_progress?.next_node
+    ?? adapter?.snapshot?.route_plan?.legs?.find(leg => !leg.is_current && leg.state !== 'COMPLETED')?.node_id
+    ?? adapter?.snapshot?.route_plan?.legs?.find(leg => leg.is_current)?.node_id;
+  const targetUiNode = uiNodeFromServer(targetServerNode);
+  document.querySelectorAll('.stop-marker').forEach(marker => {
+    marker.classList.toggle('is-current-target',Boolean(targetUiNode && marker.dataset.node === targetUiNode));
+  });
+  if (document.getElementById('robotPopover').classList.contains('is-open')) positionRobotPopover();
+}
+
+function wireMapOrderLinkage() {
   const panel = document.getElementById('sidePanel');
-  const modal = document.getElementById('orderDetailModal');
   panel.addEventListener('click', event => {
     const card = event.target.closest('.order-card[data-order]');
-    if (card) openOrderDetail(card.dataset.order);
+    if (card) focusOrder(card.dataset.order);
   });
   panel.addEventListener('keydown', event => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     const card = event.target.closest('.order-card[data-order]');
     if (!card) return;
     event.preventDefault();
-    openOrderDetail(card.dataset.order);
+    focusOrder(card.dataset.order);
   });
-  modal.querySelectorAll('[data-close-order-detail]').forEach(button => {
-    button.addEventListener('click', closeOrderDetail);
+  const markerLayer = document.getElementById('markerLayer');
+  const focusFromMarker = event => {
+    const marker = event.target.closest('.stop-marker[data-node]');
+    if (!marker) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const order = orderForRouteNode(marker.dataset.node);
+    if (order) focusOrder(order.id);
+  };
+  markerLayer.addEventListener('click',focusFromMarker);
+  const robot = document.getElementById('robotMarker');
+  robot.addEventListener('click',event => { event.stopPropagation(); toggleRobotPopover(); });
+  robot.addEventListener('keydown',event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    toggleRobotPopover();
   });
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') closeOrderDetail();
+  document.addEventListener('click',event => {
+    if (!event.target.closest('#robotPopover,#robotMarker')) toggleRobotPopover(false);
   });
 }
 
 /* ---------- 9. Interaction ---------- */
 function onPinClick(nodeId) {
+  state.focusedOrderId = null;
+  toggleRobotPopover(false);
   if (!state.selecting) {
     state.selecting = { from: nodeId, to: null };
   } else if (!state.selecting.from) {
@@ -1918,19 +2236,38 @@ function confirmSelection() {
 // Panel reserves the left ~480px of the screen; the map lives in whatever's
 // left of the viewport, scaled down only if that space is smaller than its
 // native 1440x900 (never scaled up past native size).
-const MAP_LEFT_RESERVE = 430, MAP_MARGIN = 40;
+const MAP_LEFT_RESERVE = 400, MAP_MARGIN = 12;
 function layoutMap() {
   const mapLayer = document.getElementById('mapLayer');
   const compact = window.innerWidth <= 900;
   const reserve = compact ? 0 : MAP_LEFT_RESERVE;
-  const margin = compact ? 24 : MAP_MARGIN;
+  const margin = compact ? 12 : MAP_MARGIN;
   const availW = window.innerWidth - reserve - margin;
   const availH = compact ? window.innerHeight * .51 : window.innerHeight - margin * 2;
-  const scale = Math.min(availW / 1440, availH / 900, 1) * 0.95;
-  const cx = compact ? window.innerWidth / 2 : reserve + availW / 2;
-  const cy = compact ? 72 + availH / 2 : window.innerHeight / 2 + 10;
-  mapLayer.style.left = cx + 'px';
-  mapLayer.style.top = cy + 'px';
+  const baseScale = Math.min(availW / 1440, availH / 900, 1) * 0.99;
+  const viewportCenterX = compact ? window.innerWidth / 2 : reserve + availW / 2;
+  const viewportCenterY = compact ? 72 + availH / 2 : window.innerHeight / 2 + 8;
+  let scale = baseScale;
+  let cx = viewportCenterX;
+  let cy = viewportCenterY;
+  const order = focusedOrder();
+  if (order && NODES[order.from] && NODES[order.to]) {
+    const robot = document.getElementById('robotMarker');
+    const robotPoint = {x:parseFloat(robot.style.left) || NODES[state.robotPos].x,y:parseFloat(robot.style.top) || NODES[state.robotPos].y};
+    const points = [NODES[order.from],NODES[order.to],robotPoint];
+    const minX = Math.min(...points.map(point => point.x));
+    const maxX = Math.max(...points.map(point => point.x));
+    const minY = Math.min(...points.map(point => point.y));
+    const maxY = Math.max(...points.map(point => point.y));
+    const focusX = (minX + maxX) / 2;
+    const focusY = (minY + maxY) / 2;
+    const fitScale = Math.min(availW / Math.max(420,maxX - minX + 300),availH / Math.max(300,maxY - minY + 220));
+    scale = Math.min(1,Math.max(baseScale,Math.min(fitScale,baseScale * (compact ? 1.30 : 1.22))));
+    cx = viewportCenterX + (720 - focusX) * scale;
+    cy = viewportCenterY + (450 - focusY) * scale;
+  }
+  mapLayer.style.left = `${cx}px`;
+  mapLayer.style.top = `${cy}px`;
   mapLayer.style.transform = `translate(-50%,-50%) scale(${scale})`;
 }
 
@@ -1944,17 +2281,87 @@ function presentationNodeLabel(nodeId) {
   return PRESENTATION_NODE_LABELS[Number(nodeId)] || '定位中';
 }
 
+const cameraFeedState = {
+  socket: null,
+  lastFrameAt: 0,
+  open: false,
+};
+
+function setCameraDockOpen(open) {
+  cameraFeedState.open = Boolean(open);
+  const dock = document.getElementById('cameraDock');
+  const toggle = document.getElementById('cameraToggle');
+  const viewer = document.getElementById('cameraViewer');
+  if (!dock || !toggle || !viewer) return;
+  dock.classList.toggle('is-open',cameraFeedState.open);
+  toggle.setAttribute('aria-expanded',String(cameraFeedState.open));
+  viewer.setAttribute('aria-hidden',String(!cameraFeedState.open));
+}
+
+function updateCameraDockStatus() {
+  const dock = document.getElementById('cameraDock');
+  const status = document.getElementById('cameraStatusText');
+  const frame = document.getElementById('cameraFrame');
+  const empty = document.getElementById('cameraEmpty');
+  if (!dock || !status || !frame || !empty) return;
+  const connected = Boolean(cameraFeedState.socket && cameraFeedState.socket.readyState === 1);
+  const hasFrame = cameraFeedState.lastFrameAt > 0;
+  const fresh = connected && hasFrame && Date.now() - cameraFeedState.lastFrameAt < 5000;
+  dock.classList.toggle('has-frame',fresh);
+  frame.hidden = !hasFrame;
+  empty.hidden = hasFrame;
+  if (fresh) status.textContent = 'Streaming live';
+  else if (connected && hasFrame) status.textContent = 'Paused · Waiting for frame';
+  else if (connected) status.textContent = 'Connected · Waiting for feed';
+  else status.textContent = 'Connecting to feed';
+}
+
+function syncCameraFeedSocket(socket) {
+  if (cameraFeedState.socket === socket) {
+    updateCameraDockStatus();
+    return;
+  }
+  cameraFeedState.socket = socket || null;
+  updateCameraDockStatus();
+  if (!socket) return;
+  socket.addEventListener('message',event => {
+    let message;
+    try { message = JSON.parse(event.data); }
+    catch (_error) { return; }
+    if (message.type !== 'image_frame' || !message.data) return;
+    const frame = document.getElementById('cameraFrame');
+    if (!frame) return;
+    frame.src = `data:image/jpeg;base64,${message.data}`;
+    cameraFeedState.lastFrameAt = Date.now();
+    updateCameraDockStatus();
+  });
+  socket.addEventListener('close',updateCameraDockStatus);
+}
+
+function wireCameraDock() {
+  const toggle = document.getElementById('cameraToggle');
+  const close = document.getElementById('cameraClose');
+  if (toggle) toggle.addEventListener('click',() => setCameraDockOpen(!cameraFeedState.open));
+  if (close) close.addEventListener('click',event => {
+    event.stopPropagation();
+    setCameraDockOpen(false);
+  });
+  document.addEventListener('keydown',event => {
+    if (event.key === 'Escape' && cameraFeedState.open) setCameraDockOpen(false);
+  });
+  updateCameraDockStatus();
+}
+
 // Read-only presentation bridge: reflects the adapter snapshot into labels and
 // CSS state. It never sends a command or changes delivery state.
 function syncPresentationStatus() {
   const adapter = window.deliveryBackendAdapter;
+  syncCameraFeedSocket(adapter && adapter.socket);
   const snapshot = adapter && adapter.snapshot;
   const rail = document.getElementById('systemRail');
   const hint = document.getElementById('hintChip');
   const stage = document.getElementById('stage');
-  const nodeLabel = document.getElementById('vehicleNodeLabel');
-  const missionProgress = document.getElementById('missionProgressLabel');
-  if (!rail || !hint || !stage || !nodeLabel || !missionProgress) return;
+  if (!rail || !hint || !stage) return;
 
   const socketOpen = Boolean(adapter && adapter.socket && adapter.socket.readyState === 1);
   const vehicle = snapshot && snapshot.vehicle;
@@ -1964,14 +2371,9 @@ function syncPresentationStatus() {
   stage.dataset.connection = connectionState;
   stage.dataset.motion = String(vehicle && vehicle.motion_state || 'stopped').toLowerCase();
 
-  nodeLabel.textContent = vehicle && vehicle.current_node != null
+  const currentNodeText = vehicle && vehicle.current_node != null
     ? presentationNodeLabel(vehicle.current_node)
     : '定位中';
-
-  const trip = snapshot && snapshot.active_trip;
-  const stops = trip && Array.isArray(trip.stops) ? trip.stops : [];
-  const completedStops = stops.filter(stop => stop.state === 'COMPLETED').length;
-  missionProgress.textContent = stops.length ? `${completedStops} / ${stops.length}` : '待命';
 
   if (!state.selecting) {
     if (!socketOpen) {
@@ -1984,9 +2386,12 @@ function syncPresentationStatus() {
     } else if (vehicle.motion_state === 'MOVING') {
       hint.textContent = '小车行驶中 · 状态实时同步';
     } else {
-      hint.textContent = `小车在线 · 当前位于${nodeLabel.textContent}`;
+      hint.textContent = `小车在线 · 当前位于${currentNodeText}`;
     }
   }
+
+  updateRobotPopover();
+  enhanceMapPresentation();
 
 }
 
@@ -1996,13 +2401,14 @@ function boot() {
   buildPins();
   renderSvgOverlay();
   renderPanel();
-  wireOrderDetails();
+  wireMapOrderLinkage();
+  wireCameraDock();
   // The map/robot position update every animation frame via animateRun()
   // (started by startNextRun()); the queue panel only needs a much slower
   // refresh for things like live ETA text, matching UI/index.html's own
   // 1s-interval renderLogs() decoupled from its 60fps run animation.
   setInterval(() => { if (state.run && !state.selecting) updateQueuePanelLive(); }, 1000);
-  setInterval(syncPresentationStatus, 500);
+  setInterval(syncPresentationStatus, 350);
   syncPresentationStatus();
   window.addEventListener('resize', layoutMap);
   layoutMap();

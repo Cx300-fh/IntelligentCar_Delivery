@@ -14,10 +14,10 @@
   // server edge into the original UI's hidden junctions; it never chooses a route.
   const EDGE_GEOMETRY = Object.freeze({
     '1-3': ['zijing', 'jBumpTL', 'jBumpL', 'library'],
-    '1-5': ['zijing', 'jBumpTR', 'jBumpR', 'dongda'],
+    '1-5': ['zijing', 'jBumpTR', 'dongda'],
     '2-3': ['like', 'library'],
     '2-6': ['like', 'j1', 'hospital'],
-    '4-5': ['sushimin', 'jBumpR', 'dongda'],
+    '4-5': ['sushimin', 'dongda'],
     '4-7': ['sushimin', 'dorm'],
     '5-8': ['dongda', 'j3', 'dongmen'],
     '6-9': ['hospital', 'j4', 'hall'],
