@@ -23,17 +23,19 @@ jobs:
         shell: bash
         run: |
           set -e
-          grep -q 'Typography hierarchy v1' docs/index.html
+          grep -q 'Typography hierarchy v2' docs/index.html
           grep -q 'Watch Demo' docs/index.html
           grep -q 'System Design' docs/index.html
           grep -q 'Intertwined Roles, Unified Vision' docs/index.html
-          grep -q 'System: From Problem to Answer' docs/index.html
+          grep -q 'System: From Problem To Answer' docs/index.html
+          grep -q 'Real scene / Move' docs/index.html
+          ! grep -q 'REAL SCENE / MOVE' docs/index.html
           ! grep -q 'Start with the situation, then reveal the engineering response' docs/index.html
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/index.html
           git diff --cached --check
-          git commit -m "Refine typography hierarchy and section copy"
+          git commit -m "Refine typography hierarchy and capitalization"
           git push origin main
 
-# retrigger: typography hierarchy pass v1
+# retrigger: typography hierarchy pass v2
