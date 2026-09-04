@@ -5557,6 +5557,134 @@
         padding-bottom: 34px;
       }
     }
+
+
+    /* ============================================================
+       Typography hierarchy v1
+       Prism stays as the primary display face. Didot is used only as an
+       editorial secondary layer via locally installed fonts; operational UI
+       and body copy remain sans-serif for clarity.
+       ============================================================ */
+    @font-face {
+      font-family: "DidotEditorial";
+      src: local("Didot Bold"), local("Didot-Bold"), local("Didot");
+      font-style: normal;
+      font-weight: 700;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "DidotEditorial";
+      src: local("Didot Italic"), local("Didot-Italic"), local("Didot");
+      font-style: italic;
+      font-weight: 400;
+      font-display: swap;
+    }
+
+    :root {
+      --font-display: "Prism", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+      --font-editorial: "DidotEditorial", "Didot", "Bodoni 72", "Bodoni MT", Georgia, serif;
+      --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    h1,
+    h2,
+    h3,
+    .hero-title-en,
+    .system-view-frame > .system-story-head h2,
+    .contact-head h2,
+    .demo-video-head h2 {
+      font-family: var(--font-display) !important;
+      font-style: normal;
+    }
+
+    .story-feature h4,
+    .system-architecture-v2 h4,
+    .role-title,
+    .feature-video-title {
+      font-family: var(--font-editorial) !important;
+      font-weight: 700;
+      font-style: normal;
+      letter-spacing: -.012em;
+      text-transform: none !important;
+    }
+
+    .team-bio,
+    .story-problem > p,
+    .contact-links-kicker,
+    .responsibility-kicker {
+      font-family: var(--font-editorial) !important;
+      font-style: italic;
+      font-weight: 400;
+      letter-spacing: .005em;
+    }
+
+    .app-nav,
+    .btn,
+    .story-tab,
+    .feature-video-trigger,
+    .story-feature p,
+    .role-members,
+    .team-index,
+    .story-label,
+    .system-arch-kicker,
+    .demo-video-kicker,
+    .eyebrow {
+      font-family: var(--font-ui) !important;
+    }
+
+    .eyebrow,
+    .demo-video-kicker,
+    .role-title,
+    .responsibility-kicker,
+    .contact-links-kicker {
+      text-transform: none !important;
+    }
+
+    .eyebrow,
+    .demo-video-kicker {
+      font-weight: 620;
+      letter-spacing: .045em;
+    }
+
+    .role-title {
+      font-size: clamp(17px, 1.28vw, 20px);
+      line-height: 1.08;
+    }
+
+    .story-feature h4,
+    .system-architecture-v2 h4 {
+      line-height: 1.08;
+    }
+
+    .app-view-system .system-view-frame > .system-story-head {
+      grid-template-columns: minmax(0, 1fr) !important;
+      align-items: end;
+      gap: 0;
+      width: min(980px, 100%);
+      max-width: 980px;
+      padding-bottom: 4px;
+    }
+
+    .app-view-system .system-view-frame > .system-story-head .eyebrow {
+      margin-bottom: 10px;
+    }
+
+    .app-view-system .system-view-frame > .system-story-head h2 {
+      max-width: 940px;
+      margin: 0;
+      line-height: .93;
+    }
+
+    .app-view-system .system-story-lead {
+      display: none !important;
+    }
+
+    @media (max-width: 700px) {
+      .app-view-system .system-view-frame > .system-story-head {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -5603,8 +5731,8 @@
         </h1>
         <p class="hero-tagline">用清送，更轻松</p>
         <div class="hero-actions hero-cta">
-          <a class="btn primary" href="#demo" data-app-view="demo">进入实时 Demo →</a>
-          <a class="btn" href="#system" data-app-view="system">查看系统设计</a>
+          <a class="btn primary" href="#demo" data-app-view="demo">Watch Demo</a>
+          <a class="btn" href="#system" data-app-view="system">System Design</a>
         </div>
       </div>
       <aside class="mission-card" aria-label="Route progress preview">
@@ -5661,8 +5789,8 @@
       <div class="system-view-frame shell">
 <div class="system-story-head">
         <p class="eyebrow">Designed for the real world</p>
-        <h2>Every module answers a real delivery problem.</h2>
-        <p class="system-story-lead">Start with the situation, then reveal the engineering response. Scroll through six linked scenes while the left rail always shows where you are.</p>
+        <h2>System: From Problem To Answer</h2>
+
       </div>
 
       <div class="system-workspace">
@@ -5865,7 +5993,7 @@
     <section id="contact-content" class="shell open-source contact-section">
       <div class="contact-head">
         <p class="eyebrow">Contact Us</p>
-        <h2>Built by five people, connected by one system.</h2>
+        <h2>Intertwined Roles, Unified Vision</h2>
       </div>
 
       <div class="team-grid" aria-label="THU Delivery team">
