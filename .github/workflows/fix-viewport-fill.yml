@@ -1,0 +1,34 @@
+name: Fix Viewport Fill
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-viewport-fill.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Apply viewport fill patch
+        run: python .github/scripts/fix_viewport_fill.py
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          set -e
+          grep -q 'Four-view viewport fill v3' docs/index.html
+          grep -q 'grid-template-rows: auto minmax(0, 1fr);' docs/index.html
+          grep -q '.app-view-contact .contact-section {' docs/index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html
+          git diff --cached --check
+          git commit -m "Fill Demo System and Contact viewports"
+          git push origin main
