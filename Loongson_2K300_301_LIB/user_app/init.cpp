@@ -75,6 +75,7 @@ void All_Init(void)
 
     Image_Init();       // 图像模块初始化
     Tag_Scan_Init();    // 标签识别初始化
+    HX711_Init();       // HX711称重模块初始化（GPIO+开机去皮+启动100ms服务定时器）
 
     // 初始化FPS统计
     frame_count = 0;  // 帧计数清零

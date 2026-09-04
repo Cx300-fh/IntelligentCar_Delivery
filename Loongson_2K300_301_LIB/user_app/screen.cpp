@@ -81,9 +81,12 @@ static bool screen_uart_write_all(const uint8_t* data, size_t len)
     return sent == len;
 }
 
+char g_screen_last_cmd[128] = {0};   // 【诊断】最近一条发给屏幕的指令
+
 static bool screen_write_command(const char* cmd)
 {
     if (!cmd) return false;
+    snprintf(g_screen_last_cmd, sizeof(g_screen_last_cmd), "%s", cmd);
     std::lock_guard<std::mutex> lock(g_screen_tx_mutex);
     if (g_screen_transfer_active.load()) {
         // 【临时诊断】传输占用时所有写入被静默丢弃，而调用方全都忽略返回值
@@ -718,6 +721,23 @@ void Screen_Rx_Process(const uint8_t* data, ssize_t len)
     if (is_empty) return;
 
     // 【临时诊断】打开原始接收打印：区分“屏幕没发”与“发了但指令名对不上”
+    // 【诊断】屏幕回 0x1A = 控件名无效。按控件名去重，一个名字只报一次。
+    if (len == 1 && (unsigned char)cmd[0] == 0x1A) {
+        static char seen[24][64];
+        static int  seen_n = 0;
+        char key[64];
+        snprintf(key, sizeof(key), "%s", g_screen_last_cmd);
+        for (int i = 0; key[i]; i++) { if (key[i] == '=') { key[i] = 0; break; } }
+        bool dup = false;
+        for (int i = 0; i < seen_n; i++) if (strcmp(seen[i], key) == 0) { dup = true; break; }
+        if (!dup && seen_n < 24) {
+            snprintf(seen[seen_n], sizeof(seen[0]), "%s", key);
+            seen_n++;
+            printf("[Screen] 屏幕拒收(0x1A): %s\n", key);
+        }
+        return;
+    }
+    if (len <= 2) return;   // 其余短应答(0x01成功等)不刷屏
     printf("[Screen] RX[%zd]: %s\n", len, cmd);
 
     int map_id = 0;
@@ -1020,64 +1040,22 @@ static int delivery_active_slot(const StateSync& snap)
     return 0;
 }
 
+// 车端只下发"数据"，不再下发任何成句文案。
+// d_s_1~d_s_4 的措辞全部交给 HMI 的定时事件按 active_phase 自己拼，
+// 这样文字在设计器里就是对的编码、对的字库，也不存在两边抢同一个控件的问题。
+//
+// 车端负责的四个动态文本控件（HMI里必须建，且 vscope 设成【全局】，
+// 跟已经能正常工作的 b1~b5 一样）：
+// 没有活跃订单时统一写空串。
+// 车端不再下发任何文案，一个字都不发。
+// 屏幕上显示什么，完全由 HMI 的定时事件按 active_phase / active_slot / viewing_slot 自己决定。
+// 车端只负责三件事：下发这三个变量、下发 b1~b5 的订单号、用 tsw 控制确认按钮能不能点。
+// 这样做的好处是文字在设计器里就是对的编码和字库，串口上不再出现中文，
+// 也彻底没有"车端和HMI抢同一个控件"的问题。
 static void render_delivery_texts(const StateSync& snap, int slot)
 {
-    char s1[48], s4[32];
-    // slot 是可见列表里的位置，不是 snap.orders 的下标，要转一次
-    int vis_c[5];
-    int vis_cn = delivery_visible_orders(snap, vis_c, 5);
-    const OrderInfo* cur = (slot > 0 && slot <= vis_cn)
-                           ? &snap.orders[vis_c[slot - 1]] : nullptr;
-
-    switch (snap.screen_phase) {
-        case SCREEN_PHASE_NONE: {
-            Screen_Send_Text("DConfirm.d_s_1", "暂无订单");
-            Screen_Send_Text("DConfirm.d_s_2", "等待服务器分配订单");
-            Screen_Send_Text("DConfirm.d_s_3", " ");
-            Screen_Send_Text("DConfirm.d_s_4", "待命");
-            break;
-        }
-        case SCREEN_PHASE_TO_PICKUP:
-            screen_safe_text(s1, sizeof(s1), cur ? cur->nickname + " - 前往取件点"
-                                                 : std::string("前往取件点"));
-            Screen_Send_Text("DConfirm.d_s_1", s1);
-            Screen_Send_Text("DConfirm.d_s_2", "车辆正在前往取件点");
-            Screen_Send_Text("DConfirm.d_s_3", "到点后等待装载确认");
-            Screen_Send_Text("DConfirm.d_s_4", "配送中");
-            break;
-        case SCREEN_PHASE_WAIT_PICKUP:
-            screen_safe_text(s1, sizeof(s1), cur ? "已到取件点 - " + cur->nickname : std::string("已到取件点"));
-            Screen_Send_Text("DConfirm.d_s_1", s1);
-            screen_safe_text(s1, sizeof(s1), cur ? "物品：" + cur->item_summary : std::string(" "));
-            Screen_Send_Text("DConfirm.d_s_2", s1);
-            Screen_Send_Text("DConfirm.d_s_3", "装好后点击下方按钮");
-            Screen_Send_Text("DConfirm.d_s_4", cur && !cur->button_label.empty() ? cur->button_label.c_str() : "物品已装好");
-            break;
-        case SCREEN_PHASE_DELIVERING:
-            screen_safe_text(s1, sizeof(s1), cur ? cur->nickname + " - 配送中" : std::string("配送中"));
-            Screen_Send_Text("DConfirm.d_s_1", s1);
-            screen_safe_text(s1, sizeof(s1), cur ? "送往：" + cur->dropoff_name : std::string(" "));
-            Screen_Send_Text("DConfirm.d_s_2", s1);
-            Screen_Send_Text("DConfirm.d_s_3", "到点后等待取件确认");
-            Screen_Send_Text("DConfirm.d_s_4", "配送中");
-            break;
-        case SCREEN_PHASE_WAIT_DROPOFF:
-            screen_safe_text(s1, sizeof(s1), cur ? "已到目的地 - " + cur->nickname : std::string("已到目的地"));
-            Screen_Send_Text("DConfirm.d_s_1", s1);
-            Screen_Send_Text("DConfirm.d_s_2", "物品已送达，等待取件");
-            Screen_Send_Text("DConfirm.d_s_3", "取走后点击下方按钮");
-            Screen_Send_Text("DConfirm.d_s_4", cur && !cur->button_label.empty() ? cur->button_label.c_str() : "物品已取走");
-            break;
-        case SCREEN_PHASE_ALL_DONE:
-            Screen_Send_Text("DConfirm.d_s_1", "全部订单完成");
-            Screen_Send_Text("DConfirm.d_s_2", "等待服务器新任务");
-            Screen_Send_Text("DConfirm.d_s_3", " ");
-            Screen_Send_Text("DConfirm.d_s_4", "已完成");
-            break;
-        default:
-            break;
-    }
-    (void)s4;
+    (void)snap;
+    (void)slot;
 }
 
 void Screen_Render_Delivery(void)
@@ -1105,10 +1083,13 @@ void Screen_Render_Delivery(void)
     for (int i = 0; i < 5; i++) {
         char name[16];
         snprintf(name, sizeof(name), "DConfirm.b%d", i + 1);
-        if (i < vis_n && !snap.orders[vis[i]].display_no.empty()) {
-            screen_safe_text(txt, sizeof(txt), snap.orders[vis[i]].display_no);
+        // 槽位号从1开始按顺序排，不用服务器的display_no
+        // （display_no是全局流水号，会是"015"这种，跟屏幕上5个槽对不上）。
+        // 空槽写空串：开机没订单时整个页面就是干净的。
+        if (i < vis_n) {
+            snprintf(txt, sizeof(txt), "%d", i + 1);
         } else {
-            snprintf(txt, sizeof(txt), "--");
+            txt[0] = 0;
         }
         Screen_Send_Text(name, txt);
     }
@@ -1116,7 +1097,10 @@ void Screen_Render_Delivery(void)
     // 状态机变量：屏幕据此切换按钮文案（b1~b5内部逻辑）与确认按钮使能
     Screen_Send_Var("active_phase", snap.screen_phase);
     Screen_Send_Var("active_slot", slot);
-    Screen_Send_Var("viewing_slot", slot > 0 ? slot : 1);
+    // viewing_slot 不再由车端下发：这是"用户正在看第几个订单"，属于屏幕本地状态。
+    // 车端每秒回写一次的话，用户点 b1~b5 翻看别的订单会在1秒内被弹回当前订单，
+    // HMI 里那两个 viewing_slot</>active_slot 分支就永远走不到。
+    // 现在 HMI 的 b1~b5 点击事件自己设 viewing_slot.val，车端不碰。
 
     // 文案与确认按钮（车端权威写入，覆盖屏幕本地文案）
     render_delivery_texts(snap, slot);
