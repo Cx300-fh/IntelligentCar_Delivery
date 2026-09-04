@@ -1,11 +1,26 @@
 from pathlib import Path
+import re
 
 path = Path('docs/index.html')
 text = path.read_text(encoding='utf-8')
 
+# Target homepage actions structurally so the patch does not depend on stale copy.
+text, n_demo = re.subn(
+    r'(<a class="btn primary" href="#demo" data-app-view="demo">).*?(</a>)',
+    r'\1Watch Demo\2',
+    text,
+    count=1,
+)
+text, n_system = re.subn(
+    r'(<a class="btn" href="#system" data-app-view="system">).*?(</a>)',
+    r'\1System Design\2',
+    text,
+    count=1,
+)
+if n_demo != 1 or n_system != 1:
+    raise SystemExit(f'homepage CTA match failed: demo={n_demo}, system={n_system}')
+
 replacements = {
-    '进入实时 Demo →': 'Watch Demo',
-    '查看系统设计': 'System Design',
     'Built by five people, connected by one system.': 'Intertwined Roles, Unified Vision',
     'Every module answers a real delivery problem.': 'System: From Problem to Answer',
     '        <p class="system-story-lead">Start with the situation, then reveal the engineering response. Scroll through six linked scenes while the left rail always shows where you are.</p>\n': '',
@@ -21,9 +36,10 @@ replacements = {
 }
 
 for old, new in replacements.items():
-    if old not in text:
-        raise SystemExit(f'missing expected text: {old}')
-    text = text.replace(old, new, 1)
+    if old in text:
+        text = text.replace(old, new, 1)
+    elif new not in text:
+        raise SystemExit(f'missing expected copy pair: {old} / {new}')
 
 if 'Typography hierarchy v1' in text:
     raise SystemExit('typography patch already present')
