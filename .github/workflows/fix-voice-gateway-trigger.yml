@@ -1,0 +1,46 @@
+name: Fix Voice gateway video trigger
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-voice-gateway-trigger.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Convert Voice interaction trigger from code to video
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('docs/index.html')
+          text = path.read_text(encoding='utf-8')
+
+          old = '<article class="story-feature is-code"><div class="story-feature-top"><span>02</span><button class="feature-code-trigger" type="button" data-code-key="voice" aria-label="Open Voice interaction source code"></button></div><h4>Voice interaction</h4><p>Natural-language requests enter the same task pipeline through the PC voice gateway.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>'
+          new = '<article class="story-feature is-video"><div class="story-feature-top"><span>02</span><button class="feature-video-trigger" type="button" data-video="assets/media/voice.mp4" data-title="Voice Gateway" data-copy="Natural-language delivery requests entering the same task pipeline as the web UI." aria-label="Play Voice Gateway video"></button></div><h4>Voice interaction</h4><p>Natural-language requests enter the same task pipeline through the PC voice gateway.</p><div class="feature-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><b></b></div></article>'
+
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one Voice interaction source trigger, found {count}')
+
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Commit fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-voice-gateway-trigger.yml
+          git add docs/index.html
+          git commit -m "Fix Voice gateway video trigger"
+          git push origin HEAD:main
