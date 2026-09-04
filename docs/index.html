@@ -5685,6 +5685,148 @@
         width: 100%;
       }
     }
+
+
+    /* ============================================================
+       Typography hierarchy v2
+       Primary title  -> Prism (unchanged)
+       Editorial bold -> Didot Bold
+       Editorial note -> Didot Italic
+       UI / body      -> neutral sans
+       ============================================================ */
+    @font-face {
+      font-family: "DidotWeb";
+      src:
+        url("./assets/fonts/Didot-Bold-1.ttf") format("truetype"),
+        local("Didot Bold"),
+        local("Didot-Bold"),
+        local("Didot");
+      font-style: normal;
+      font-weight: 700;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "DidotWeb";
+      src:
+        url("./assets/fonts/Didot-Italic-2.ttf") format("truetype"),
+        local("Didot Italic"),
+        local("Didot-Italic"),
+        local("Didot");
+      font-style: italic;
+      font-weight: 400;
+      font-display: swap;
+    }
+
+    :root {
+      --font-display: "Prism", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+      --font-editorial: "DidotWeb", "DidotEditorial", Didot, "Bodoni 72", "Bodoni MT", Georgia, serif;
+      --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* Main titles stay exactly in the original display language. */
+    h1,
+    h2,
+    h3,
+    .hero-title-en,
+    .demo-video-head h2,
+    .system-story-head h2,
+    .contact-head h2 {
+      font-family: var(--font-display) !important;
+      font-style: normal !important;
+    }
+
+    /* Bold Didot marks the second information tier, never the main title tier. */
+    .story-feature h4,
+    .system-architecture-v2 h4,
+    .role-title,
+    .feature-video-title,
+    .team-name {
+      font-family: var(--font-editorial) !important;
+      font-style: normal !important;
+      font-weight: 700 !important;
+      text-transform: none !important;
+      letter-spacing: -.014em;
+    }
+
+    .team-name {
+      font-size: clamp(20px, 1.55vw, 25px);
+      line-height: 1.03;
+    }
+
+    /* Italic Didot is used sparingly for editorial context and scene markers. */
+    .story-label,
+    .system-arch-kicker,
+    .contact-links-kicker,
+    .responsibility-kicker {
+      font-family: var(--font-editorial) !important;
+      font-style: italic !important;
+      font-weight: 400 !important;
+      text-transform: none !important;
+      letter-spacing: .018em;
+    }
+
+    .story-label {
+      font-size: 13px;
+      color: rgba(158,207,83,.84);
+    }
+
+    .system-arch-kicker {
+      font-size: 12px;
+    }
+
+    /* Paragraphs and operational UI return to sans for clarity. */
+    .team-bio,
+    .story-problem > p,
+    .story-feature p,
+    .role-members,
+    .story-flow,
+    .feature-video-trigger,
+    .story-tab,
+    .btn,
+    .app-nav,
+    .team-index,
+    .demo-video-kicker,
+    .eyebrow {
+      font-family: var(--font-ui) !important;
+      font-style: normal !important;
+    }
+
+    .eyebrow,
+    .demo-video-kicker {
+      text-transform: none !important;
+      font-weight: 620;
+      letter-spacing: .045em;
+    }
+
+    /* Keep the System header compact after removing the explanatory paragraph. */
+    .app-view-system .system-view-frame > .system-story-head {
+      grid-template-columns: minmax(0, 1fr) !important;
+      width: min(960px, 100%);
+      max-width: 960px;
+      gap: 0 !important;
+      align-items: end;
+      padding: 6px 0 8px;
+      margin: 0;
+    }
+
+    .app-view-system .system-story-head .eyebrow {
+      margin: 0 0 9px;
+    }
+
+    .app-view-system .system-story-head h2 {
+      max-width: 920px;
+      margin: 0;
+      line-height: .92;
+    }
+
+    .app-view-system .system-story-lead {
+      display: none !important;
+    }
+
+    .app-view-system .system-workspace {
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -5806,7 +5948,7 @@
       <div class="system-story-scroll" id="systemStoryScroll">
         <article class="story-panel is-active" id="storyPanelOrder" role="tabpanel" aria-labelledby="storyTabOrder" data-panel="order">
           <div class="story-problem">
-            <span class="story-label">REAL SCENE / ORDER</span>
+            <span class="story-label">Real scene / Order</span>
             <h3>What if ordering is harder than the delivery itself?</h3>
             <p>Campus users may be walking, carrying items, or simply unwilling to operate a complicated console. The interaction has to disappear into the task.</p>
             <div class="story-flow" aria-label="Order flow"><span>Speak or tap</span><i></i><span>Choose pickup</span><i></i><span>Preview route</span><i></i><span>Dispatch</span></div>
@@ -5821,7 +5963,7 @@
 
         <article class="story-panel" id="storyPanelCargo" role="tabpanel" aria-labelledby="storyTabCargo" data-panel="cargo">
           <div class="story-problem">
-            <span class="story-label">REAL SCENE / CARGO</span>
+            <span class="story-label">Real scene / Cargo</span>
             <h3>Reaching a place does not prove the package is there.</h3>
             <p>Pickup and handoff need physical evidence and clear interaction. Cargo state, user prompts and the compartment itself all become part of the delivery loop.</p>
             <div class="story-flow" aria-label="Cargo flow"><span>Open</span><i></i><span>Load</span><i></i><span>Verify</span><i></i><span>Handoff</span></div>
@@ -5836,7 +5978,7 @@
 
         <article class="story-panel story-panel-move" id="storyPanelMove" role="tabpanel" aria-labelledby="storyTabMove" data-panel="move">
           <div class="story-problem">
-            <span class="story-label">REAL SCENE / MOVE</span>
+            <span class="story-label">Real scene / Move</span>
             <h3>The road changes. The payload changes. Motion has to adapt.</h3>
             <p>Real delivery is not one fixed controller on one clean route. The car has to perceive the road, localize itself, estimate cargo load, change turning behavior, avoid blocked edges and still execute safely.</p>
             <div class="story-flow story-flow-move" aria-label="Motion flow"><span>Perceive</span><i></i><span>Weigh</span><i></i><span>Localize</span><i></i><span>Re-plan</span><i></i><span>Tune</span><i></i><span>Control</span></div>
@@ -5855,7 +5997,7 @@
 
 
           <div class="move-route-lab">
-            <span class="story-label">DYNAMIC ROUTING ALGORITHM</span>
+            <span class="story-label">Dynamic routing algorithm</span>
 <div class="section-head">
         <h2>The campus is not static.</h2>
 
@@ -5919,7 +6061,7 @@
 
         <article class="story-panel" id="storyPanelScale" role="tabpanel" aria-labelledby="storyTabScale" data-panel="scale">
           <div class="story-problem">
-            <span class="story-label">REAL SCENE / SCALE</span>
+            <span class="story-label">Real scene / Scale</span>
             <h3>What happens when several users need one robot?</h3>
             <p>A useful campus delivery system has to coordinate orders, capacity, stops and routes instead of treating every request as an isolated demo.</p>
             <div class="story-flow" aria-label="Scale flow"><span>Orders</span><i></i><span>Schedule</span><i></i><span>Plan</span><i></i><span>Dispatch</span></div>
@@ -5934,7 +6076,7 @@
 
         <article class="story-panel" id="storyPanelTrust" role="tabpanel" aria-labelledby="storyTabTrust" data-panel="trust">
           <div class="story-problem">
-            <span class="story-label">REAL SCENE / TRUST</span>
+            <span class="story-label">Real scene / Trust</span>
             <h3>Autonomy also means knowing when not to move.</h3>
             <p>Network loss, stale commands, emergency intervention and restart recovery have to end in a predictable physical state, not just an error message.</p>
             <div class="story-flow" aria-label="Trust flow"><span>Detect</span><i></i><span>Inhibit</span><i></i><span>Stop</span><i></i><span>Sync</span><i></i><span>Resume</span></div>
@@ -5955,11 +6097,11 @@
             <button class="system-master-demo feature-video-trigger" type="button" data-video="assets/media/campus-demo.mp4" data-title="End-to-end delivery" data-copy="The current integrated campus demonstration from order to physical delivery."><span>▶</span> Watch end-to-end demo</button>
           </div>
           <div class="system-architecture-v2" aria-label="Integrated system architecture">
-            <article><span class="system-arch-kicker">HUMAN & INTERACTION</span><h4>Order</h4><p>Voice · Web UI · Route preview · On-car display</p></article>
+            <article><span class="system-arch-kicker">Human & interaction</span><h4>Order</h4><p>Voice · Web UI · Route preview · On-car display</p></article>
             <div class="system-arch-link"><span>REST / WebSocket</span></div>
-            <article><span class="system-arch-kicker">PC DISPATCH</span><h4>Coordinate</h4><p>Scheduler · Route Planner · Map Weights · Database · Gateway</p></article>
+            <article><span class="system-arch-kicker">PC dispatch</span><h4>Coordinate</h4><p>Scheduler · Route Planner · Map Weights · Database · Gateway</p></article>
             <div class="system-arch-link"><span>TCP / Events</span></div>
-            <article><span class="system-arch-kicker">DELIVERY CAR</span><h4>Execute</h4><p>Weight · Camera · AprilTag · Obstacle · Navigation · 5 ms Control · Shell</p></article>
+            <article><span class="system-arch-kicker">Delivery car</span><h4>Execute</h4><p>Weight · Camera · AprilTag · Obstacle · Navigation · 5 ms Control · Shell</p></article>
           </div>
           <div class="system-feedback-line"><span>heartbeat · arrived · user action · state sync · image</span></div>
         </article>
@@ -5971,7 +6113,7 @@
         <button class="feature-video-backdrop" type="button" aria-label="Close video"></button>
         <div class="feature-video-dialog">
           <div class="feature-video-head">
-            <div><span class="story-label">FUNCTION DEMO</span><h3 id="featureVideoTitle">Demo</h3><p id="featureVideoCopy"></p></div>
+            <div><span class="story-label">Function demo</span><h3 id="featureVideoTitle">Demo</h3><p id="featureVideoCopy"></p></div>
             <button class="feature-video-close" type="button" aria-label="Close video">×</button>
           </div>
           <div class="feature-video-stage">
