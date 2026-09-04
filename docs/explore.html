@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ece8df">
+<title>Explore More — 清送 / THU Delivery</title>
+<style>
+:root{
+  --ink:#171714;
+  --paper:#ece8df;
+  --soft:#d7d2c8;
+  --moss:#5f7040;
+  --warm:#b38b63;
+  --line:rgba(23,23,20,.16);
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;overflow-x:hidden}
+a{color:inherit}.serif{font-family:Didot,"Bodoni 72","Times New Roman",Georgia,serif}.page-nav{position:fixed;inset:0 0 auto;z-index:30;height:70px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(22px,4vw,64px);color:#f5f1e8;mix-blend-mode:difference}.page-nav a{text-decoration:none;font-size:12px;letter-spacing:.14em;text-transform:uppercase}.page-nav .brand{font-weight:650;letter-spacing:.04em}.hero{position:relative;min-height:100svh;display:flex;align-items:flex-end;overflow:hidden;background:#111}.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,9,8,.04) 20%,rgba(8,9,8,.78) 100%),url("assets/delivery-robot-hero.png") center/cover no-repeat;transform:scale(1.015)}.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(15,16,14,.5),transparent 55%)}.hero-copy{position:relative;z-index:2;width:min(1180px,calc(100% - 48px));margin:0 auto;padding:0 0 clamp(48px,8vh,92px);color:#f4f0e7}.eyebrow{margin:0 0 16px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;opacity:.72}.hero h1{margin:0;max-width:980px;font-size:clamp(64px,10vw,150px);line-height:.82;font-weight:400;letter-spacing:-.04em}.hero .cn{display:block;margin-top:18px;font-family:"Songti SC","STSong",serif;font-size:clamp(27px,3.2vw,48px);font-weight:400;letter-spacing:.08em}.hero-lead{max-width:600px;margin:30px 0 0;font-size:clamp(16px,1.5vw,21px);line-height:1.8;color:rgba(244,240,231,.78)}.scroll-note{position:absolute;right:clamp(24px,4vw,66px);bottom:38px;z-index:3;color:rgba(244,240,231,.6);font-size:10px;letter-spacing:.18em;text-transform:uppercase;writing-mode:vertical-rl}.essay{width:min(1180px,calc(100% - 48px));margin:0 auto;padding:clamp(90px,13vw,180px) 0}.essay-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.25fr);gap:clamp(48px,9vw,150px);align-items:start}.section-no{position:sticky;top:100px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(23,23,20,.52)}.essay h2{margin:0;font-size:clamp(48px,6.3vw,92px);line-height:.92;font-weight:400;letter-spacing:-.035em}.essay p{font-size:clamp(16px,1.35vw,20px);line-height:1.9;color:rgba(23,23,20,.72)}.essay p.lead{margin-top:32px;font-size:clamp(21px,2vw,30px);line-height:1.55;color:var(--ink)}.pullquote{margin:58px 0;padding:32px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:clamp(31px,4vw,60px);line-height:1.2;font-weight:400}.pullquote small{display:block;margin-top:16px;font-family:Inter,ui-sans-serif,system-ui,sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(23,23,20,.48)}.film{position:relative;min-height:92svh;display:grid;align-items:end;overflow:hidden;background:#111;color:#f5f1e8}.film video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.75) contrast(.92) brightness(.7)}.film::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,12,10,.12),rgba(12,12,10,.72) 80%)}.film-copy{position:relative;z-index:2;width:min(1180px,calc(100% - 48px));margin:0 auto;padding:0 0 clamp(58px,9vh,110px)}.film-copy h2{margin:0;max-width:850px;font-size:clamp(50px,7vw,106px);line-height:.9;font-weight:400;letter-spacing:-.035em}.film-copy p{max-width:560px;margin:28px 0 0;font-size:17px;line-height:1.8;color:rgba(245,241,232,.76)}.principles{background:#171714;color:#ebe7dd;padding:clamp(90px,12vw,170px) 0}.principles-inner{width:min(1180px,calc(100% - 48px));margin:0 auto}.principles-head{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:70px}.principles h2{margin:0;font-size:clamp(48px,6.8vw,98px);line-height:.9;font-weight:400}.principles-head p{margin:0;align-self:end;max-width:480px;color:rgba(235,231,221,.63);line-height:1.8}.principle-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid rgba(235,231,221,.18)}.principle{padding:34px 8% 42px 0;border-bottom:1px solid rgba(235,231,221,.18)}.principle:nth-child(odd){border-right:1px solid rgba(235,231,221,.18)}.principle:nth-child(even){padding-left:8%}.principle span{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#aeb98b}.principle h3{margin:13px 0 12px;font-family:Didot,"Bodoni 72",Georgia,serif;font-size:clamp(28px,3vw,44px);font-weight:400}.principle p{margin:0;color:rgba(235,231,221,.62);line-height:1.75}.portrait-section{padding:clamp(90px,12vw,160px) 0;background:#d8d2c6}.portrait-inner{width:min(1280px,calc(100% - 32px));margin:0 auto}.portrait-head{width:min(1180px,calc(100% - 32px));margin:0 auto 44px;display:flex;align-items:end;justify-content:space-between;gap:30px}.portrait-head h2{margin:0;font-size:clamp(46px,6vw,88px);line-height:.92;font-weight:400}.portrait-head p{max-width:390px;margin:0;color:rgba(23,23,20,.6);line-height:1.7}.portraits{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.portrait{position:relative;aspect-ratio:3/4;overflow:hidden;background:#bbb}.portrait img{width:100%;height:100%;object-fit:cover;filter:saturate(.72) contrast(.95);transition:transform .8s cubic-bezier(.2,.7,.2,1),filter .5s ease}.portrait:hover img{transform:scale(1.035);filter:saturate(.95)}.portrait::after{content:"";position:absolute;inset:auto 0 0;height:40%;background:linear-gradient(transparent,rgba(12,12,10,.64))}.portrait span{position:absolute;left:18px;bottom:16px;z-index:2;color:#f6f1e8;font-size:12px;letter-spacing:.04em}.poem{min-height:90svh;display:grid;place-items:center;padding:90px 24px;background:linear-gradient(150deg,#e8e0d2,#cfd5c4);text-align:center}.poem-inner{max-width:920px}.poem .quote{margin:0;font-size:clamp(46px,6vw,96px);line-height:1.25;font-weight:400;letter-spacing:.03em}.poem .source{margin:28px 0 0;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:rgba(23,23,20,.48)}.poem .after{max-width:620px;margin:64px auto 0;font-size:17px;line-height:1.9;color:rgba(23,23,20,.68)}.future{position:relative;min-height:92svh;overflow:hidden;background:#090a09;color:#f3efe7;display:grid;align-items:end}.future video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:grayscale(.2) brightness(.58)}.future::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,8,7,.82),rgba(8,8,7,.22) 70%),linear-gradient(180deg,transparent 45%,rgba(8,8,7,.7))}.future-copy{position:relative;z-index:2;width:min(1180px,calc(100% - 48px));margin:0 auto;padding:0 0 clamp(58px,10vh,110px)}.future-copy h2{margin:0;max-width:760px;font-size:clamp(48px,6.8vw,100px);line-height:.92;font-weight:400}.future-copy p{max-width:560px;margin:26px 0 0;color:rgba(243,239,231,.7);font-size:17px;line-height:1.8}.closing{padding:120px 24px 80px;text-align:center;background:#ece8df}.closing h2{margin:0 auto;max-width:800px;font-size:clamp(48px,6vw,88px);line-height:.98;font-weight:400}.closing p{max-width:600px;margin:28px auto 0;color:rgba(23,23,20,.6);line-height:1.8}.back{display:inline-flex;margin-top:44px;min-height:50px;padding:0 26px;align-items:center;justify-content:center;border:1px solid rgba(23,23,20,.28);border-radius:999px;text-decoration:none;font-size:12px;letter-spacing:.1em;text-transform:uppercase;transition:.25s ease}.back:hover{background:#171714;color:#f5f1e8;transform:translateY(-2px)}
+@media(max-width:760px){.essay-grid,.principles-head{grid-template-columns:1fr}.section-no{position:static}.principle-list{grid-template-columns:1fr}.principle:nth-child(odd){border-right:0}.principle:nth-child(even){padding-left:0}.portraits{grid-template-columns:repeat(2,1fr)}.portrait:last-child{grid-column:1/-1;aspect-ratio:16/9}.portrait-head{align-items:start;flex-direction:column}.scroll-note{display:none}.page-nav{height:58px}.hero-copy{padding-bottom:44px}}
+</style>
+</head>
+<body>
+<nav class="page-nav"><a class="brand" href="./">清送 · THU Delivery</a><a href="./#system">Back to system</a></nav>
+<header class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow">Explore More · Design Notes</p>
+    <h1 class="serif">A quieter way<br>to move.</h1>
+    <span class="cn">清送，不只是把东西送到。</span>
+    <p class="hero-lead">我们更在意：当技术真正进入校园，它能否少一点打扰，多一点体谅；少让人学习一个系统，多让系统理解人的处境。</p>
+  </div>
+  <div class="scroll-note">A design story · scroll</div>
+</header>
+<section class="essay">
+  <div class="essay-grid">
+    <div class="section-no">01 · Why 清送</div>
+    <div>
+      <h2 class="serif">The best interface is sometimes the one that disappears.</h2>
+      <p class="lead">“清送”这个名字，对我们而言不只是一个项目名。它意味着一种克制：路径可以复杂，控制可以精密，但来到使用者面前时，事情应该重新变得简单。</p>
+      <p>一个抱着箱子的学生，不应该为了叫车腾出双手；一个赶时间的人，不应该理解调度器；一个第一次见到机器人的人，也不应该先读说明书。语音、网页、称重、自动重规划、断联停车——它们不是为了让系统看起来更复杂，而是为了让复杂性退到人的背后。</p>
+      <div class="pullquote serif">“所谓智能，不是让人适应机器，而是让机器更懂得人的不便。”<small>Our design premise</small></div>
+      <p>因此我们不断问同一个问题：这一项技术，究竟解决了谁的什么麻烦？如果答案不够具体，它就不应该占据页面，也不应该占据车上的空间。</p>
+    </div>
+  </div>
+</section>
+<section class="film">
+  <video src="assets/media/frame.mp4" muted autoplay loop playsinline preload="metadata"></video>
+  <div class="film-copy">
+    <p class="eyebrow">02 · Form follows care</p>
+    <h2 class="serif">A robot should feel like infrastructure, not an intruder.</h2>
+    <p>低重心、圆角外壳、清晰的显示区域、克制的灯光与封闭的货舱，让它在校园中更像一个安静的公共设施，而不是一个要求注意力的机器。</p>
+  </div>
+</section>
+<section class="principles">
+  <div class="principles-inner">
+    <div class="principles-head">
+      <h2 class="serif">Designed around<br>small moments.</h2>
+      <p>真正影响体验的，往往不是一项宏大的算法，而是那些发生在十秒钟里的小事：手上有东西、拐角突然有人、网络短暂断开、货物比预期更重。</p>
+    </div>
+    <div class="principle-list">
+      <article class="principle"><span>01 · Hands full</span><h3>Speak instead of operate.</h3><p>当双手被占用，语音不是“多一种交互”，而是让交互本身不再成为负担。</p></article>
+      <article class="principle"><span>02 · Heavy cargo</span><h3>Measure before moving.</h3><p>重量进入控制参数，让转弯和运动策略面对真实载荷，而不是假设每一次配送都一样。</p></article>
+      <article class="principle"><span>03 · Road blocked</span><h3>Find another way.</h3><p>障碍不只是停车条件，也会成为新的路况信息，让路线能够重新选择。</p></article>
+      <article class="principle"><span>04 · Link lost</span><h3>Stopping is also intelligence.</h3><p>安全不是“系统失败以后怎么办”，而是设计开始时就必须存在的状态。</p></article>
+    </div>
+  </div>
+</section>
+<section class="poem">
+  <div class="poem-inner">
+    <p class="quote serif">“山重水复疑无路，<br>柳暗花明又一村。”</p>
+    <p class="source">陆游 · 《游山西村》</p>
+    <p class="after">我们喜欢这句诗，不是因为它恰好像重规划算法，而是因为它描述了一种更温柔的工程观：路被挡住，不意味着任务结束；重要的是系统能否承认变化，然后找到下一条可走的路。</p>
+  </div>
+</section>
+<section class="portrait-section">
+  <div class="portrait-inner">
+    <div class="portrait-head"><h2 class="serif">Five perspectives.<br>One vehicle.</h2><p>Motion、Control、Voice、UI、Frame、Camera、Network……不同分工最后必须汇到同一次真实配送里。</p></div>
+    <div class="portraits">
+      <div class="portrait"><img src="assets/team/gan-hongwen.png" alt="甘闳文"><span>Gan Hongwen</span></div>
+      <div class="portrait"><img src="assets/team/zhi-tong.png" alt="Lim Zhitong"><span>Lim Zhitong</span></div>
+      <div class="portrait"><img src="assets/team/li-yuxin.png" alt="李雨欣"><span>Li Yuxin</span></div>
+      <div class="portrait"><img src="assets/team/su-liyun.png" alt="Saw Liyun"><span>Saw Liyun</span></div>
+      <div class="portrait"><img src="assets/team/pu-renzhi.png" alt="蒲仁智"><span>Pu Renzhi</span></div>
+    </div>
+  </div>
+</section>
+<section class="future">
+  <video src="assets/media/eeg-demo.mp4" muted autoplay loop playsinline preload="metadata"></video>
+  <div class="future-copy">
+    <p class="eyebrow">03 · Beyond hands</p>
+    <h2 class="serif">What if intention itself could become an interface?</h2>
+    <p>脑波小车不是为了给系统增加一个更炫的输入方式。它让我们重新思考：当一个人无法、或者不方便使用传统界面时，机器还能如何理解意图？Future work 从这里开始。</p>
+  </div>
+</section>
+<section class="essay">
+  <div class="essay-grid">
+    <div class="section-no">04 · Build, test, return</div>
+    <div>
+      <h2 class="serif">A design is only finished when it survives the real road.</h2>
+      <p class="lead">地图里的路径、控制器里的状态、网页上的按钮，最终都要接受同一个问题：车真正开出去以后，它还成立吗？</p>
+      <div class="pullquote serif">“纸上得来终觉浅，绝知此事要躬行。”<small>陆游 · 《冬夜读书示子聿》</small></div>
+      <p>所以清送的设计来源不是某一张效果图，而是一连串真实场景：称重后重新调参数，遇到障碍再规划，发现网络会掉线就设计安全停车，发现操作本身可能成为负担就加入语音与更多自然接口。设计不是给技术加包装，而是在每一次失败之后重新理解人和环境。</p>
+    </div>
+  </div>
+</section>
+<footer class="closing">
+  <h2 class="serif">Deliver the object.<br>Leave the burden behind.</h2>
+  <p>如果清送最终能让一次配送少一点等待、少一点搬运、少一点对技术的迁就，那么这些模块才真正连接成了一个系统。</p>
+  <a class="back" href="./#system">Return to THU Delivery →</a>
+</footer>
+</body>
+</html>
