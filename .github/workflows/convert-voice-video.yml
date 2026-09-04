@@ -16,6 +16,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install ffmpeg
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
       - name: Convert voice.mov to browser-compatible MP4
         shell: bash
         run: |
