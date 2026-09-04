@@ -542,7 +542,23 @@ void DeliveryController::Handle_Resume(const ServerMessage& m)
                          std::vector<int>(), ERR_NOT_SYNCHRONIZED, "nothing to resume");
         return;
     }
-    if (!nav_fsm.resume_task()) {
+    // 急停可能落在“已到站等待确认”上：nav 在 handle_arrived 里已把 task.active
+    // 置为 false，resume_task() 第一行 (!task.active) 就返回 false。原实现据此拒收，
+    // 而解除禁止位的代码在它之后——于是到站等确认时按一次急停，车就再也
+    // 解不开：重启同样无效，emergency_latched 是持久化的，而重启后的 nav
+    // 也没有活跃任务。这种场景本就不需要“恢复导航”，恢复的语义只是解除
+    // 禁止位、退回到站等待。
+    // 不能只看 is_navigating()：它读的是 task.active，而定位阶段也会把它置 true
+    // （navigation.cpp“状态机需要激活才会扫描Tag”），于是车在原地定位时会被
+    // 误判成“导航中”，resume 放行运动后车就跑了——实测从新清华学堂一路
+    // 跑到照澜院。真正可恢复的只有在途状态；定位/到站/空闲都是“停着”，
+    // 恢复的语义仅仅是解除禁止位。
+    const NavState nav_state = nav_fsm.get_state();
+    const bool nav_resumable = nav_fsm.is_navigating() &&
+                               nav_state != NAV_STATE_LOCATING &&
+                               nav_state != NAV_STATE_ARRIVED &&
+                               nav_state != NAV_STATE_IDLE;
+    if (nav_resumable && !nav_fsm.resume_task()) {
         Send_Command_Ack(m.header.message_id, false, c.command_version,
                          std::vector<int>(), ERR_NAVIGATION_FAILED, "nav resume failed");
         return;
@@ -553,11 +569,15 @@ void DeliveryController::Handle_Resume(const ServerMessage& m)
     store_.emergency_latched = false;
     store_.command_version = c.command_version;
     Store_Save();
-    state_ = DELIVERY_NAVIGATING;   // 从零缓加速由5ms线程保证（current_speed已为0）
+    // 无导航任务可恢复 = 车停在站上等确认，不能谎报 NAVIGATING
+    // （前面已校验 trip_id/stop_id 与本地一致，所以必定是本 trip 的到站等待）
+    state_ = nav_resumable ? DELIVERY_NAVIGATING : DELIVERY_ARRIVED_WAIT;   // 从零缓加速由5ms线程保证（current_speed已为0）
     Send_Command_Ack(m.header.message_id, true, c.command_version,
                      std::vector<int>(), ERR_NONE, "");
-    printf("[DLV] resume v%llu → NAVIGATING（零速缓启）\n",
-           (unsigned long long)c.command_version);
+    printf("[DLV] resume v%llu → %s\n",
+           (unsigned long long)c.command_version,
+           nav_resumable ? "NAVIGATING（零速缓启）"
+                         : "ARRIVED_WAIT（到站等确认，仅解除急停）");
 }
 
 /*============================================================================

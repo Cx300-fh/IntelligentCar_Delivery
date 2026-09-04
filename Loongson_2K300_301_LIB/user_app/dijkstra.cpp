@@ -437,10 +437,14 @@ static int thu_tag_offset_of(int node_id) {
         case 2:  return 30;   // 理科楼      实测 angle≈240.5，车头正西 270°
         case 3:  return 34;   // 图书馆      实测 angle≈235.8，车头正西 270°
         case 4:  return 19;   // 苏世民书院  实测 angle≈250.0，车头正西 270°
-        case 5:  return 51;   // 东大操场    实测 angle≈ 38.7，车头正东  90°
-        case 10: return 58;   // 新清华学堂  实测 angle≈211.8，车头正西 270°
-        case 12: return -5;   // A点         实测 angle≈185.1，车头正南 180°
-        case 9:  return 31;   // 大礼堂      实测 angle≈239.0，车头正西 270°
+        case 12: return 85;   // A点         停稳实测 angle≈5.5，车沿 11→12 循迹到达，车头正东 90°
+        // 下面三个是人工摆车标定的，【均存疑，待重标】：
+        // 手摆时容易把方向记错——节点12 原本标成 -5（记作“车头正南”），
+        // 拿正确值 85 反推得 185.1+85=270°，车头其实是正西，方向记偏了 90°。
+        // 这三个同样可能偏 90° 的倍数，需用停稳自动标定（[CALIB]）逐个重测。
+        case 5:  return 122;  // 东大操场    停稳实测 angle≈188.7，车沿 8→5 循迹到达，理论 311°
+        case 10: return 13;   // 新清华学堂  停稳实测 angle≈166.7，车沿 7→10 循迹到达，理论 180°
+        case 9:  return 87;   // 大礼堂      实测 angle≈183.1，车沿 10→9 循迹到达，理论正西 270°
         default: return kDefaultTagOffset;   // 其余节点尚未标定
     }
 }

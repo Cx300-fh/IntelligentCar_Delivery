@@ -119,6 +119,24 @@ void Tag_Scan_Process(void)
     // 160x120 的图降采样到 80x60，导致车静止不动时识别结果在互不相干的节点间乱跳
     // ——实测停在图书馆(3)却被先后认成大礼堂(9)、A点(12)、东门(8)。
     // 位置一旦失真，路径规划、到站判定、user_action 的停靠点校验会跟着全线错乱。
+    {   // 【临时诊断】把本帧所有检测结果都打出来：现场每个点位贴了四块 tag，
+        // 要先看清它们的 id 是否相同、角度是否相差 90 的倍数，
+        // 才能确定“选 margin 最高的那块”会不会把朝向基准选乱。
+        static int all_dbg = 0;
+        if ((++all_dbg % 60) == 0) {
+            printf("[TAGS] n=%d", detection_count);
+            for (int i = 0; i < detection_count; i++) {
+                apriltag_detection_t *c = NULL;
+                zarray_get(detections, i, &c);
+                double ha = -atan2(MATD_EL(c->H, 1, 0), MATD_EL(c->H, 0, 0)) * 180.0 / M_PI;
+                if (ha < 0) ha += 360.0;
+                printf("  [id=%d ang=%.1f mg=%.1f cx=%.0f cy=%.0f]",
+                       c->id, ha, c->decision_margin, c->c[0], c->c[1]);
+            }
+            printf("\n");
+        }
+    }
+
     static const float kMinDecisionMargin = 30.0f;
 
     apriltag_detection_t *det = NULL;
@@ -220,6 +238,12 @@ void Tag_Scan_Process(void)
     // 东西方向：[0,180)为东，[180,360)为西
     tag_dir_ew = (angle_norm < 180) ? DIR_EW_EAST : DIR_EW_WEST;
     tag_dir_ew_name = (tag_dir_ew == DIR_EW_EAST) ? "E" : "W";
+
+    {   // 【临时诊断】静止时读 tag 角，用于校验 [CALIB] 在行驶中采的值
+        static int dir_dbg = 0;
+        if ((++dir_dbg % 60) == 0)
+            printf("[DIR] id=%d angle=%.1f margin=%.1f\n", det->id, tag_angle, best_margin);
+    }
 
 
     // 释放检测结果

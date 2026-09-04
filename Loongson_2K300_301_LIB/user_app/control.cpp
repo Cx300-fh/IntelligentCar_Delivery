@@ -48,10 +48,11 @@ ls_gtim_pwm servo_pwm(GTIM_PWM1_PIN88, 100, SERVO_MID);
 
 // 掉头专用速度上限：先保守，稳定后再逐步提高
 #define UTURN_ROTATE_SPEED    8.0    // stage 1：旋转
+#define UTURN_INNER_RATIO     0.35   // stage 1：内侧(右)后轮速度系数，0=抱死(会拖地堆转)
 #define UTURN_EXIT_SPEED     10.0    // stage 2：直行脱离转弯区
 
 // 【临时调试】stage1结束后停车观察时长（确认车位置用）
-#define UTURN_OBSERVE_MS      20000
+#define UTURN_OBSERVE_MS      1000    // stage1 与 stage2 之间的停顿（换向缓冲）
 
 int follow_left = 0;  // 循迹左边界标志位（5ms线程按快照刷新，调试显示用）
 
@@ -241,15 +242,14 @@ void dir_control()
         if (lq_get_tick_ms() - g_uturn_hold_ms >= UTURN_OBSERVE_MS)
         {
             g_uturn_hold_ms = 0;
-            mile = 0;                       // 清里程：stage2实装后独立计1500
-            g_uturn_stage = 0;
-            g_uturn_done_latched = true;
-            follow_left = 0;
+            mile = 0;                       // 清里程：stage2 独立计程
+            g_uturn_stage = 2;              // 进入倒车左弧，把剩下的角度补齐
 
             PID zero = {0};
             turn_pid = zero;
 
-            printf("[CTRL] UTURN 观察期结束（本轮无stage2），恢复循迹\n");
+            printf("[CTRL] UTURN stage2: 倒车左弧(舵机+%d)，speed<=%.1f mile_limit=%u\n",
+                   -TURN_UTURN_ELEOUT, UTURN_ROTATE_SPEED, (unsigned)UTURN_MILE_LIMIT_2);
         }
     }
 
@@ -317,6 +317,13 @@ void dir_control()
             ele_out = 0;
             break;
 
+        // 导航说停车就得真停：原实现没有这两个分支，ACTION_STOP / ACTION_NONE
+        // 会掉进下面的 default（循迹 PID），于是“停车”被当成“沿线跑”。
+        case ACTION_STOP:
+        case ACTION_NONE:
+            ele_out = 0;   // 舵机回中；驱动由下面的 drive 门切断
+            break;
+
         case ACTION_UTURN:
             ele_out = TURN_UTURN_ELEOUT;
             break;
@@ -328,6 +335,12 @@ void dir_control()
                                         ele_target,
                                         turn_ele);
             break;
+    }
+
+    // stage2 走的是 ACTION_STRAIGHT 分支（ele_out=0），这里覆盖成左打满。
+    if (g_uturn_stage == 2 && g_uturn_hold_ms == 0)
+    {
+        ele_out = -TURN_UTURN_ELEOUT;   // +70
     }
 
     ele_out = RANGE_LIMIT(ele_out, -ELE_OUT_MAX, ELE_OUT_MAX);
@@ -342,10 +355,14 @@ void dir_control()
     // 同时支持目标速度向上、向下都通过speed_ramp缓变，
     // 避免正常速度20直接瞬间跳到掉头速度8。
     //========================================================================
+    // 注意用的是经掉头状态机处理过的 action 而不是 requested_action：
+    // 掉头进行中 action 被强制成 UTURN/STRAIGHT，不会被半途切断。
     bool drive = cmd.motion_permitted &&
                  !Safety_Inhibit_Active() &&
                  !g_watchdog_stale &&
-                 g_uturn_hold_ms == 0;   // 【临时调试】观察期禁止驱动
+                 g_uturn_hold_ms == 0 &&   // 【临时调试】观察期禁止驱动
+                 action != ACTION_STOP &&
+                 action != ACTION_NONE;
 
 
     if (drive)
@@ -358,9 +375,9 @@ void dir_control()
             effective_target_speed = UTURN_ROTATE_SPEED;
         }
         else if (g_uturn_stage == 2 &&
-                 effective_target_speed > UTURN_EXIT_SPEED)
+                 effective_target_speed > UTURN_ROTATE_SPEED)
         {
-            effective_target_speed = UTURN_EXIT_SPEED;
+            effective_target_speed = UTURN_ROTATE_SPEED;   // 与 stage1 同速，保证两段弧对称
         }
 
         if (current_speed < effective_target_speed)
@@ -425,11 +442,34 @@ void dir_control()
         right_speed = current_speed * (1 - diff_ratio);
     }
 
-    // stage1：前进右弧——舵机右打(-70)，左轮正转、右轮抱死，车头顺时针前扫。
+    // stage1：前进右弧——舵机右打(-70)，左轮全速、右轮低速跟进，车头顺时针前扫。
+    //
+    // 原实现是 right_speed = 0（想让车绕右轮旋转），但这台车是阿克曼结构：
+    // 前轮由舵机定向、后轮驱动。右轮速度设成 0 之后，PID 会主动输出反向 duty
+    // 把它摹住（实测 R_duty 稳定在 -800 上下），右后轮只能在地面上横向拖行，
+    // 阻力直接超过电机扭矩——等于一边给油一边拉手刹。
+    //
+    // 2026-09-03 实测：左轮 duty 顶满 9000、enc_l 归零、mile 卡在 350 不动；
+    // 同一时刻把后轮抬离地面，mile 立刻冲到 3003 完成 stage1，
+    // 证明电机/驱动/电池/编码器全都是好的，纯粹是负载问题。
+    //
+    // 因此右轮改为低速正转跟进：既保留差速辅助转向，又不让它拖地。
+    // 系数取 0.35，与普通差速在 ele_out=-70 时的内轮系数(1-0.7=0.3)相当。
     if (g_uturn_stage == 1 && g_uturn_hold_ms == 0)
     {
         left_speed  = current_speed;
-        right_speed = 0;
+        right_speed = current_speed * UTURN_INNER_RATIO;
+    }
+
+    // stage2：倒车左弧——与 stage1 镜像。舵机左打(+70)、两轮倒转，
+    // 左轮（此时的内侧轮）低速跟进。阿克曼车倒车时前轮左打，
+    // 车头才会继续沿 stage1 的方向（顺时针）转。
+    // 实测 stage1 的 4000 里程把车头转过约 90°，这一段再补 90°，
+    // 合起来完成 180° 三点掉头。
+    if (g_uturn_stage == 2 && g_uturn_hold_ms == 0)
+    {
+        left_speed  = -current_speed * UTURN_INNER_RATIO;
+        right_speed = -current_speed;
     }
 
     // 这里让stage2先不动，我们看看位置在哪
@@ -455,6 +495,36 @@ void motor_control()
 
     left_motor_duty = RANGE_LIMIT(left_motor_duty, -MOTOR_MAX, MOTOR_MAX);
     right_motor_duty = RANGE_LIMIT(right_motor_duty, -MOTOR_MAX, MOTOR_MAX);
+
+    // 增量式 PID 的输出是累加的：堵转期间 iError 恒为正，
+    // duty 每周期加一个 KI*iError，一路冲到 MOTOR_MAX；等停下来
+    // iError 归零，increase 也跟着归零，于是 duty 永远停在饱和值不再回落。
+    // 2026-09-03 实测：掉头堵转后车已停稳（spd=0、enc=0），
+    // left_motor_duty 仍残留 8336 且在缓慢爬升——下次 drive 一放行
+    // 就是全功率窜车。因此目标速度为零且两轮确实不转时，
+    // 把累加量与 PID 历史一起清干净。
+    if (left_speed == 0.0 && right_speed == 0.0 &&
+        encoder_ave < CONTROL_STOP_ENC_THRESH)
+    {
+        left_motor_duty  = 0;
+        right_motor_duty = 0;
+        left_motor_pid.iError  = left_motor_pid.LastError  = left_motor_pid.PrevError  = 0;
+        right_motor_pid.iError = right_motor_pid.LastError = right_motor_pid.PrevError = 0;
+    }
+
+    {   // 【P3 诊断】掉头卡死排查：9月2日实测 stage1 触发后左轮 duty 饱和到
+        // MOTOR_MAX 但 enc_l/enc_r 全程为 0 → mile 永不累积 → 到不了
+        // UTURN_MILE_LIMIT_1 → 卡死 stage1。这里当拍实读编码器，区分
+        // “电机出力没生效/轮子被懋死”与“编码器坏”。标定完删。
+        static int motor_dbg = 0;
+        if ((++motor_dbg % 100) == 0)
+            printf("[MOTOR] spd=%.1f L_spd=%.1f R_spd=%.1f L_duty=%.1f R_duty=%.1f "
+                   "enc_l=%d enc_r=%d mile=%u stage=%d\n",
+                   current_speed, left_speed, right_speed,
+                   left_motor_duty, right_motor_duty,
+                   (int)encoder_l, (int)encoder_r,
+                   (unsigned)mile, (int)g_uturn_stage);
+    }
 
 
     motor_pwm1.atim_pwm_set_duty(left_motor_duty);

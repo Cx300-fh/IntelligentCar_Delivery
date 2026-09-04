@@ -807,6 +807,7 @@ void NavigationFSM::handle_executing(void) {
         printf("[Nav] 到达新节点：%s（来自：%s）\n",
                dijkstra->get_node_name(tag_id),
                dijkstra->get_node_name(status.prev_id));
+
         status.state = NAV_STATE_AT_NODE;
     }
 }
@@ -822,6 +823,32 @@ void NavigationFSM::handle_executing(void) {
  */
 void NavigationFSM::handle_arrived(void) {
     status.current_action = ACTION_STOP;
+
+    // 【tag 朝向标定】车停稳后再采。到达瞬间车还在动、tag 处于图像边缘，
+    // 透视畔变会把角度带偏——实测节点12 行驶中读 345.3°、停稳后读 5.5°，差 20°。
+    //
+    // 车是循迹压线过来的，车头方向必然就是 prev→current 的方向，
+    // 与停稳后的 tag_angle 一比就是这个节点的贴装偏移。现场每个点位贴了四块
+    // tag、内容相同且朝向一致，所以看到哪一块都不影响这个值。
+    //
+    // 不用人工摆车标定：手摆时方向容易记错，实测节点12 就被摆成朝西却
+    // 记作朝南，标出个差 90° 的错值，进而让起步转向判错。
+    {
+        static int last_calib_node = -1;
+        if (status.current_id != last_calib_node && status.has_prev_info &&
+            det_found && tag_id == status.current_id && Control_Is_Stopped()) {
+            int heading = dijkstra->get_expected_heading(status.prev_id, status.current_id);
+            if (heading >= 0) {
+                int off = heading - (int)(tag_angle + 0.5f);
+                off %= 360;
+                if (off < 0) off += 360;
+                printf("[CALIB] 节点%d(%s) 来自%d：理论%d° tag角%.1f° → offset=%d（停稳）\n",
+                       status.current_id, dijkstra->get_node_name(status.current_id),
+                       status.prev_id, heading, tag_angle, off);
+                last_calib_node = status.current_id;
+            }
+        }
+    }
     if (task.active) {
         task.active = false;
         status.target_arrived = true;   // 到站锁存：一次到站只消费一次

@@ -68,15 +68,52 @@ static std::deque<uint8_t> g_screen_ack_bytes;
 /**
  * @brief   发送帧尾（0xFF 0xFF 0xFF）
  */
+// 串口续写：uart_write 超时会短写，必须从断点继续发，
+// 不能从包头重发（否则屏幕会收到重复前缀）。
+static bool screen_uart_write_all(const uint8_t* data, size_t len)
+{
+    size_t sent = 0;
+    for (int retry = 0; retry < 8 && sent < len; retry++) {
+        ssize_t w = screen_uart.uart_write(data + sent, (ssize_t)(len - sent), 100);
+        if (w <= 0) break;
+        sent += (size_t)w;
+    }
+    return sent == len;
+}
+
 static bool screen_write_command(const char* cmd)
 {
     if (!cmd) return false;
     std::lock_guard<std::mutex> lock(g_screen_tx_mutex);
-    if (g_screen_transfer_active.load()) return false;
+    if (g_screen_transfer_active.load()) {
+        // 【临时诊断】传输占用时所有写入被静默丢弃，而调用方全都忽略返回值
+        static int busy_dbg = 0;
+        if ((++busy_dbg % 50) == 1)
+            printf("[Screen] TX被跳过：文件传输占用中 cmd=%s\n", cmd);
+        return false;
+    }
     const uint8_t tail[] = {0xFF, 0xFF, 0xFF};
     size_t len = strlen(cmd);
-    return screen_uart.uart_write((const uint8_t*)cmd, (ssize_t)len, 100) == (ssize_t)len &&
-           screen_uart.uart_write(tail, 3, 100) == 3;
+    // ls_uart::uart_write() 超时时会只发出一部分并返回已发字节数。
+    // 原实现一次写不完就直接放弃，屏幕收到的是半条指令，
+    // 变量名被截断于是回 0x1A（变量名无效）——2026-09-03 实测
+    // “DConfirm.d_s_1.txt=...” 期望 33 字节只发出 11 个，帧尾根本没发，
+    // 单次运行累计收到 4406 个 0x1A；active_phase/active_slot/viewing_slot
+    // 三个变量发不下去，屏幕只能拿旧值算，装货按钮就卡在“等待中”。
+    // 同文件的 screen_write_raw_locked() 早就有续写逻辑，这里补上。
+    if (!screen_uart_write_all((const uint8_t*)cmd, len)) {
+        static int fail_dbg = 0;
+        if ((++fail_dbg % 50) == 1)
+            printf("[Screen] TX正文续写仍失败 cmd=%s 期望%zu\n", cmd, len);
+        return false;
+    }
+    if (!screen_uart_write_all(tail, 3)) {
+        static int tail_dbg = 0;
+        if ((++tail_dbg % 50) == 1)
+            printf("[Screen] TX帧尾续写仍失败 cmd=%s\n", cmd);
+        return false;
+    }
+    return true;
 }
 
 // 仅供已取得传输所有权的twfile实现调用。
@@ -680,8 +717,8 @@ void Screen_Rx_Process(const uint8_t* data, ssize_t len)
     }
     if (is_empty) return;
 
-    // 调试时可选：打印所有接收数据（默认关闭，避免刷屏）
-    // printf("[Screen] RX[%zd]: %s\n", len, cmd);
+    // 【临时诊断】打开原始接收打印：区分“屏幕没发”与“发了但指令名对不上”
+    printf("[Screen] RX[%zd]: %s\n", len, cmd);
 
     int map_id = 0;
     int target_id = 0;
@@ -943,19 +980,42 @@ static void screen_safe_text(char* dst, size_t dst_size, const std::string& src)
     dst[o] = '\0';
 }
 
-// 订单槽位映射：当前订单（current_order_id优先，否则首个status2/3/4订单）在缓存中的槽(1~5)
+// 屏幕只有 b1~b5 五个槽位，而服务器快照会把全部历史订单一起下发。
+// 原实现直接取 snap.orders[0..4]，订单一多，正在执行的那条就会被已完成的
+// 挤出前五条，delivery_active_slot 返回 0，屏幕收到 active_slot=0 / viewing_slot=1，
+// HMI 按 "viewing_slot > active_slot" 判成“等待前序订单完成”——文案变“等待中”、
+// tsw d_s_4,0 禁用确认按钮，用户点了也不会发 LOAD_CONFIRMED。
+// 2026-09-03 实测：积累到 15 条订单后活跃订单排在第 15 位，装货确认彻底点不动。
+// 因此槽位只映射未完成的订单，已完成的不占位。
+static int delivery_visible_orders(const StateSync& snap, int* idx, int max_n)
+{
+    int n = 0;
+    for (size_t i = 0; i < snap.orders.size() && n < max_n; i++) {
+        if (snap.orders[i].status != ORDER_COMPLETED) idx[n++] = (int)i;
+    }
+    if (n == 0) {   // 全部已完成：退化为显示最近几条，避免屏幕整片空白
+        size_t total = snap.orders.size();
+        size_t start = total > (size_t)max_n ? total - (size_t)max_n : 0;
+        for (size_t i = start; i < total && n < max_n; i++) idx[n++] = (int)i;
+    }
+    return n;
+}
+
+// 订单槽位映射：当前订单（current_order_id优先，否则首个status2/3/4订单）的槽(1~5)
 // 无活跃订单返回0
 static int delivery_active_slot(const StateSync& snap)
 {
-    for (size_t i = 0; i < snap.orders.size() && i < 5; i++) {
-        if (snap.has_current_order && snap.orders[i].order_id == snap.current_order_id)
-            return (int)(i + 1);
+    int idx[5];
+    int n = delivery_visible_orders(snap, idx, 5);
+    for (int s = 0; s < n; s++) {
+        if (snap.has_current_order && snap.orders[idx[s]].order_id == snap.current_order_id)
+            return s + 1;
     }
-    for (size_t i = 0; i < snap.orders.size() && i < 5; i++) {
-        int st = snap.orders[i].status;
+    for (int s = 0; s < n; s++) {
+        int st = snap.orders[idx[s]].status;
         if (st == ORDER_WAIT_PICKUP_CONFIRM || st == ORDER_DELIVERING ||
             st == ORDER_WAIT_DROPOFF_CONFIRM)
-            return (int)(i + 1);
+            return s + 1;
     }
     return 0;
 }
@@ -963,8 +1023,11 @@ static int delivery_active_slot(const StateSync& snap)
 static void render_delivery_texts(const StateSync& snap, int slot)
 {
     char s1[48], s4[32];
-    const OrderInfo* cur = (slot > 0 && (size_t)(slot - 1) < snap.orders.size())
-                           ? &snap.orders[slot - 1] : nullptr;
+    // slot 是可见列表里的位置，不是 snap.orders 的下标，要转一次
+    int vis_c[5];
+    int vis_cn = delivery_visible_orders(snap, vis_c, 5);
+    const OrderInfo* cur = (slot > 0 && slot <= vis_cn)
+                           ? &snap.orders[vis_c[slot - 1]] : nullptr;
 
     switch (snap.screen_phase) {
         case SCREEN_PHASE_NONE: {
@@ -1037,11 +1100,13 @@ void Screen_Render_Delivery(void)
     // 订单号：b1~b5显示display_no（无订单的槽清空）。
     // 带DConfirm页面前缀：即使门控失效（END在途竞态）也不会污染其他页同名控件
     char txt[16];
+    int vis[5];
+    int vis_n = delivery_visible_orders(snap, vis, 5);
     for (int i = 0; i < 5; i++) {
         char name[16];
         snprintf(name, sizeof(name), "DConfirm.b%d", i + 1);
-        if ((size_t)i < snap.orders.size() && !snap.orders[i].display_no.empty()) {
-            screen_safe_text(txt, sizeof(txt), snap.orders[i].display_no);
+        if (i < vis_n && !snap.orders[vis[i]].display_no.empty()) {
+            screen_safe_text(txt, sizeof(txt), snap.orders[vis[i]].display_no);
         } else {
             snprintf(txt, sizeof(txt), "--");
         }
