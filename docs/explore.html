@@ -42,6 +42,103 @@ a{color:inherit}.serif{font-family:Didot,"Bodoni 72","Times New Roman",Georgia,s
 .why-close .why-close-em{margin:18px 0!important;font-family:"Songti SC","STSong","Noto Serif CJK SC",serif;font-size:clamp(25px,2.25vw,36px)!important;line-height:1.55!important;color:var(--ink)!important}
 @media(max-width:760px){.why-intro{grid-template-columns:1fr;gap:22px;margin-bottom:72px}.why-section .section-no{position:static}.why-row{grid-template-columns:1fr;row-gap:54px}.why-left,.why-right{grid-column:1}.why-row + .why-row{margin-top:86px}.why-title{font-size:clamp(46px,13vw,72px)!important}.why-cn-statement p{font-size:24px!important}.why-quote{font-size:36px!important}}
 
+
+
+/* EXPLORE FULL VIEWPORT CHAPTERS v1 */
+html {
+  scroll-snap-type: y proximity;
+  scroll-padding-top: 0;
+}
+body {
+  min-height: 100%;
+}
+body > header,
+body > section {
+  scroll-snap-align: start;
+}
+
+/* The navigation is an overlay, never a layout strip. */
+.page-nav {
+  background: transparent !important;
+  pointer-events: none;
+}
+.page-nav a {
+  pointer-events: auto;
+}
+
+/* Film-like chapters occupy the complete browser viewport. */
+.hero,
+.film,
+.poem,
+.future {
+  width: 100%;
+  height: 100svh;
+  min-height: 100svh;
+  max-height: none;
+}
+
+/* Editorial chapters always start as a complete page, but may grow when copy needs it. */
+.why-section,
+.principles,
+.portrait-section,
+.closing {
+  min-height: 100svh;
+}
+
+.why-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.principles,
+.portrait-section {
+  display: flex;
+  align-items: center;
+}
+.principles-inner,
+.portrait-inner {
+  width: 100%;
+}
+
+/* Give the final chapter a full-page ending instead of a short footer band. */
+.closing {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  padding-top: clamp(96px, 12vh, 150px);
+  padding-bottom: clamp(72px, 10vh, 120px);
+}
+
+/* Prevent adjacent chapter colours from leaking into the viewport at snap boundaries. */
+.hero,
+.film,
+.future,
+.poem,
+.principles,
+.portrait-section,
+.why-section,
+.closing {
+  position: relative;
+  isolation: isolate;
+}
+
+@media (max-width: 760px) {
+  html { scroll-snap-type: y proximity; }
+  .hero,
+  .film,
+  .poem,
+  .future {
+    height: 100svh;
+    min-height: 100svh;
+  }
+  .why-section,
+  .principles,
+  .portrait-section,
+  .closing {
+    min-height: 100svh;
+  }
+}
+
 </style>
 </head>
 <body>
