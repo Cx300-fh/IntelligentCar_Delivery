@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
 
+# retry after normalizing legacy trailing whitespace
 jobs:
   patch:
     runs-on: ubuntu-latest
