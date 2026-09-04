@@ -1,0 +1,34 @@
+name: Open System Layout
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/open-system-layout.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Apply open System layout
+        run: python .github/scripts/open_system_layout.py
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          set -e
+          grep -q 'System open canvas v1' docs/index.html
+          grep -q 'grid-template-columns: 142px minmax(0, 1fr);' docs/index.html
+          grep -q 'background: transparent !important;' docs/index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html
+          git diff --cached --check
+          git commit -m "Redesign System as open canvas"
+          git push origin main
