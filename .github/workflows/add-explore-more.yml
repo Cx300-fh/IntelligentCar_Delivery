@@ -1,0 +1,33 @@
+name: Add Explore More
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/add_explore_more.js'
+      - '.github/workflows/add-explore-more.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply Explore More patch
+        run: node .github/scripts/add_explore_more.js
+      - name: Validate
+        run: |
+          grep -q 'system-explore-more' docs/index.html
+          grep -q 'href="explore.html"' docs/index.html
+          ! grep -q 'EEG demo slot is intentionally reserved' docs/index.html
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/index.html
+          git commit -m 'Add Explore More entry and remove EEG placeholder note'
+          git push
