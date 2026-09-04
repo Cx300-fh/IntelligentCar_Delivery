@@ -1,0 +1,53 @@
+name: Fix Demo video reference
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-demo-video-reference.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update Demo section video only
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('docs/index.html')
+          text = path.read_text(encoding='utf-8')
+
+          old = 'src="assets/media/campus-demo.mp4"\n          poster="assets/media/campus-demo-poster.jpg"'
+          new = 'src="assets/media/demo.mp4"\n          poster="assets/media/campus-demo-poster.jpg"'
+
+          count = text.count(old)
+          if count < 1:
+              raise SystemExit('Demo video reference pattern not found')
+
+          text = text.replace(old, new)
+
+          nav = '<video src="assets/media/campus-demo.mp4" controls muted playsinline preload="metadata"></video>'
+          if nav not in text:
+              raise SystemExit('Navigation campus-demo reference was unexpectedly changed or missing')
+
+          path.write_text(text, encoding='utf-8')
+          print(f'Updated {count} Demo video reference(s); Navigation left unchanged.')
+          PY
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-demo-video-reference.yml
+          git add docs/index.html
+          git commit -m "Point Demo section to demo.mp4"
+          git push origin HEAD:main
