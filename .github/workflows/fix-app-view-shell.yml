@@ -1,0 +1,33 @@
+name: Fix App View Shell
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-app-view-shell.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Apply app view shell reset
+        run: python .github/scripts/fix_app_view_shell.py
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          set -e
+          grep -q 'main.app-shell-main > section.app-view' docs/index.html
+          grep -q 'padding: 0 !important;' docs/index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html
+          git diff --cached --check
+          git commit -m "Reset top-level app view spacing"
+          git push origin main
